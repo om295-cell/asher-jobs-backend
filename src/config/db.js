@@ -1,37 +1,47 @@
 const mongoose = require('mongoose');
 const { MONGO_URI, NODE_ENV } = require('./env');
 
+let isConnected = false;
+
 async function connectDB() {
+  if (mongoose.connection.readyState >= 1) {
+    return mongoose.connection;
+  }
+
+  const uri = process.env.MONGO_URI || MONGO_URI;
+
   try {
-    console.log(`[Database] Attempting connection to MongoDB at: ${MONGO_URI}`);
-    await mongoose.connect(MONGO_URI, {
+    const maskedUri = uri ? uri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') : '';
+    console.log(`[Database] Attempting connection to MongoDB at: ${maskedUri}`);
+    await mongoose.connect(uri, {
       serverSelectionTimeoutMS: 5000
     });
     console.log('[Database] MongoDB Connected Successfully.');
+    return mongoose.connection;
   } catch (err) {
     console.warn(`[Database] Could not connect to primary MONGO_URI: ${err.message}`);
 
-    // Attempt MongoMemoryServer if available (requires prior download)
-    try {
-      const { MongoMemoryServer } = require('mongodb-memory-server');
-      const cachedBinary = require('mongodb-memory-server-core/lib/util/MongoBinary').MongoBinary;
-      console.log('[Database] Attempting embedded MongoDB Memory Server...');
-      const memoryServer = await MongoMemoryServer.create({
-        instance: { dbName: 'asher_jobs_db' }
-      });
-      const uri = memoryServer.getUri();
-      await mongoose.connect(uri);
-      console.log(`[Database] Connected to In-Memory MongoDB at: ${uri}`);
-      // Attach reference for graceful shutdown
-      mongoose._memoryServer = memoryServer;
-    } catch (memErr) {
-      console.error('[Database] In-memory MongoDB also unavailable:', memErr.message);
-      console.error('\n⚠️  IMPORTANT: Please install and start MongoDB locally:');
-      console.error('   Option 1: Install MongoDB Community: https://www.mongodb.com/try/download/community');
-      console.error('   Option 2: Use MongoDB Atlas (cloud): https://www.mongodb.com/cloud/atlas');
-      console.error('   Then update MONGO_URI in server/.env\n');
-      throw new Error('No database available. Please install MongoDB and set MONGO_URI in .env');
+    // In local development only, attempt MongoMemoryServer if available
+    if (!process.env.VERCEL && process.env.NODE_ENV !== 'production') {
+      try {
+        const { MongoMemoryServer } = require('mongodb-memory-server');
+        console.log('[Database] Attempting embedded MongoDB Memory Server...');
+        const memoryServer = await MongoMemoryServer.create({
+          instance: { dbName: 'asher_jobs_db' }
+        });
+        const memUri = memoryServer.getUri();
+        await mongoose.connect(memUri);
+        console.log(`[Database] Connected to In-Memory MongoDB at: ${memUri}`);
+        mongoose._memoryServer = memoryServer;
+        return mongoose.connection;
+      } catch (memErr) {
+        console.error('[Database] In-memory MongoDB also unavailable:', memErr.message);
+      }
     }
+
+    console.warn(
+      '⚠️  [Database] Warning: No active MongoDB connection available. Please configure MONGO_URI in your environment variables (e.g. MongoDB Atlas on Vercel).'
+    );
   }
 
   mongoose.connection.on('error', (err) => {

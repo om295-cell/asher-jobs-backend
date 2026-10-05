@@ -11,11 +11,16 @@ const adminRoutes = require('./admin.routes');
 const recommendationRoutes = require('./recommendation.routes');
 const { getStats, recordVisit } = require('../controllers/stats.controller');
 
+const mongoose = require('mongoose');
+
 // Health check endpoint
 router.get('/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const dbStatusMap = { 0: 'disconnected', 1: 'connected', 2: 'connecting', 3: 'disconnecting' };
   res.status(200).json({
     success: true,
     status: 'ok',
+    database: dbStatusMap[dbState] || 'disconnected',
     timestamp: new Date().toISOString(),
     service: 'Asher Jobs API'
   });

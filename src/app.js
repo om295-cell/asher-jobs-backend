@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const mongoose = require('mongoose');
 const routes = require('./routes');
 const { errorHandler } = require('./middleware/error.middleware');
 const { CLIENT_URL, UPLOAD_DIR } = require('./config/env');
@@ -28,12 +29,16 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like mobile apps, curl, postman)
       if (!origin) return callback(null, true);
-      if (allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
-        return callback(null, true);
+      try {
+        const host = new URL(origin).hostname;
+        if (host.endsWith('.vercel.app') || allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
+          return callback(null, true);
+        }
+      } catch (e) {
+        // Fallback for non-standard origin strings
       }
-      return callback(null, true); // Permissive in local development
+      return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -48,6 +53,24 @@ app.use(cookieParser());
 
 // Static files for uploaded CVs
 app.use('/uploads', express.static(path.resolve(process.cwd(), UPLOAD_DIR)));
+
+// Favicon handler
+app.get('/favicon.ico', (req, res) => res.status(204).end());
+
+// Root health check & API status
+app.get('/', (req, res) => {
+  const isDbConnected = mongoose.connection.readyState === 1;
+  res.status(200).json({
+    success: true,
+    message: 'Asher Jobs Backend API is running',
+    database: isDbConnected ? 'connected' : 'disconnected',
+    endpoints: {
+      health: '/api/health',
+      stats: '/api/stats',
+      jobs: '/api/jobs'
+    }
+  });
+});
 
 // Main API Routes
 app.use('/api', routes);
