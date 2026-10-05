@@ -52,7 +52,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // Static files for uploaded CVs
-app.use('/uploads', express.static(path.resolve(process.cwd(), UPLOAD_DIR)));
+try {
+  const { cvDir } = require('./middleware/upload.middleware');
+  app.use('/uploads', express.static(path.dirname(cvDir)));
+} catch (e) {
+  // Fallback
+}
 
 // Favicon handler
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -70,6 +75,19 @@ app.get('/', (req, res) => {
       jobs: '/api/jobs'
     }
   });
+});
+
+// Lazy DB connection middleware for serverless requests
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState < 1) {
+    try {
+      const { connectDB } = require('./config/db');
+      await connectDB();
+    } catch (err) {
+      console.warn('[Serverless DB] Connection warning:', err.message);
+    }
+  }
+  next();
 });
 
 // Main API Routes

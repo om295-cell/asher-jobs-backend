@@ -1,12 +1,22 @@
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const os = require('os');
 const { UPLOAD_DIR } = require('../config/env');
 
-// Ensure upload directory exists
-const cvDir = path.resolve(process.cwd(), UPLOAD_DIR, 'cvs');
-if (!fs.existsSync(cvDir)) {
-  fs.mkdirSync(cvDir, { recursive: true });
+// Determine upload directory: on serverless (e.g. Vercel), use /tmp (os.tmpdir())
+const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+const cvDir = isServerless
+  ? path.join(os.tmpdir(), 'uploads', 'cvs')
+  : path.resolve(process.cwd(), UPLOAD_DIR, 'cvs');
+
+// Safely ensure directory exists without crashing on read-only environments
+try {
+  if (!fs.existsSync(cvDir)) {
+    fs.mkdirSync(cvDir, { recursive: true });
+  }
+} catch (err) {
+  console.warn('[Upload Middleware] Could not create upload directory:', err.message);
 }
 
 const storage = multer.diskStorage({
