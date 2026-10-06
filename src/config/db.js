@@ -8,12 +8,13 @@ async function connectDB() {
     return mongoose.connection;
   }
 
-  const uri = process.env.MONGO_URI || MONGO_URI;
+  const uri = process.env.MONGODB_URI || process.env.MONGO_URI || MONGO_URI;
 
   try {
     const maskedUri = uri ? uri.replace(/\/\/[^:]+:[^@]+@/, '//***:***@') : '';
     console.log(`[Database] Attempting connection to MongoDB at: ${maskedUri}`);
     await mongoose.connect(uri, {
+      dbName: 'asher_jobs_db',
       serverSelectionTimeoutMS: 5000
     });
     console.log('[Database] MongoDB Connected Successfully.');

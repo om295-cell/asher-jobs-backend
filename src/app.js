@@ -63,7 +63,15 @@ try {
 app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // Root health check & API status
-app.get('/', (req, res) => {
+app.get('/', async (req, res) => {
+  if (mongoose.connection.readyState < 1) {
+    try {
+      const { connectDB } = require('./config/db');
+      await connectDB();
+    } catch (e) {
+      // Allow response even if DB is still connecting
+    }
+  }
   const isDbConnected = mongoose.connection.readyState === 1;
   res.status(200).json({
     success: true,
