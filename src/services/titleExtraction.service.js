@@ -1,6 +1,6 @@
-const xlsx = require('xlsx');
-const mammoth = require('mammoth');
-const pdfParse = require('pdf-parse');
+// NOTE: xlsx, mammoth, and pdf-parse are lazy-required inside functions
+// to prevent Vercel serverless cold-start crashes (pdf-parse in particular
+// runs file I/O at module load time which fails in Lambda environments).
 const path = require('path');
 const Job = require('../models/Job');
 const JobCategory = require('../models/JobCategory');
@@ -63,6 +63,8 @@ async function extractLinesFromFile(buffer, originalname, mimetype) {
   let rawText = '';
 
   if (ext === '.xlsx' || ext === '.xls' || ext === '.csv') {
+    // Lazy require to avoid serverless cold-start issues
+    const xlsx = require('xlsx');
     const workbook = xlsx.read(buffer, { type: 'buffer' });
     const lines = [];
     workbook.SheetNames.forEach((sheetName) => {
@@ -89,6 +91,8 @@ async function extractLinesFromFile(buffer, originalname, mimetype) {
 
   if (ext === '.docx' || ext === '.doc') {
     try {
+      // Lazy require to avoid serverless cold-start issues
+      const mammoth = require('mammoth');
       const docResult = await mammoth.extractRawText({ buffer });
       rawText = docResult.value || '';
     } catch (e) {
@@ -97,6 +101,8 @@ async function extractLinesFromFile(buffer, originalname, mimetype) {
     }
   } else if (ext === '.pdf') {
     try {
+      // Lazy require: pdf-parse runs file I/O at module load which crashes Vercel
+      const pdfParse = require('pdf-parse');
       const pdfData = await pdfParse(buffer);
       rawText = pdfData.text || '';
     } catch (e) {
