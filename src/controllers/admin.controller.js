@@ -1,5 +1,7 @@
 const adminService = require('../services/admin.service');
 const reportService = require('../services/report.service');
+const titleExtractionService = require('../services/titleExtraction.service');
+const JobSuggestion = require('../models/JobSuggestion');
 const { getActivityLogs } = require('../services/activity.service');
 const { successResponse } = require('../utils/response');
 
@@ -268,6 +270,182 @@ async function updateRequestStatus(req, res, next) {
   }
 }
 
+// ==========================================
+// Job Titles Extraction & Multi-Process Save
+// ==========================================
+
+async function extractJobTitles(req, res, next) {
+  try {
+    const buffer = req.file?.buffer;
+    const originalname = req.file?.originalname;
+    const mimetype = req.file?.mimetype;
+    const rawText = req.body?.text;
+    const defaultCategoryId = req.body?.defaultCategoryId;
+
+    if (!buffer && (!rawText || !rawText.trim())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload a valid file or provide text to extract job titles from.'
+      });
+    }
+
+    const result = await titleExtractionService.extractTitlesForReview({
+      buffer,
+      originalname,
+      mimetype,
+      rawText,
+      defaultCategoryId
+    });
+
+    return successResponse(res, result, 'Job titles extracted successfully for review');
+  } catch (err) {
+    console.error('[Admin] extractJobTitles error:', err.message);
+    next(err);
+  }
+}
+
+async function confirmSingleJobTitle(req, res, next) {
+  try {
+    const { name, nameAr, categoryId, description } = req.body;
+    const job = await titleExtractionService.processSingleTitle({
+      name,
+      nameAr,
+      categoryId,
+      description
+    });
+    return successResponse(res, job, 'Job title saved successfully', 201);
+  } catch (err) {
+    const isDuplicate = err.message.toLowerCase().includes('duplicate');
+    return res.status(isDuplicate ? 409 : 400).json({
+      success: false,
+      status: isDuplicate ? 'duplicate' : 'failed',
+      message: err.message,
+      code: isDuplicate ? 'DUPLICATE_TITLE' : 'PROCESS_FAILED'
+    });
+  }
+}
+
+async function batchConfirmJobTitles(req, res, next) {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Items array is required for batch title confirmation'
+      });
+    }
+
+    const results = [];
+    let successCount = 0;
+    let duplicateCount = 0;
+    let failureCount = 0;
+
+    // Process each item as an independent, isolated process
+    for (const item of items) {
+      try {
+        const job = await titleExtractionService.processSingleTitle(item);
+        results.push({
+          id: item.id,
+          title: item.title || item.name || item.nameAr,
+          status: 'success',
+          jobId: job._id,
+          job
+        });
+        successCount++;
+      } catch (err) {
+        const isDuplicate = err.message.toLowerCase().includes('duplicate');
+        if (isDuplicate) {
+          duplicateCount++;
+          results.push({
+            id: item.id,
+            title: item.title || item.name || item.nameAr,
+            status: 'duplicate',
+            error: err.message
+          });
+        } else {
+          failureCount++;
+          results.push({
+            id: item.id,
+            title: item.title || item.name || item.nameAr,
+            status: 'failed',
+            error: err.message
+          });
+        }
+      }
+    }
+
+    return successResponse(
+      res,
+      {
+        summary: {
+          total: items.length,
+          success: successCount,
+          duplicate: duplicateCount,
+          failed: failureCount
+        },
+        results
+      },
+      `Processed ${items.length} titles: ${successCount} added, ${duplicateCount} duplicate, ${failureCount} failed`
+    );
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Company Job Suggestions
+async function listJobSuggestions(req, res, next) {
+  try {
+    const query = {};
+    if (req.query.status) query.status = req.query.status;
+    const suggestions = await JobSuggestion.find(query)
+      .populate('companyId', 'name nameAr email industry contactPhone')
+      .sort({ createdAt: -1 })
+      .lean();
+    return successResponse(res, suggestions, 'Company job suggestions retrieved');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function reviewJobSuggestion(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { status, categoryId, notes } = req.body; // status: 'Approved' | 'Rejected'
+
+    const suggestion = await JobSuggestion.findById(id);
+    if (!suggestion) {
+      return res.status(404).json({ success: false, message: 'Suggestion not found' });
+    }
+
+    suggestion.status = status;
+    if (notes) suggestion.notes = notes;
+    suggestion.reviewedBy = req.user._id;
+    suggestion.reviewedAt = new Date();
+    await suggestion.save();
+
+    let createdJob = null;
+    if (status === 'Approved') {
+      try {
+        createdJob = await titleExtractionService.processSingleTitle({
+          name: suggestion.proposedTitle,
+          nameAr: suggestion.proposedTitle,
+          categoryId: categoryId || req.body.defaultCategoryId
+        });
+      } catch (err) {
+        console.warn('[reviewJobSuggestion] Could not create job automatically:', err.message);
+      }
+    }
+
+    return successResponse(
+      res,
+      { suggestion, createdJob },
+      `Suggestion has been marked as ${status}`
+    );
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getDashboard,
   listCandidates,
@@ -296,6 +474,11 @@ module.exports = {
   resolveReport,
   listActivityLogs,
   getSettings,
-  updateSetting
+  updateSetting,
+  extractJobTitles,
+  confirmSingleJobTitle,
+  batchConfirmJobTitles,
+  listJobSuggestions,
+  reviewJobSuggestion
 };
 

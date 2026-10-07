@@ -30,11 +30,22 @@ router.patch('/companies/:id/subscription', adminController.updateCompanySubscri
 router.get('/requests', adminController.listRequests);
 router.patch('/requests/:id/status', adminController.updateRequestStatus);
 
-// Jobs Management
+const multer = require('multer');
+const uploadTitleDoc = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024 }
+});
+
+// Jobs Management & Title Extraction
 router.get('/jobs', adminController.listJobs);
 router.post('/jobs', adminController.createJob);
 router.put('/jobs/:id', adminController.updateJob);
 router.delete('/jobs/:id', adminController.deleteJob);
+router.post('/jobs/extract-titles', uploadTitleDoc.single('file'), adminController.extractJobTitles);
+router.post('/jobs/confirm-title', adminController.confirmSingleJobTitle);
+router.post('/jobs/batch-confirm-titles', adminController.batchConfirmJobTitles);
+router.get('/jobs/suggestions', adminController.listJobSuggestions);
+router.patch('/jobs/suggestions/:id', adminController.reviewJobSuggestion);
 
 // Categories Management
 router.get('/categories', adminController.listCategories);
