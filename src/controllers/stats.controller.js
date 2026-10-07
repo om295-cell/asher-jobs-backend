@@ -4,47 +4,39 @@ const Company = require('../models/Company');
 const SiteVisit = require('../models/SiteVisit');
 const SystemSetting = require('../models/SystemSetting');
 
-// Fallback baseline for visitor counter
-let inMemoryVisitors = 1248;
-
 /**
- * Helper to fetch total visitor count from SystemSetting or aggregate from SiteVisit
+ * Helper to fetch real total visitor count directly aggregated from SiteVisit
  */
 async function getTotalVisitors() {
   if (mongoose.connection.readyState !== 1) {
-    return inMemoryVisitors;
+    return 0;
   }
   try {
-    const setting = await SystemSetting.findOne({ key: 'total_visitor_count' }).lean();
-    if (setting && typeof setting.value === 'number') {
-      inMemoryVisitors = Math.max(inMemoryVisitors, setting.value);
-      return inMemoryVisitors;
-    }
     const totalVisitResult = await SiteVisit.aggregate([
       { $group: { _id: null, total: { $sum: '$count' } } }
     ]);
-    const total = totalVisitResult[0]?.total || inMemoryVisitors;
-    inMemoryVisitors = Math.max(inMemoryVisitors, total);
-    return inMemoryVisitors;
+    const realTotal = totalVisitResult[0]?.total ?? 0;
+    return realTotal;
   } catch (err) {
-    return inMemoryVisitors;
+    console.error('[stats] Error in getTotalVisitors:', err.message);
+    return 0;
   }
 }
 
 /**
  * GET /api/stats
- * Pure read-only endpoint returning current counts:
+ * Pure read-only endpoint returning current real counts:
  * - candidates
  * - approved companies
- * - total site visitors
+ * - real total site visitors
  */
 async function getStats(req, res) {
   try {
     const isDbConnected = mongoose.connection.readyState === 1;
 
-    let candidateCount = 250;
-    let companyCount = 45;
-    let totalVisitors = inMemoryVisitors;
+    let candidateCount = 0;
+    let companyCount = 0;
+    let totalVisitors = 0;
 
     if (isDbConnected) {
       try {
@@ -57,7 +49,7 @@ async function getStats(req, res) {
         companyCount = comp;
         totalVisitors = vis;
       } catch (dbErr) {
-        console.warn('[stats] DB query warning, returning fallback:', dbErr.message);
+        console.warn('[stats] DB query warning:', dbErr.message);
       }
     }
 
@@ -74,9 +66,9 @@ async function getStats(req, res) {
     return res.status(200).json({
       success: true,
       data: {
-        candidates: 250,
-        companies: 45,
-        visitors: inMemoryVisitors
+        candidates: 0,
+        companies: 0,
+        visitors: 0
       }
     });
   }
@@ -84,54 +76,63 @@ async function getStats(req, res) {
 
 /**
  * POST /api/stats/visit
- * Records a visitor session and increments both:
- * 1. Persistent cumulative total in SystemSetting
- * 2. Daily bucket in SiteVisit
+ * Records real unique visitor session.
+ * Deduplicates by client IP per day in SiteVisit.
  */
 async function recordVisit(req, res) {
   try {
-    inMemoryVisitors += 1;
     const isDbConnected = mongoose.connection.readyState === 1;
 
     if (isDbConnected) {
-      try {
-        const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+      const today = new Date().toISOString().slice(0, 10); // 'YYYY-MM-DD'
+      
+      // Extract client IP address safely (supports Vercel, proxies, direct)
+      const forwarded = req.headers['x-forwarded-for'];
+      const clientIp = (forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress) || '127.0.0.1';
 
-        // Increment cumulative total
-        const updatedSetting = await SystemSetting.findOneAndUpdate(
-          { key: 'total_visitor_count' },
-          { $inc: { value: 1 } },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
+      // Check if this IP was already recorded today
+      const alreadyVisitedToday = await SiteVisit.findOne({
+        date: today,
+        ips: clientIp
+      }).lean();
 
-        // Increment daily bucket
+      if (!alreadyVisitedToday) {
+        // Unique visitor today: increment daily count and store IP
         await SiteVisit.findOneAndUpdate(
           { date: today },
-          { $inc: { count: 1 } },
-          { upsert: true }
+          {
+            $inc: { count: 1 },
+            $addToSet: { ips: clientIp }
+          },
+          { upsert: true, new: true, setDefaultsOnInsert: true }
         );
-
-        if (updatedSetting?.value) {
-          inMemoryVisitors = Math.max(inMemoryVisitors, updatedSetting.value);
-        }
-      } catch (dbErr) {
-        console.warn('[stats] DB write warning, kept in-memory:', dbErr.message);
       }
+    }
+
+    const realTotal = await getTotalVisitors();
+
+    // Sync cumulative total setting in database
+    if (isDbConnected) {
+      await SystemSetting.findOneAndUpdate(
+        { key: 'total_visitor_count' },
+        { value: realTotal },
+        { upsert: true }
+      ).catch(() => {});
     }
 
     return res.status(200).json({
       success: true,
       data: {
-        visitors: inMemoryVisitors
+        visitors: realTotal
       }
     });
   } catch (err) {
     console.error('[stats] Error in recordVisit:', err.message);
-    inMemoryVisitors += 1;
+    const total = await getTotalVisitors().catch(() => 0);
     return res.status(200).json({
       success: true,
       data: {
-        visitors: inMemoryVisitors
+        visitors: total
       }
     });
   }
