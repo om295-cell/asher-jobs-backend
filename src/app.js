@@ -20,6 +20,7 @@ app.use(
 // CORS configuration supporting credentials and explicit origin
 const allowedOrigins = [
   CLIENT_URL,
+  'https://asher-jobs-frontend.vercel.app',
   'http://localhost:5173',
   'http://127.0.0.1:5173',
   'http://localhost:3000',
