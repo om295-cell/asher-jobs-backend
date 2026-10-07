@@ -2,10 +2,12 @@ const authService = require('../services/auth.service');
 const { successResponse, errorResponse } = require('../utils/response');
 const { NODE_ENV } = require('../config/env');
 
+const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+
 const cookieOptions = {
   httpOnly: true,
-  secure: NODE_ENV === 'production',
-  sameSite: 'lax',
+  secure: isProd,
+  sameSite: isProd ? 'none' : 'lax',
   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 };
 
