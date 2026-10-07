@@ -86,7 +86,10 @@ app.get('/', async (req, res) => {
   });
 });
 
-// Lazy DB connection middleware for serverless requests
+// Lazy DB connection + one-time seed middleware for serverless (Vercel)
+// server.js handles seeding in traditional mode, but Vercel uses api/index.js
+// which only exports app — so we seed here after the first successful connection.
+let _seeded = false;
 app.use(async (req, res, next) => {
   if (mongoose.connection.readyState < 1) {
     try {
@@ -94,6 +97,17 @@ app.use(async (req, res, next) => {
       await connectDB();
     } catch (err) {
       console.warn('[Serverless DB] Connection warning:', err.message);
+    }
+  }
+  // Run seed once per cold-start after DB is ready
+  if (!_seeded && mongoose.connection.readyState === 1) {
+    _seeded = true;
+    try {
+      const { autoSeedIfEmpty } = require('./seed');
+      await autoSeedIfEmpty();
+      console.log('[Serverless] Seed completed successfully.');
+    } catch (err) {
+      console.warn('[Serverless] Seed warning:', err.message);
     }
   }
   next();
