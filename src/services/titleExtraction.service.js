@@ -49,6 +49,18 @@ function cleanCandidateTitle(rawStr) {
   // If numeric only, skip
   if (/^\d+$/.test(str)) return null;
 
+  // Reject PDF syntax tokens and binary garbage
+  if (/^%%/.test(str)) return null; // %%EOF, %%Header etc.
+  if (/^(endobj|endstream|stream|xref|trailer|startxref|obj)$/i.test(str)) return null;
+  if (/^<<.*>>$/.test(str)) return null; // PDF dictionary tokens
+  if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(str)) return null; // control chars / binary
+  // Reject strings that are mostly non-printable or look like encoded data
+  const nonPrintable = (str.match(/[^\x20-\x7E\u0600-\u06FF\u0750-\u077F]/g) || []).length;
+  if (nonPrintable / str.length > 0.3) return null;
+  // Reject if it looks like a PDF object reference e.g. "37 0 R" or hex strings
+  if (/^\d+\s+\d+\s+R$/.test(str)) return null;
+  if (/^[0-9A-Fa-f]{8,}$/.test(str)) return null;
+
   const norm = normalizeForComparison(str);
   if (JUNK_HEADERS.has(norm)) return null;
 
@@ -107,7 +119,8 @@ async function extractLinesFromFile(buffer, originalname, mimetype) {
       rawText = pdfData.text || '';
     } catch (e) {
       console.warn('[Extraction] PDF-parse error:', e.message);
-      rawText = buffer.toString('utf-8');
+      // Do NOT fall back to raw buffer — it produces PDF syntax garbage
+      return [];
     }
   } else {
     // .txt or default text
