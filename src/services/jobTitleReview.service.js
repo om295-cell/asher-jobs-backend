@@ -385,7 +385,7 @@ async function deleteArchivedReview(id, actor, req) {
 }
 
 async function deleteAllArchivedReviews({ batchId, actor, req }) {
-  const filter = { isArchived: true };
+  const filter = { $or: [{ isArchived: true }, { status: 'Rejected' }] };
   if (batchId) filter.batchId = batchId;
   const reviews = await JobTitleReview.find(filter).select('_id batchId').lean();
   if (!reviews.length) throw { statusCode: 404, code: 'NOTHING_TO_DELETE', message: 'No archived records found to delete.' };
