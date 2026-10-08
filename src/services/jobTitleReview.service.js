@@ -18,14 +18,34 @@ function cleanTitle(title) {
   return typeof title === 'string' ? title.trim().replace(/\s+/g, ' ') : '';
 }
 
-async function ensureCategory(categoryId) {
-  if (!categoryId) {
-    throw { statusCode: 400, code: 'CATEGORY_REQUIRED', message: 'A default category is required for titles submitted for review.' };
+async function getOrCreateUncategorizedCategory() {
+  // An import never stops just because an admin has not classified it yet.
+  // This category remains editable through the existing Categories screen.
+  let category = await JobCategory.findOne({ name: 'Uncategorized' });
+  if (!category) {
+    try {
+      category = await JobCategory.create({
+        name: 'Uncategorized',
+        nameAr: 'غير مصنف',
+        description: 'Automatically created for job titles awaiting categorization.',
+        isActive: true,
+        systemGenerated: true
+      });
+    } catch (error) {
+      if (error.code !== 11000) throw error;
+      category = await JobCategory.findOne({ name: 'Uncategorized' });
+    }
   }
-  const category = await JobCategory.findById(categoryId).lean();
+  return category;
+}
+
+async function ensureCategory(categoryId) {
+  if (!categoryId) return getOrCreateUncategorizedCategory();
+  const category = await JobCategory.findById(categoryId);
   if (!category) {
     throw { statusCode: 400, code: 'INVALID_CATEGORY', message: 'The selected job category does not exist.' };
   }
+  return category;
 }
 
 async function refreshBatch(batchId) {
@@ -131,7 +151,8 @@ async function createBatch({ titles, source, categoryId, originalFileName = '', 
     const existing = await JobTitleBatch.findOne({ createdBy: actor._id, idempotencyKey }).lean();
     if (existing) return getBatchById(existing._id);
   }
-  await ensureCategory(categoryId);
+  const category = await ensureCategory(categoryId);
+  const resolvedCategoryId = category._id;
   const cleanedTitles = titles.map(cleanTitle).filter(Boolean);
   if (!cleanedTitles.length) {
     throw { statusCode: 400, code: 'NO_TITLES_FOUND', message: 'No valid job titles were found in the submitted input.' };
@@ -145,7 +166,7 @@ async function createBatch({ titles, source, categoryId, originalFileName = '', 
     source,
     originalFileName,
     idempotencyKey: idempotencyKey || null,
-    defaultCategoryId: categoryId,
+    defaultCategoryId: resolvedCategoryId,
     totalTitles: cleanedTitles.length,
     createdBy: actor._id
   });
@@ -159,7 +180,7 @@ async function createBatch({ titles, source, categoryId, originalFileName = '', 
       source,
       originalTitle,
       finalTitle: originalTitle,
-      categoryId,
+      categoryId: resolvedCategoryId,
       status: 'Processing'
     })),
     { ordered: false }

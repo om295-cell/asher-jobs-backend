@@ -32,6 +32,13 @@ const jobCategorySchema = new mongoose.Schema(
       type: Boolean,
       default: false,
       index: true
+    },
+    // Used for the fallback category assigned to newly imported titles until
+    // an admin chooses a more specific category during review.
+    systemGenerated: {
+      type: Boolean,
+      default: false,
+      index: true
     }
   },
   {
