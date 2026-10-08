@@ -241,6 +241,11 @@ async function getBatchById(batchId) {
 async function listReviews(query = {}) {
   const { page, limit, skip } = getPagination(query, 25, 100);
   const filter = {};
+  if (query.archived === 'true') {
+    filter.isArchived = true;
+  } else {
+    filter.isArchived = { $ne: true };
+  }
   if (query.status) filter.status = query.status;
   if (query.batchId) filter.batchId = query.batchId;
   if (query.search?.trim()) {
@@ -325,6 +330,7 @@ async function rejectReview(id, reason, actor, req) {
   review.errorMessage = '';
   review.reviewedBy = actor._id;
   review.reviewedAt = new Date();
+  review.isArchived = true;
   await review.save();
   await refreshBatch(review.batchId);
   await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_REJECTED', entityType: 'JobTitleReview', entityId: review._id, req });
@@ -360,7 +366,7 @@ async function bulkRejectReviews({ reason, batchId, actor, req }) {
   if (!reviews.length) throw { statusCode: 404, code: 'NOTHING_TO_REJECT', message: 'No records with issues found to reject.' };
   await JobTitleReview.updateMany(
     { _id: { $in: reviews.map((r) => r._id) } },
-    { status: 'Rejected', rejectionReason: reason.trim(), errorMessage: '', reviewedBy: actor._id, reviewedAt: new Date() }
+    { status: 'Rejected', rejectionReason: reason.trim(), errorMessage: '', reviewedBy: actor._id, reviewedAt: new Date(), isArchived: true }
   );
   const batchIds = [...new Set(reviews.map((r) => String(r.batchId)))];
   await Promise.all(batchIds.map(refreshBatch));

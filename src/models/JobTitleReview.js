@@ -20,7 +20,8 @@ const jobTitleReviewSchema = new mongoose.Schema(
     reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     reviewedAt: { type: Date, default: null },
     editedAt: { type: Date, default: null },
-    retryCount: { type: Number, default: 0 }
+    retryCount: { type: Number, default: 0 },
+    isArchived: { type: Boolean, default: false, index: true }
   },
   { timestamps: true }
 );
