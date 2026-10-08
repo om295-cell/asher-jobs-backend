@@ -331,6 +331,7 @@ async function rejectReview(id, reason, actor, req) {
   review.reviewedBy = actor._id;
   review.reviewedAt = new Date();
   review.isArchived = true;
+  review.archivedAt = new Date();
   await review.save();
   await refreshBatch(review.batchId);
   await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_REJECTED', entityType: 'JobTitleReview', entityId: review._id, req });
@@ -366,7 +367,7 @@ async function bulkRejectReviews({ reason, batchId, actor, req }) {
   if (!reviews.length) throw { statusCode: 404, code: 'NOTHING_TO_REJECT', message: 'No records with issues found to reject.' };
   await JobTitleReview.updateMany(
     { _id: { $in: reviews.map((r) => r._id) } },
-    { status: 'Rejected', rejectionReason: reason.trim(), errorMessage: '', reviewedBy: actor._id, reviewedAt: new Date(), isArchived: true }
+    { status: 'Rejected', rejectionReason: reason.trim(), errorMessage: '', reviewedBy: actor._id, reviewedAt: new Date(), isArchived: true, archivedAt: new Date() }
   );
   const batchIds = [...new Set(reviews.map((r) => String(r.batchId)))];
   await Promise.all(batchIds.map(refreshBatch));
@@ -374,8 +375,17 @@ async function bulkRejectReviews({ reason, batchId, actor, req }) {
   return { rejectedCount: reviews.length };
 }
 
+async function deleteArchivedReview(id, actor, req) {
+  const review = await JobTitleReview.findById(id);
+  if (!review) throw { statusCode: 404, code: 'TITLE_REVIEW_NOT_FOUND', message: 'Job-title review record not found.' };
+  if (!review.isArchived) throw { statusCode: 409, code: 'NOT_ARCHIVED', message: 'Only archived records can be permanently deleted.' };
+  await JobTitleReview.deleteOne({ _id: id });
+  await refreshBatch(review.batchId);
+  await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_DELETED', entityType: 'JobTitleReview', entityId: review._id, req });
+}
+
 module.exports = {
   createManualBatch, createFileBatch, listBatches, getBatchById,
   listReviews, getReviewById, editReview, approveReview, rejectReview, retryReview,
-  runIndependently, bulkRejectReviews
+  runIndependently, bulkRejectReviews, deleteArchivedReview
 };

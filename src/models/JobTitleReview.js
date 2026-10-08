@@ -21,12 +21,15 @@ const jobTitleReviewSchema = new mongoose.Schema(
     reviewedAt: { type: Date, default: null },
     editedAt: { type: Date, default: null },
     retryCount: { type: Number, default: 0 },
-    isArchived: { type: Boolean, default: false, index: true }
+    isArchived: { type: Boolean, default: false, index: true },
+    archivedAt: { type: Date, default: null }
   },
   { timestamps: true }
 );
 
 jobTitleReviewSchema.index({ batchId: 1, sequence: 1 }, { unique: true });
 jobTitleReviewSchema.index({ status: 1, createdAt: -1 });
+// Auto-delete archived records 60 days after they are archived
+jobTitleReviewSchema.index({ archivedAt: 1 }, { expireAfterSeconds: 60 * 24 * 60 * 60, partialFilterExpression: { isArchived: true } });
 
 module.exports = mongoose.model('JobTitleReview', jobTitleReviewSchema);

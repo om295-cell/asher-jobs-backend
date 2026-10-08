@@ -60,4 +60,11 @@ async function bulkRejectReviews(req, res, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { createManualBatch, createFileBatch, listBatches, getBatch, listReviews, getReview, editReview, approveReview, rejectReview, retryReview, bulkRejectReviews };
+async function deleteArchivedReview(req, res, next) {
+  try {
+    await service.deleteArchivedReview(req.params.id, req.user, req);
+    return successResponse(res, null, 'Archived record permanently deleted.');
+  } catch (error) { next(error); }
+}
+
+module.exports = { createManualBatch, createFileBatch, listBatches, getBatch, listReviews, getReview, editReview, approveReview, rejectReview, retryReview, bulkRejectReviews, deleteArchivedReview };

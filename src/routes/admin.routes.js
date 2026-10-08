@@ -50,7 +50,7 @@ router.patch('/job-title-reviews/:id', jobTitleReviewController.editReview);
 router.post('/job-title-reviews/:id/approve', jobTitleReviewController.approveReview);
 router.post('/job-title-reviews/:id/reject', jobTitleReviewController.rejectReview);
 router.post('/job-title-reviews/:id/retry', jobTitleReviewController.retryReview);
-router.post('/job-title-reviews/bulk-reject', jobTitleReviewController.bulkRejectReviews);
+router.delete('/job-title-reviews/:id', jobTitleReviewController.deleteArchivedReview);
 
 // Jobs Management & Title Extraction
 router.get('/jobs', adminController.listJobs);
