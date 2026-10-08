@@ -11,35 +11,15 @@ const RecruitmentRequest = require('../models/RecruitmentRequest');
 const CandidateReport = require('../models/CandidateReport');
 const { connectDB, closeDB } = require('../config/db');
 
-// No pre-seeded categories or job titles — admin adds all data via dashboard
-const initialCategories = [];
-const initialJobs = [];
-
 /**
- * Remove all seeded dummy data including categories and jobs
- */
-async function cleanSeededData() {
-  console.log('[Cleanup] Cleaning all seeded data from database...');
-  await Promise.all([
-    Candidate.deleteMany({}),
-    Company.deleteMany({}),
-    Job.deleteMany({}),
-    JobCategory.deleteMany({}),
-    User.deleteMany({ role: { $ne: 'admin' } }),
-    RecruitmentRequest.deleteMany({}),
-    CandidateReport.deleteMany({})
-  ]);
-  console.log('[Cleanup] All seeded data removed successfully.');
-}
-
-/**
- * Seeds subscription tiers, system settings, and admin account only
+ * Seeds subscription tiers, system settings, and admin account only.
+ * Does NOT wipe categories or jobs — admin manages those via the dashboard.
  */
 async function seedDatabase(force = false) {
   console.log('[Seed] Setting up base system data (settings, admin)...');
 
   if (force) {
-    console.log('[Seed] Force flag enabled: clearing collections...');
+    console.log('[Seed] Force flag enabled: clearing all collections...');
     await Promise.all([
       User.deleteMany({}),
       Candidate.deleteMany({}),
@@ -51,11 +31,7 @@ async function seedDatabase(force = false) {
     ]);
   }
 
-  // Clear all categories and jobs — admin enters real data via dashboard
-  await JobCategory.deleteMany({});
-  await Job.deleteMany({});
-
-  // 3. Subscriptions & System Settings
+  // Subscription plan
   await Subscription.findOneAndUpdate(
     { planName: 'Basic' },
     {
@@ -72,13 +48,14 @@ async function seedDatabase(force = false) {
     { upsert: true }
   );
 
+  // System setting
   await SystemSetting.findOneAndUpdate(
     { key: 'company_monthly_price_egp' },
     { value: 50, description: 'Standard monthly subscription ceiling in Egyptian Pounds' },
     { upsert: true }
   );
 
-  // 4. Admin Account
+  // Admin account
   const defaultPasswordHash = await bcrypt.hash('Admin@123456', 10);
   await User.findOneAndUpdate(
     { email: 'admin@asherjobs.com' },
@@ -93,13 +70,15 @@ async function seedDatabase(force = false) {
     { upsert: true }
   );
 
-  console.log('[Seed] Base system configuration initialized. No dummy data seeded.');
+  console.log('[Seed] Base system configuration initialized.');
 }
 
+/**
+ * Runs on every cold start. Only ensures admin + settings exist.
+ * Never wipes categories, jobs, or any admin-created data.
+ */
 async function autoSeedIfEmpty() {
   await seedDatabase(false);
-  // Ensure any seeded dummy candidates, companies, or test users are wiped
-  await cleanSeededData();
 }
 
 // Support direct script execution
@@ -109,7 +88,6 @@ if (require.main === module) {
       await connectDB();
       const force = process.argv.includes('--force');
       await seedDatabase(force);
-      await cleanSeededData();
       await closeDB();
       process.exit(0);
     } catch (err) {
@@ -121,6 +99,5 @@ if (require.main === module) {
 
 module.exports = {
   seedDatabase,
-  cleanSeededData,
   autoSeedIfEmpty
 };
