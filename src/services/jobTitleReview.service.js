@@ -384,8 +384,20 @@ async function deleteArchivedReview(id, actor, req) {
   await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_DELETED', entityType: 'JobTitleReview', entityId: review._id, req });
 }
 
+async function deleteAllArchivedReviews({ batchId, actor, req }) {
+  const filter = { isArchived: true };
+  if (batchId) filter.batchId = batchId;
+  const reviews = await JobTitleReview.find(filter).select('_id batchId').lean();
+  if (!reviews.length) throw { statusCode: 404, code: 'NOTHING_TO_DELETE', message: 'No archived records found to delete.' };
+  await JobTitleReview.deleteMany({ _id: { $in: reviews.map((r) => r._id) } });
+  const batchIds = [...new Set(reviews.map((r) => String(r.batchId)))];
+  await Promise.all(batchIds.map(refreshBatch));
+  await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_ARCHIVE_CLEARED', entityType: 'JobTitleBatch', entityId: batchIds[0], metadata: { count: reviews.length }, req });
+  return { deletedCount: reviews.length };
+}
+
 module.exports = {
   createManualBatch, createFileBatch, listBatches, getBatchById,
   listReviews, getReviewById, editReview, approveReview, rejectReview, retryReview,
-  runIndependently, bulkRejectReviews, deleteArchivedReview
+  runIndependently, bulkRejectReviews, deleteArchivedReview, deleteAllArchivedReviews
 };

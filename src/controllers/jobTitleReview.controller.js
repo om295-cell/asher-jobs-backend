@@ -67,4 +67,11 @@ async function deleteArchivedReview(req, res, next) {
   } catch (error) { next(error); }
 }
 
-module.exports = { createManualBatch, createFileBatch, listBatches, getBatch, listReviews, getReview, editReview, approveReview, rejectReview, retryReview, bulkRejectReviews, deleteArchivedReview };
+async function deleteAllArchivedReviews(req, res, next) {
+  try {
+    const result = await service.deleteAllArchivedReviews({ batchId: req.query.batchId, actor: req.user, req });
+    return successResponse(res, result, 'All archived records permanently deleted.');
+  } catch (error) { next(error); }
+}
+
+module.exports = { createManualBatch, createFileBatch, listBatches, getBatch, listReviews, getReview, editReview, approveReview, rejectReview, retryReview, bulkRejectReviews, deleteArchivedReview, deleteAllArchivedReviews };
