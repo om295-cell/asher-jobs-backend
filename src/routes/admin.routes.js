@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/admin.controller');
+const jobTitleReviewController = require('../controllers/jobTitleReview.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
 
@@ -35,6 +36,19 @@ const uploadTitleDoc = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 }
 });
+
+// Persisted Super Admin review queue. Every imported title receives its own
+// database record; uploading a file is never handled as one DB transaction.
+router.post('/job-title-batches/manual', jobTitleReviewController.createManualBatch);
+router.post('/job-title-batches/file', uploadTitleDoc.single('file'), jobTitleReviewController.createFileBatch);
+router.get('/job-title-batches', jobTitleReviewController.listBatches);
+router.get('/job-title-batches/:id', jobTitleReviewController.getBatch);
+router.get('/job-title-reviews', jobTitleReviewController.listReviews);
+router.get('/job-title-reviews/:id', jobTitleReviewController.getReview);
+router.patch('/job-title-reviews/:id', jobTitleReviewController.editReview);
+router.post('/job-title-reviews/:id/approve', jobTitleReviewController.approveReview);
+router.post('/job-title-reviews/:id/reject', jobTitleReviewController.rejectReview);
+router.post('/job-title-reviews/:id/retry', jobTitleReviewController.retryReview);
 
 // Jobs Management & Title Extraction
 router.get('/jobs', adminController.listJobs);

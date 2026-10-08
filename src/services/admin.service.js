@@ -500,7 +500,10 @@ async function createCategory(data) {
 }
 
 async function updateCategory(id, data) {
-  const cat = await JobCategory.findByIdAndUpdate(id, data, { new: true });
+  // Always mark as manually edited when admin touches it —
+  // this prevents the auto-seed from ever overriding these fields again.
+  const updatePayload = { ...data, manuallyEdited: true };
+  const cat = await JobCategory.findByIdAndUpdate(id, updatePayload, { new: true });
   if (!cat) throw { statusCode: 404, message: 'Category not found.', code: 'CATEGORY_NOT_FOUND' };
   return cat;
 }

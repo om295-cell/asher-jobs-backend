@@ -281,5 +281,9 @@ function escapeRegex(text) {
 module.exports = {
   extractTitlesForReview,
   processSingleTitle,
-  normalizeForComparison
+  normalizeForComparison,
+  // Reused by the persisted review-queue importer. These only parse input;
+  // review records own validation, failure state, and lifecycle.
+  parseLinesFromRawText,
+  extractLinesFromFile
 };

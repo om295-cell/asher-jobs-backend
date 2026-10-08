@@ -25,6 +25,13 @@ const jobCategorySchema = new mongoose.Schema(
     sortOrder: {
       type: Number,
       default: 0
+    },
+    // If true, this category was manually edited by admin.
+    // The auto-seed system will NEVER override fields on manually-edited categories.
+    manuallyEdited: {
+      type: Boolean,
+      default: false,
+      index: true
     }
   },
   {

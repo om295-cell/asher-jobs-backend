@@ -1,0 +1,335 @@
+const Job = require('../models/Job');
+const JobCategory = require('../models/JobCategory');
+const JobTitleBatch = require('../models/JobTitleBatch');
+const JobTitleReview = require('../models/JobTitleReview');
+const { getPagination, formatPagination } = require('../utils/pagination');
+const { parseLinesFromRawText, extractLinesFromFile, normalizeForComparison } = require('./titleExtraction.service');
+const { processSingleTitle } = require('./titleExtraction.service');
+const { logActivity } = require('./activity.service');
+
+function makeBatchNumber() {
+  return `JTB-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}-${Math.random()
+    .toString(36)
+    .slice(2, 6)
+    .toUpperCase()}`;
+}
+
+function cleanTitle(title) {
+  return typeof title === 'string' ? title.trim().replace(/\s+/g, ' ') : '';
+}
+
+async function ensureCategory(categoryId) {
+  if (!categoryId) {
+    throw { statusCode: 400, code: 'CATEGORY_REQUIRED', message: 'A default category is required for titles submitted for review.' };
+  }
+  const category = await JobCategory.findById(categoryId).lean();
+  if (!category) {
+    throw { statusCode: 400, code: 'INVALID_CATEGORY', message: 'The selected job category does not exist.' };
+  }
+}
+
+async function refreshBatch(batchId) {
+  const counts = await JobTitleReview.aggregate([
+    { $match: { batchId } },
+    { $group: { _id: '$status', count: { $sum: 1 } } }
+  ]);
+  const byStatus = Object.fromEntries(counts.map((entry) => [entry._id, entry.count]));
+  const totalTitles = Object.values(byStatus).reduce((total, count) => total + count, 0);
+  const pendingReviewCount = (byStatus['Pending Review'] || 0) + (byStatus.Edited || 0);
+  const failedCount = byStatus.Failed || 0;
+  const approvedCount = byStatus.Approved || 0;
+  const processingCount = byStatus.Processing || 0;
+  let status = 'Processing';
+  if (processingCount === 0) {
+    status = totalTitles === 0 || failedCount === totalTitles
+      ? 'Failed'
+      : failedCount > 0
+        ? 'Completed with Errors'
+        : 'Completed';
+  }
+  return JobTitleBatch.findByIdAndUpdate(
+    batchId,
+    { totalTitles, pendingReviewCount, failedCount, approvedCount, status, completedAt: processingCount === 0 ? new Date() : null },
+    { new: true }
+  );
+}
+
+async function titleAlreadyExists(title, review) {
+  const normalized = normalizeForComparison(title);
+  if (!normalized) return 'A job title is required.';
+  const jobs = await Job.find({}).select('name nameAr').lean();
+  if (jobs.some((job) => normalizeForComparison(job.name) === normalized || normalizeForComparison(job.nameAr) === normalized)) {
+    return 'A matching job title already exists in the approved catalog.';
+  }
+  // For entries in the same batch, only an earlier sequence owns the title.
+  // That deterministic rule means a duplicate line fails independently while
+  // its first occurrence still reaches review, even when workers run in parallel.
+  const query = {
+    _id: { $ne: review._id },
+    status: { $in: ['Pending Review', 'Processing', 'Edited', 'Approved'] },
+    $or: [
+      { batchId: { $ne: review.batchId } },
+      { batchId: review.batchId, sequence: { $lt: review.sequence } }
+    ]
+  };
+  const reviews = await JobTitleReview.find(query).select('originalTitle finalTitle').lean();
+  if (reviews.some((review) => normalizeForComparison(review.finalTitle || review.originalTitle) === normalized)) {
+    return 'This title already exists in another submitted title record.';
+  }
+  return null;
+}
+
+async function prepareOneReview(reviewId) {
+  const review = await JobTitleReview.findById(reviewId);
+  if (!review) return null;
+
+  const title = cleanTitle(review.finalTitle || review.originalTitle);
+  let errorMessage = '';
+  if (!title || title.length < 2 || title.length > 120) {
+    errorMessage = 'Job title must contain between 2 and 120 characters.';
+  } else if (!review.categoryId) {
+    errorMessage = 'A job category must be selected before review.';
+  } else {
+    const category = await JobCategory.exists({ _id: review.categoryId });
+    if (!category) errorMessage = 'The selected job category no longer exists.';
+  }
+  if (!errorMessage) errorMessage = await titleAlreadyExists(title, review);
+
+  review.finalTitle = title;
+  review.errorMessage = errorMessage || '';
+  review.status = errorMessage ? 'Failed' : 'Pending Review';
+  await review.save();
+  return review;
+}
+
+async function runIndependently(
+  reviewIds,
+  concurrency = 8,
+  processor = prepareOneReview,
+  onError = async (reviewId, error) => JobTitleReview.findByIdAndUpdate(reviewId, {
+    status: 'Failed',
+    errorMessage: error.message || 'Unable to process this job title.'
+  })
+) {
+  let cursor = 0;
+  async function worker() {
+    while (cursor < reviewIds.length) {
+      const reviewId = reviewIds[cursor++];
+      try {
+        await processor(reviewId);
+      } catch (error) {
+        // This catch only changes the failed item: no batch transaction or rollback is used.
+        await onError(reviewId, error);
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, reviewIds.length) }, worker));
+}
+
+async function createBatch({ titles, source, categoryId, originalFileName = '', idempotencyKey = '', actor, req }) {
+  if (idempotencyKey) {
+    const existing = await JobTitleBatch.findOne({ createdBy: actor._id, idempotencyKey }).lean();
+    if (existing) return getBatchById(existing._id);
+  }
+  await ensureCategory(categoryId);
+  const cleanedTitles = titles.map(cleanTitle).filter(Boolean);
+  if (!cleanedTitles.length) {
+    throw { statusCode: 400, code: 'NO_TITLES_FOUND', message: 'No valid job titles were found in the submitted input.' };
+  }
+  if (cleanedTitles.length > 5000) {
+    throw { statusCode: 400, code: 'TOO_MANY_TITLES', message: 'A batch can contain at most 5,000 job titles.' };
+  }
+
+  const batch = await JobTitleBatch.create({
+    batchNumber: makeBatchNumber(),
+    source,
+    originalFileName,
+    idempotencyKey: idempotencyKey || null,
+    defaultCategoryId: categoryId,
+    totalTitles: cleanedTitles.length,
+    createdBy: actor._id
+  });
+
+  // insertMany creates one persistent lifecycle record per title. There is no
+  // transaction: a later title failing can never roll back an earlier title.
+  const reviewDocs = await JobTitleReview.insertMany(
+    cleanedTitles.map((originalTitle, index) => ({
+      batchId: batch._id,
+      sequence: index + 1,
+      source,
+      originalTitle,
+      finalTitle: originalTitle,
+      categoryId,
+      status: 'Processing'
+    })),
+    { ordered: false }
+  );
+  await runIndependently(reviewDocs.map((review) => review._id));
+  const updatedBatch = await refreshBatch(batch._id);
+  await logActivity({
+    actorId: actor._id,
+    actorRole: actor.role,
+    action: 'JOB_TITLE_BATCH_CREATED',
+    entityType: 'JobTitleBatch',
+    entityId: batch._id,
+    metadata: { batchNumber: batch.batchNumber, source, totalTitles: cleanedTitles.length },
+    req
+  });
+  return getBatchById(updatedBatch._id);
+}
+
+async function createManualBatch({ text, categoryId, idempotencyKey, actor, req }) {
+  return createBatch({ titles: parseLinesFromRawText(text || ''), source: 'manual', categoryId, idempotencyKey, actor, req });
+}
+
+async function createFileBatch({ file, categoryId, idempotencyKey, actor, req }) {
+  if (!file?.buffer) {
+    throw { statusCode: 400, code: 'FILE_REQUIRED', message: 'Please choose a file containing job titles.' };
+  }
+  const titles = await extractLinesFromFile(file.buffer, file.originalname, file.mimetype);
+  return createBatch({
+    titles,
+    source: 'file',
+    categoryId,
+    originalFileName: file.originalname || '',
+    idempotencyKey,
+    actor,
+    req
+  });
+}
+
+async function listBatches(query = {}) {
+  const { page, limit, skip } = getPagination(query, 20, 100);
+  const filter = {};
+  if (query.status) filter.status = query.status;
+  const [items, total] = await Promise.all([
+    JobTitleBatch.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit)
+      .populate('createdBy', 'email phone').populate('defaultCategoryId', 'name nameAr').lean(),
+    JobTitleBatch.countDocuments(filter)
+  ]);
+  return { items, pagination: formatPagination(total, page, limit) };
+}
+
+async function getBatchById(batchId) {
+  const batch = await JobTitleBatch.findById(batchId)
+    .populate('createdBy', 'email phone').populate('defaultCategoryId', 'name nameAr').lean();
+  if (!batch) throw { statusCode: 404, code: 'BATCH_NOT_FOUND', message: 'Job-title batch not found.' };
+  return batch;
+}
+
+async function listReviews(query = {}) {
+  const { page, limit, skip } = getPagination(query, 25, 100);
+  const filter = {};
+  if (query.status) filter.status = query.status;
+  if (query.batchId) filter.batchId = query.batchId;
+  if (query.search?.trim()) {
+    const escaped = query.search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [{ originalTitle: new RegExp(escaped, 'i') }, { finalTitle: new RegExp(escaped, 'i') }];
+  }
+  const [items, total] = await Promise.all([
+    JobTitleReview.find(filter).sort({ createdAt: -1, sequence: 1 }).skip(skip).limit(limit)
+      .populate('batchId', 'batchNumber source').populate('categoryId', 'name nameAr')
+      .populate('reviewedBy', 'email phone').lean(),
+    JobTitleReview.countDocuments(filter)
+  ]);
+  return { items, pagination: formatPagination(total, page, limit) };
+}
+
+async function getReviewById(id) {
+  const review = await JobTitleReview.findById(id).populate('batchId', 'batchNumber source originalFileName')
+    .populate('categoryId', 'name nameAr').populate('reviewedBy', 'email phone').lean();
+  if (!review) throw { statusCode: 404, code: 'TITLE_REVIEW_NOT_FOUND', message: 'Job-title review record not found.' };
+  return review;
+}
+
+async function editReview(id, { finalTitle, categoryId }, actor, req) {
+  const review = await JobTitleReview.findById(id);
+  if (!review) throw { statusCode: 404, code: 'TITLE_REVIEW_NOT_FOUND', message: 'Job-title review record not found.' };
+  if (['Approved', 'Rejected'].includes(review.status)) {
+    throw { statusCode: 409, code: 'REVIEW_FINALIZED', message: 'An approved or rejected title cannot be edited.' };
+  }
+  const cleanFinalTitle = cleanTitle(finalTitle);
+  if (!cleanFinalTitle) throw { statusCode: 400, code: 'TITLE_REQUIRED', message: 'A final job title is required.' };
+  if (categoryId) await ensureCategory(categoryId);
+  review.finalTitle = cleanFinalTitle;
+  if (categoryId) review.categoryId = categoryId;
+  review.status = 'Edited';
+  review.errorMessage = '';
+  review.editedAt = new Date();
+  review.reviewedBy = actor._id;
+  review.reviewedAt = new Date();
+  await review.save();
+  await refreshBatch(review.batchId);
+  await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_EDITED', entityType: 'JobTitleReview', entityId: review._id, req });
+  return getReviewById(review._id);
+}
+
+async function approveReview(id, { finalTitle, categoryId }, actor, req) {
+  let review = await JobTitleReview.findById(id);
+  if (!review) throw { statusCode: 404, code: 'TITLE_REVIEW_NOT_FOUND', message: 'Job-title review record not found.' };
+  if (review.status === 'Approved') return getReviewById(review._id); // idempotent repeat approval
+  if (review.status === 'Rejected') throw { statusCode: 409, code: 'REVIEW_REJECTED', message: 'Rejected titles cannot be approved. Create a new review item instead.' };
+  if (finalTitle !== undefined) review.finalTitle = cleanTitle(finalTitle);
+  if (categoryId) {
+    await ensureCategory(categoryId);
+    review.categoryId = categoryId;
+  }
+  review.status = 'Processing';
+  review.errorMessage = '';
+  await review.save();
+  try {
+    const job = await processSingleTitle({ name: review.finalTitle, nameAr: review.finalTitle, categoryId: review.categoryId });
+    review.status = 'Approved';
+    review.createdJobId = job._id;
+    review.reviewedBy = actor._id;
+    review.reviewedAt = new Date();
+    await review.save();
+    await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_APPROVED', entityType: 'JobTitleReview', entityId: review._id, req });
+  } catch (error) {
+    review.status = 'Failed';
+    review.errorMessage = error.message || 'Unable to add the title to the catalog.';
+    await review.save();
+  }
+  await refreshBatch(review.batchId);
+  return getReviewById(review._id);
+}
+
+async function rejectReview(id, reason, actor, req) {
+  if (!reason?.trim()) throw { statusCode: 400, code: 'REJECTION_REASON_REQUIRED', message: 'A rejection reason is required.' };
+  const review = await JobTitleReview.findById(id);
+  if (!review) throw { statusCode: 404, code: 'TITLE_REVIEW_NOT_FOUND', message: 'Job-title review record not found.' };
+  if (review.status === 'Approved') throw { statusCode: 409, code: 'REVIEW_FINALIZED', message: 'Approved titles cannot be rejected.' };
+  review.status = 'Rejected';
+  review.rejectionReason = reason.trim();
+  review.errorMessage = '';
+  review.reviewedBy = actor._id;
+  review.reviewedAt = new Date();
+  await review.save();
+  await refreshBatch(review.batchId);
+  await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_REJECTED', entityType: 'JobTitleReview', entityId: review._id, req });
+  return getReviewById(review._id);
+}
+
+async function retryReview(id, actor, req) {
+  const review = await JobTitleReview.findById(id);
+  if (!review) throw { statusCode: 404, code: 'TITLE_REVIEW_NOT_FOUND', message: 'Job-title review record not found.' };
+  if (review.status !== 'Failed') throw { statusCode: 409, code: 'NOT_RETRYABLE', message: 'Only failed job-title records can be retried.' };
+  review.status = 'Processing';
+  review.errorMessage = '';
+  review.retryCount += 1;
+  await review.save();
+  try {
+    await prepareOneReview(review._id);
+  } catch (error) {
+    await JobTitleReview.findByIdAndUpdate(review._id, { status: 'Failed', errorMessage: error.message || 'Retry failed.' });
+  }
+  await refreshBatch(review.batchId);
+  await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_RETRIED', entityType: 'JobTitleReview', entityId: review._id, req });
+  return getReviewById(review._id);
+}
+
+module.exports = {
+  createManualBatch, createFileBatch, listBatches, getBatchById,
+  listReviews, getReviewById, editReview, approveReview, rejectReview, retryReview,
+  runIndependently
+};
