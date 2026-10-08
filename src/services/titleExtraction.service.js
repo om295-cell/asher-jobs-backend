@@ -50,16 +50,34 @@ function cleanCandidateTitle(rawStr) {
   if (/^\d+$/.test(str)) return null;
 
   // Reject PDF syntax tokens and binary garbage
-  if (/^%%/.test(str)) return null; // %%EOF, %%Header etc.
+  if (/^%%/.test(str)) return null;
   if (/^(endobj|endstream|stream|xref|trailer|startxref|obj)$/i.test(str)) return null;
-  if (/^<<.*>>$/.test(str)) return null; // PDF dictionary tokens
-  if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(str)) return null; // control chars / binary
-  // Reject strings that are mostly non-printable or look like encoded data
-  const nonPrintable = (str.match(/[^\x20-\x7E\u0600-\u06FF\u0750-\u077F]/g) || []).length;
-  if (nonPrintable / str.length > 0.3) return null;
-  // Reject if it looks like a PDF object reference e.g. "37 0 R" or hex strings
+  if (/^<<.*>>/.test(str)) return null;
+  if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(str)) return null;
+
+  // Count non-printable / non-Arabic / non-Latin characters
+  const nonPrintable = (str.match(/[^\x20-\x7E\u0600-\u06FF\u0750-\u077F\u200C-\u200F]/g) || []).length;
+  if (nonPrintable / str.length > 0.25) return null;
+
+  // Reject strings with no Arabic or Latin letters at all (pure symbols/numbers/garbage)
+  if (!/[a-zA-Z\u0600-\u06FF]/.test(str)) return null;
+
+  // Reject random/encoded strings: no spaces, no Arabic, high ratio of digits+uppercase
+  if (!/[\u0600-\u06FF\s]/.test(str)) {
+    if (/^[A-Z0-9+/=_\-]{6,}$/.test(str)) return null; // all-caps encoded
+    // Mixed case but no vowels and no spaces = likely random (e.g. HP7O7RdS, Z21260409)
+    const letters = str.replace(/[^a-zA-Z]/g, '');
+    const vowels = str.replace(/[^aeiouAEIOU]/g, '');
+    if (letters.length >= 4 && vowels.length === 0) return null;
+    // Contains digits mixed with letters and no spaces = likely encoded
+    if (/\d/.test(str) && !/\s/.test(str) && str.length <= 20) return null;
+  }
+
+  // Reject certificate DN garbage: word followed directly by digits+letter e.g. "San Francisco10U", "LLC1 0", "UUS1 0"
+  if (/\d+[A-Z]$/.test(str) || /\b[A-Z]{2,}\d+\s+\d+$/.test(str) || /^[A-Z]{2,}\d+/.test(str)) return null;
+
+  // Reject PDF object references e.g. "37 0 R"
   if (/^\d+\s+\d+\s+R$/.test(str)) return null;
-  if (/^[0-9A-Fa-f]{8,}$/.test(str)) return null;
 
   const norm = normalizeForComparison(str);
   if (JUNK_HEADERS.has(norm)) return null;
@@ -75,10 +93,25 @@ async function extractLinesFromFile(buffer, originalname, mimetype) {
   let rawText = '';
 
   if (ext === '.xlsx' || ext === '.xls' || ext === '.csv') {
-    // Lazy require to avoid serverless cold-start issues
     const xlsx = require('xlsx');
-    const workbook = xlsx.read(buffer, { type: 'buffer' });
     const lines = [];
+
+    if (ext === '.csv') {
+      // xlsx misreads UTF-8 Arabic as Latin-1 — parse CSV as plain text instead
+      const text = buffer.toString('utf-8');
+      // For CSV, always split by comma regardless of Arabic content
+      const csvLines = [];
+      text.split(/[\r\n]+/).forEach((line) => {
+        if (!line.trim()) return;
+        line.split(',').forEach((cell) => {
+          const cleaned = cleanCandidateTitle(cell);
+          if (cleaned) csvLines.push(cleaned);
+        });
+      });
+      return csvLines;
+    }
+
+    const workbook = xlsx.read(buffer, { type: 'buffer' });
     workbook.SheetNames.forEach((sheetName) => {
       const sheet = workbook.Sheets[sheetName];
       const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 });
@@ -136,19 +169,30 @@ async function extractLinesFromFile(buffer, originalname, mimetype) {
 function parseLinesFromRawText(rawText) {
   if (!rawText) return [];
   const lines = [];
-  // Split on newlines, semicolons, or commas (when appropriate)
-  const segments = rawText.split(/[\r\n\t]+/);
+  const segments = rawText.split(/[\r\n]+/);
 
   for (const seg of segments) {
-    // If segment has multiple comma-separated items on a single line
-    if (seg.includes(',') || seg.includes('،')) {
-      const subItems = seg.split(/[,،]/);
+    const trimmed = seg.trim();
+    if (!trimmed) continue;
+
+    // Only split by comma/Arabic comma if the segment has NO Arabic text
+    // Arabic job titles commonly contain commas as part of the title context
+    const hasArabic = /[\u0600-\u06FF]/.test(trimmed);
+    if (!hasArabic && (trimmed.includes(',') || trimmed.includes('\t'))) {
+      const subItems = trimmed.split(/[,\t]/);
+      for (const item of subItems) {
+        const cleaned = cleanCandidateTitle(item);
+        if (cleaned) lines.push(cleaned);
+      }
+    } else if (trimmed.includes('،')) {
+      // Arabic comma — split only if multiple distinct titles
+      const subItems = trimmed.split('،');
       for (const item of subItems) {
         const cleaned = cleanCandidateTitle(item);
         if (cleaned) lines.push(cleaned);
       }
     } else {
-      const cleaned = cleanCandidateTitle(seg);
+      const cleaned = cleanCandidateTitle(trimmed);
       if (cleaned) lines.push(cleaned);
     }
   }
