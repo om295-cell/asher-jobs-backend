@@ -53,4 +53,11 @@ async function retryReview(req, res, next) {
   try { return successResponse(res, await service.retryReview(req.params.id, req.user, req), 'Job-title retry processed.'); } catch (error) { next(error); }
 }
 
-module.exports = { createManualBatch, createFileBatch, listBatches, getBatch, listReviews, getReview, editReview, approveReview, rejectReview, retryReview };
+async function bulkRejectReviews(req, res, next) {
+  try {
+    const result = await service.bulkRejectReviews({ reason: req.body.reason, batchId: req.body.batchId, actor: req.user, req });
+    return successResponse(res, result, 'Bulk rejection completed.');
+  } catch (error) { next(error); }
+}
+
+module.exports = { createManualBatch, createFileBatch, listBatches, getBatch, listReviews, getReview, editReview, approveReview, rejectReview, retryReview, bulkRejectReviews };

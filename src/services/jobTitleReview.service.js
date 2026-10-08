@@ -349,8 +349,27 @@ async function retryReview(id, actor, req) {
   return getReviewById(review._id);
 }
 
+async function bulkRejectReviews({ reason, batchId, actor, req }) {
+  if (!reason?.trim()) throw { statusCode: 400, code: 'REJECTION_REASON_REQUIRED', message: 'A rejection reason is required.' };
+  const filter = {
+    status: { $in: ['Pending Review', 'Edited', 'Failed'] },
+    errorMessage: { $ne: '' }
+  };
+  if (batchId) filter.batchId = batchId;
+  const reviews = await JobTitleReview.find(filter).select('_id batchId').lean();
+  if (!reviews.length) throw { statusCode: 404, code: 'NOTHING_TO_REJECT', message: 'No records with issues found to reject.' };
+  await JobTitleReview.updateMany(
+    { _id: { $in: reviews.map((r) => r._id) } },
+    { status: 'Rejected', rejectionReason: reason.trim(), errorMessage: '', reviewedBy: actor._id, reviewedAt: new Date() }
+  );
+  const batchIds = [...new Set(reviews.map((r) => String(r.batchId)))];
+  await Promise.all(batchIds.map(refreshBatch));
+  await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_BULK_REJECTED', entityType: 'JobTitleBatch', entityId: batchIds[0], metadata: { count: reviews.length }, req });
+  return { rejectedCount: reviews.length };
+}
+
 module.exports = {
   createManualBatch, createFileBatch, listBatches, getBatchById,
   listReviews, getReviewById, editReview, approveReview, rejectReview, retryReview,
-  runIndependently
+  runIndependently, bulkRejectReviews
 };
