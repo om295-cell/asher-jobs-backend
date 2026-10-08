@@ -155,7 +155,7 @@ async function createBatch({ titles, source, categoryId, originalFileName = '', 
   const resolvedCategoryId = category._id;
   const cleanedTitles = titles.map(cleanTitle).filter(Boolean);
   if (!cleanedTitles.length) {
-    throw { statusCode: 400, code: 'NO_TITLES_FOUND', message: 'No valid job titles were found in the submitted input.' };
+    throw { statusCode: 400, code: 'NO_TITLES_FOUND', message: 'لم يتم العثور على مسميات وظيفية صالحة في المدخلات.' };
   }
   if (cleanedTitles.length > 5000) {
     throw { statusCode: 400, code: 'TOO_MANY_TITLES', message: 'A batch can contain at most 5,000 job titles.' };
@@ -208,6 +208,9 @@ async function createFileBatch({ file, categoryId, idempotencyKey, actor, req })
     throw { statusCode: 400, code: 'FILE_REQUIRED', message: 'Please choose a file containing job titles.' };
   }
   const titles = await extractLinesFromFile(file.buffer, file.originalname, file.mimetype);
+  if (!titles.length) {
+    throw { statusCode: 422, code: 'NO_TITLES_EXTRACTED', message: 'لم يتم استخراج أي مسميات وظيفية من الملف. تأكد أن الملف يحتوي على نصوص قابلة للقراءة وليس صور أو ملف PDF مشفر.' };
+  }
   return createBatch({
     titles,
     source: 'file',

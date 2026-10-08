@@ -103,13 +103,13 @@ async function extractLinesFromFile(buffer, originalname, mimetype) {
 
   if (ext === '.docx' || ext === '.doc') {
     try {
-      // Lazy require to avoid serverless cold-start issues
       const mammoth = require('mammoth');
       const docResult = await mammoth.extractRawText({ buffer });
       rawText = docResult.value || '';
     } catch (e) {
-      console.warn('[Extraction] Mammoth error, fallback to utf8 string:', e.message);
-      rawText = buffer.toString('utf-8');
+      console.warn('[Extraction] Mammoth error:', e.message);
+      // Do NOT fall back to raw buffer — it produces binary garbage
+      return [];
     }
   } else if (ext === '.pdf') {
     try {
