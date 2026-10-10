@@ -171,21 +171,59 @@ async function createBatch({ titles, source, categoryId, originalFileName = '', 
     createdBy: actor._id
   });
 
-  // insertMany creates one persistent lifecycle record per title. There is no
-  // transaction: a later title failing can never roll back an earlier title.
-  const reviewDocs = await JobTitleReview.insertMany(
-    cleanedTitles.map((originalTitle, index) => ({
+  // Batch check duplicates and validation upfront in memory (O(1)) instead of
+  // hundreds of round-trips over the network that timeout on serverless platforms.
+  const [existingJobs, existingReviews] = await Promise.all([
+    Job.find({}).select('name nameAr').lean(),
+    JobTitleReview.find({ status: { $in: ['Pending Review', 'Processing', 'Edited', 'Approved'] } })
+      .select('originalTitle finalTitle')
+      .lean()
+  ]);
+
+  const existingCatalogSet = new Set(
+    existingJobs.flatMap((j) => [normalizeForComparison(j.name), normalizeForComparison(j.nameAr)]).filter(Boolean)
+  );
+
+  const existingReviewsSet = new Set(
+    existingReviews.flatMap((r) => [normalizeForComparison(r.finalTitle), normalizeForComparison(r.originalTitle)]).filter(Boolean)
+  );
+
+  const seenInCurrentBatch = new Set();
+
+  const docsToInsert = cleanedTitles.map((originalTitle, index) => {
+    const title = cleanTitle(originalTitle);
+    const normalized = normalizeForComparison(title);
+    let errorMessage = '';
+
+    if (!title || title.length < 2 || title.length > 120) {
+      errorMessage = 'Job title must contain between 2 and 120 characters.';
+    } else if (!resolvedCategoryId) {
+      errorMessage = 'A job category must be selected before review.';
+    } else if (!normalized) {
+      errorMessage = 'A job title is required.';
+    } else if (existingCatalogSet.has(normalized)) {
+      errorMessage = 'A matching job title already exists in the approved catalog.';
+    } else if (existingReviewsSet.has(normalized)) {
+      errorMessage = 'This title already exists in another submitted title record.';
+    } else if (seenInCurrentBatch.has(normalized)) {
+      errorMessage = 'This title already exists in another submitted title record.';
+    } else {
+      seenInCurrentBatch.add(normalized);
+    }
+
+    return {
       batchId: batch._id,
       sequence: index + 1,
       source,
       originalTitle,
-      finalTitle: originalTitle,
+      finalTitle: title,
       categoryId: resolvedCategoryId,
-      status: 'Processing'
-    })),
-    { ordered: false }
-  );
-  await runIndependently(reviewDocs.map((review) => review._id));
+      status: errorMessage ? 'Failed' : 'Pending Review',
+      errorMessage: errorMessage || ''
+    };
+  });
+
+  await JobTitleReview.insertMany(docsToInsert, { ordered: false });
   const updatedBatch = await refreshBatch(batch._id);
   await logActivity({
     actorId: actor._id,

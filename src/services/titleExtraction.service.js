@@ -69,6 +69,14 @@ function cleanCandidateTitle(rawStr) {
   const norm = normalizeForComparison(str);
   if (JUNK_HEADERS.has(norm)) return null;
 
+  // Filter introductory list headers, prompt text, and branding headers
+  if (/^(إليك|اليك|هذه|هناك|وفيما يلي)?\s*(قائمة|لائحة|دليل|مجموعة)\s+/i.test(str)) return null;
+  if (/قائمة\s+(مرجعية|بالمسميات|الوظائف|المسميات)/i.test(str)) return null;
+  if (/مسمى\s+وظيفي\s+وردت/i.test(str)) return null;
+  if (/^(asher\s*jobs|jobs\s*asher)$/i.test(norm)) return null;
+  if (/asher\s*jobs/i.test(norm) && (norm.includes('قائمه') || norm.includes('مجموعات') || norm.includes('مسمي') || norm.includes('وظائف'))) return null;
+  if (str.endsWith(':') && (str.includes('قائمة') || str.includes('مسمى') || str.includes('وظائف') || str.includes('jobs'))) return null;
+
   return str;
 }
 
@@ -163,9 +171,24 @@ async function extractLinesFromFile(buffer, originalname, mimetype) {
     }
   } else if (ext === '.pdf') {
     try {
-      const pdfParse = require('pdf-parse');
-      const pdfData = await pdfParse(buffer);
-      rawText = pdfData.text || '';
+      const pdfModule = require('pdf-parse');
+      if (typeof pdfModule === 'function') {
+        const pdfData = await pdfModule(buffer);
+        rawText = pdfData?.text || '';
+      } else if (pdfModule && (pdfModule.PDFParse || typeof pdfModule.default === 'function')) {
+        const ParserClass = pdfModule.PDFParse || pdfModule.default;
+        if (typeof ParserClass === 'function') {
+          try {
+            const parser = new ParserClass({ data: buffer });
+            const res = await parser.getText();
+            rawText = res?.text || (typeof res === 'string' ? res : '');
+            if (parser.destroy) await parser.destroy();
+          } catch (classErr) {
+            const res = await ParserClass(buffer);
+            rawText = res?.text || (typeof res === 'string' ? res : '');
+          }
+        }
+      }
     } catch (e) {
       console.warn('[Extraction] PDF-parse error:', e.message);
       return [];
