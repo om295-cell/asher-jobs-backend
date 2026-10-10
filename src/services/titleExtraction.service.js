@@ -264,15 +264,16 @@ async function processSingleTitle({ name, nameAr, categoryId, description }) {
   const categoryExists = await JobCategory.findById(categoryId).lean();
   if (!categoryExists) throw new Error(`Category not found: ${categoryId}`);
 
-  const existingJobs = await Job.find({
-    $or: [
-      { name: new RegExp(`^${escapeRegex(cleanName)}$`, 'i') },
-      { nameAr: new RegExp(`^${escapeRegex(cleanNameAr)}$`, 'i') }
-    ]
-  }).lean();
-  if (existingJobs.length > 0) {
-    const dup = existingJobs[0];
-    throw new Error(`Duplicate title: '${dup.nameAr || dup.name}' already exists in system`);
+  const normName = normalizeForComparison(cleanName);
+  const normNameAr = normalizeForComparison(cleanNameAr);
+  const allJobs = await Job.find({}).select('name nameAr').lean();
+  const dup = allJobs.find(
+    (j) =>
+      (normName && (normalizeForComparison(j.name) === normName || normalizeForComparison(j.nameAr) === normName)) ||
+      (normNameAr && (normalizeForComparison(j.name) === normNameAr || normalizeForComparison(j.nameAr) === normNameAr))
+  );
+  if (dup) {
+    throw new Error(`المسمى موجود مسبقاً في كتالوج المسميات المعتمدة (${dup.nameAr || dup.name})`);
   }
 
   return Job.create({ name: cleanName, nameAr: cleanNameAr, categoryId, description: description || '', isActive: true });

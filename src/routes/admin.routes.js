@@ -44,6 +44,7 @@ router.post('/job-title-batches/file', uploadTitleDoc.single('file'), jobTitleRe
 router.get('/job-title-batches', jobTitleReviewController.listBatches);
 router.get('/job-title-batches/:id', jobTitleReviewController.getBatch);
 router.get('/job-title-reviews', jobTitleReviewController.listReviews);
+router.post('/job-title-reviews/bulk-approve', jobTitleReviewController.bulkApproveReviews);
 router.post('/job-title-reviews/bulk-reject', jobTitleReviewController.bulkRejectReviews);
 router.delete('/job-title-reviews', jobTitleReviewController.deleteAllArchivedReviews);
 router.get('/job-title-reviews/:id', jobTitleReviewController.getReview);

@@ -5,6 +5,7 @@ const JobTitleReview = require('../models/JobTitleReview');
 const { getPagination, formatPagination } = require('../utils/pagination');
 const { parseLinesFromRawText, extractLinesFromFile, normalizeForComparison } = require('./titleExtraction.service');
 const { processSingleTitle } = require('./titleExtraction.service');
+const { getCategoryCache, resolveCategoryForTitle } = require('./categoryInference.service');
 const { logActivity } = require('./activity.service');
 
 function makeBatchNumber() {
@@ -173,11 +174,12 @@ async function createBatch({ titles, source, categoryId, originalFileName = '', 
 
   // Batch check duplicates and validation upfront in memory (O(1)) instead of
   // hundreds of round-trips over the network that timeout on serverless platforms.
-  const [existingJobs, existingReviews] = await Promise.all([
+  const [existingJobs, existingReviews, categoryCache] = await Promise.all([
     Job.find({}).select('name nameAr').lean(),
     JobTitleReview.find({ status: { $in: ['Pending Review', 'Processing', 'Edited', 'Approved'] } })
       .select('originalTitle finalTitle')
-      .lean()
+      .lean(),
+    getCategoryCache()
   ]);
 
   const existingCatalogSet = new Set(
@@ -189,39 +191,48 @@ async function createBatch({ titles, source, categoryId, originalFileName = '', 
   );
 
   const seenInCurrentBatch = new Set();
+  const docsToInsert = [];
 
-  const docsToInsert = cleanedTitles.map((originalTitle, index) => {
+  for (let index = 0; index < cleanedTitles.length; index++) {
+    const originalTitle = cleanedTitles[index];
     const title = cleanTitle(originalTitle);
     const normalized = normalizeForComparison(title);
     let errorMessage = '';
 
     if (!title || title.length < 2 || title.length > 120) {
       errorMessage = 'Job title must contain between 2 and 120 characters.';
-    } else if (!resolvedCategoryId) {
-      errorMessage = 'A job category must be selected before review.';
     } else if (!normalized) {
       errorMessage = 'A job title is required.';
     } else if (existingCatalogSet.has(normalized)) {
-      errorMessage = 'A matching job title already exists in the approved catalog.';
+      errorMessage = 'المسمى موجود مسبقاً في كتالوج المسميات المعتمدة.';
     } else if (existingReviewsSet.has(normalized)) {
-      errorMessage = 'This title already exists in another submitted title record.';
+      errorMessage = 'هذا المسمى موجود بالفعل في سجلات المراجعة السابقة.';
     } else if (seenInCurrentBatch.has(normalized)) {
-      errorMessage = 'This title already exists in another submitted title record.';
+      errorMessage = 'مكرر ضمن نفس الدفعة المدخلة.';
     } else {
       seenInCurrentBatch.add(normalized);
     }
 
-    return {
+    // Automatically assign category per title (system auto-creates category if it does not exist)
+    let itemCategoryId = null;
+    if (categoryId) {
+      itemCategoryId = resolvedCategoryId;
+    } else {
+      itemCategoryId = await resolveCategoryForTitle(title, categoryCache);
+    }
+
+    docsToInsert.push({
       batchId: batch._id,
       sequence: index + 1,
       source,
       originalTitle,
       finalTitle: title,
-      categoryId: resolvedCategoryId,
+      categoryId: itemCategoryId || resolvedCategoryId,
+      isCategoryManuallyEdited: Boolean(categoryId),
       status: errorMessage ? 'Failed' : 'Pending Review',
       errorMessage: errorMessage || ''
-    };
-  });
+    });
+  }
 
   await JobTitleReview.insertMany(docsToInsert, { ordered: false });
   const updatedBatch = await refreshBatch(batch._id);
@@ -317,9 +328,12 @@ async function editReview(id, { finalTitle, categoryId }, actor, req) {
   }
   const cleanFinalTitle = cleanTitle(finalTitle);
   if (!cleanFinalTitle) throw { statusCode: 400, code: 'TITLE_REQUIRED', message: 'A final job title is required.' };
-  if (categoryId) await ensureCategory(categoryId);
+  if (categoryId) {
+    await ensureCategory(categoryId);
+    review.categoryId = categoryId;
+    review.isCategoryManuallyEdited = true; // User manually chose category: never override
+  }
   review.finalTitle = cleanFinalTitle;
-  if (categoryId) review.categoryId = categoryId;
   review.status = 'Edited';
   review.errorMessage = '';
   review.editedAt = new Date();
@@ -340,21 +354,62 @@ async function approveReview(id, { finalTitle, categoryId }, actor, req) {
   if (categoryId) {
     await ensureCategory(categoryId);
     review.categoryId = categoryId;
+    review.isCategoryManuallyEdited = true;
   }
+  const titleToApprove = cleanTitle(review.finalTitle || review.originalTitle);
+  if (!titleToApprove) {
+    review.status = 'Failed';
+    review.errorMessage = 'المسمى الوظيفي مطلوب.';
+    await review.save();
+    await refreshBatch(review.batchId);
+    return getReviewById(review._id);
+  }
+
+  // Ensure category is set
+  if (!review.categoryId) {
+    const categoryCache = await getCategoryCache();
+    review.categoryId = await resolveCategoryForTitle(titleToApprove, categoryCache);
+  }
+
+  // Check catalog duplication: CATALOG NEVER ACCEPTS DUPLICATE JOB TITLES
+  const normalized = normalizeForComparison(titleToApprove);
+  const existingJobs = await Job.find({}).select('name nameAr').lean();
+  const isDuplicate = existingJobs.some(
+    (j) => normalizeForComparison(j.name) === normalized || normalizeForComparison(j.nameAr) === normalized
+  );
+
+  if (isDuplicate) {
+    review.status = 'Failed';
+    review.errorMessage = 'المسمى موجود مسبقاً في كتالوج المسميات المعتمدة.';
+    review.isArchived = false;
+    review.archivedAt = null;
+    await review.save();
+    await refreshBatch(review.batchId);
+    return getReviewById(review._id);
+  }
+
   review.status = 'Processing';
   review.errorMessage = '';
   await review.save();
   try {
-    const job = await processSingleTitle({ name: review.finalTitle, nameAr: review.finalTitle, categoryId: review.categoryId });
+    const job = await processSingleTitle({ name: titleToApprove, nameAr: titleToApprove, categoryId: review.categoryId });
     review.status = 'Approved';
     review.createdJobId = job._id;
+    // Moving from review workspace to catalog: archive review record
+    review.isArchived = true;
+    review.archivedAt = new Date();
+    review.errorMessage = '';
     review.reviewedBy = actor._id;
     review.reviewedAt = new Date();
     await review.save();
     await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_APPROVED', entityType: 'JobTitleReview', entityId: review._id, req });
   } catch (error) {
     review.status = 'Failed';
-    review.errorMessage = error.message || 'Unable to add the title to the catalog.';
+    review.errorMessage = error.message?.includes('المسمى موجود مسبقاً') || error.code === 11000
+      ? 'المسمى موجود مسبقاً في كتالوج المسميات المعتمدة.'
+      : (error.message || 'تعذر إضافة المسمى إلى الكتالوج.');
+    review.isArchived = false;
+    review.archivedAt = null;
     await review.save();
   }
   await refreshBatch(review.batchId);
@@ -388,13 +443,125 @@ async function retryReview(id, actor, req) {
   review.retryCount += 1;
   await review.save();
   try {
-    await prepareOneReview(review._id);
+    const title = cleanTitle(review.finalTitle || review.originalTitle);
+    if (!review.categoryId || !review.isCategoryManuallyEdited) {
+      const categoryCache = await getCategoryCache();
+      review.categoryId = await resolveCategoryForTitle(title, categoryCache);
+    }
+    const normalized = normalizeForComparison(title);
+    const existingJobs = await Job.find({}).select('name nameAr').lean();
+    const isDup = existingJobs.some((j) => normalizeForComparison(j.name) === normalized || normalizeForComparison(j.nameAr) === normalized);
+    if (isDup) {
+      review.status = 'Failed';
+      review.errorMessage = 'المسمى موجود مسبقاً في كتالوج المسميات المعتمدة.';
+    } else {
+      review.status = 'Pending Review';
+      review.errorMessage = '';
+    }
+    await review.save();
   } catch (error) {
     await JobTitleReview.findByIdAndUpdate(review._id, { status: 'Failed', errorMessage: error.message || 'Retry failed.' });
   }
   await refreshBatch(review.batchId);
   await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_RETRIED', entityType: 'JobTitleReview', entityId: review._id, req });
   return getReviewById(review._id);
+}
+
+async function bulkApproveReviews({ batchId, actor, req }) {
+  const filter = {
+    status: { $in: ['Pending Review', 'Edited'] },
+    isArchived: { $ne: true }
+  };
+  if (batchId) filter.batchId = batchId;
+
+  const reviews = await JobTitleReview.find(filter).sort({ sequence: 1 });
+  if (!reviews.length) {
+    return { approvedCount: 0, failedCount: 0, totalProcessed: 0, message: 'لا توجد مسميات قابلة للاعتماد.' };
+  }
+
+  // Load catalog jobs to strictly prevent duplicates
+  const existingJobs = await Job.find({}).select('name nameAr').lean();
+  const catalogSet = new Set(
+    existingJobs.flatMap((j) => [normalizeForComparison(j.name), normalizeForComparison(j.nameAr)]).filter(Boolean)
+  );
+
+  const categoryCache = await getCategoryCache();
+  let approvedCount = 0;
+  let failedCount = 0;
+  const batchIdsToRefresh = new Set();
+
+  for (const review of reviews) {
+    batchIdsToRefresh.add(String(review.batchId));
+    const title = cleanTitle(review.finalTitle || review.originalTitle);
+    const normalized = normalizeForComparison(title);
+
+    if (!title) {
+      review.status = 'Failed';
+      review.errorMessage = 'المسمى الوظيفي مطلوب.';
+      await review.save();
+      failedCount++;
+      continue;
+    }
+
+    if (!review.categoryId && !review.isCategoryManuallyEdited) {
+      review.categoryId = await resolveCategoryForTitle(title, categoryCache);
+    }
+
+    // Check catalog duplication
+    if (catalogSet.has(normalized)) {
+      review.status = 'Failed';
+      review.errorMessage = 'المسمى موجود مسبقاً في كتالوج المسميات المعتمدة.';
+      review.isArchived = false;
+      review.archivedAt = null;
+      await review.save();
+      failedCount++;
+      continue;
+    }
+
+    try {
+      const job = await Job.create({
+        name: title,
+        nameAr: title,
+        categoryId: review.categoryId,
+        isActive: true
+      });
+      catalogSet.add(normalized);
+
+      review.status = 'Approved';
+      review.createdJobId = job._id;
+      review.errorMessage = '';
+      review.isArchived = true;
+      review.archivedAt = new Date();
+      review.reviewedBy = actor._id;
+      review.reviewedAt = new Date();
+      await review.save();
+      approvedCount++;
+    } catch (err) {
+      review.status = 'Failed';
+      review.errorMessage = err.code === 11000
+        ? 'المسمى موجود مسبقاً في كتالوج المسميات المعتمدة.'
+        : (err.message || 'تعذر إضافة المسمى إلى الكتالوج.');
+      review.isArchived = false;
+      review.archivedAt = null;
+      await review.save();
+      failedCount++;
+    }
+  }
+
+  for (const bId of batchIdsToRefresh) {
+    await refreshBatch(bId);
+  }
+
+  await logActivity({
+    actorId: actor._id,
+    actorRole: actor.role,
+    action: 'JOB_TITLE_REVIEWS_BULK_APPROVED',
+    entityType: 'JobTitleBatch',
+    metadata: { batchId, approvedCount, failedCount, total: reviews.length },
+    req
+  });
+
+  return { approvedCount, failedCount, totalProcessed: reviews.length };
 }
 
 async function bulkRejectReviews({ reason, batchId, actor, req }) {
@@ -439,6 +606,7 @@ async function deleteAllArchivedReviews({ batchId, actor, req }) {
 
 module.exports = {
   createManualBatch, createFileBatch, listBatches, getBatchById,
-  listReviews, getReviewById, editReview, approveReview, rejectReview, retryReview,
-  runIndependently, bulkRejectReviews, deleteArchivedReview, deleteAllArchivedReviews
+  listReviews, getReviewById, editReview, approveReview, bulkApproveReviews,
+  rejectReview, retryReview, runIndependently, bulkRejectReviews,
+  deleteArchivedReview, deleteAllArchivedReviews
 };

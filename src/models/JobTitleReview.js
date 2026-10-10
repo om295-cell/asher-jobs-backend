@@ -21,6 +21,7 @@ const jobTitleReviewSchema = new mongoose.Schema(
     reviewedAt: { type: Date, default: null },
     editedAt: { type: Date, default: null },
     retryCount: { type: Number, default: 0 },
+    isCategoryManuallyEdited: { type: Boolean, default: false },
     isArchived: { type: Boolean, default: false, index: true },
     archivedAt: { type: Date, default: null }
   },
