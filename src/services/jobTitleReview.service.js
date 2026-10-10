@@ -297,6 +297,9 @@ async function listReviews(query = {}) {
     filter.isArchived = true;
   } else {
     filter.isArchived = { $ne: true };
+    if (!query.status) {
+      filter.status = { $nin: ['Approved', 'Rejected'] };
+    }
   }
   if (query.status) filter.status = query.status;
   if (query.batchId) filter.batchId = query.batchId;
@@ -469,7 +472,7 @@ async function retryReview(id, actor, req) {
 
 async function bulkApproveReviews({ batchId, actor, req }) {
   const filter = {
-    status: { $in: ['Pending Review', 'Edited'] },
+    status: { $in: ['Pending Review', 'Edited', 'Failed'] },
     isArchived: { $ne: true }
   };
   if (batchId) filter.batchId = batchId;
