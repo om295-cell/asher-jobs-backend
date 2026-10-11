@@ -79,6 +79,11 @@ async function seedDatabase(force = false) {
  */
 async function autoSeedIfEmpty() {
   try {
+    // Clean up any legacy system Uncategorized category if unused
+    await JobCategory.deleteMany({
+      $or: [{ name: 'Uncategorized' }, { nameAr: 'غير مصنف' }]
+    }).catch(() => {});
+
     const adminExists = await User.exists({ role: 'admin' });
     if (adminExists) {
       return; // Already initialized, zero overhead

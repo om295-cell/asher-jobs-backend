@@ -511,7 +511,9 @@ async function getAllCategories(includeInactive = false) {
     return categoriesCache[cacheKey];
   }
 
-  const query = includeInactive ? {} : { isActive: true };
+  const query = includeInactive
+    ? { name: { $ne: 'Uncategorized' }, nameAr: { $ne: 'غير مصنف' } }
+    : { isActive: true, name: { $ne: 'Uncategorized' }, nameAr: { $ne: 'غير مصنف' } };
   const categories = await JobCategory.find(query).sort({ sortOrder: 1, name: 1 }).lean();
 
   categoriesCache[cacheKey] = categories;

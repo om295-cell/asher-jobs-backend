@@ -30,7 +30,7 @@ async function getOrCreateUncategorizedCategory() {
         name: 'Uncategorized',
         nameAr: 'غير مصنف',
         description: 'Automatically created for job titles awaiting categorization.',
-        isActive: true,
+        isActive: false,
         systemGenerated: true
       });
     } catch (error) {
