@@ -152,6 +152,9 @@ const companySchema = new mongoose.Schema(
   }
 );
 
+companySchema.index({ isDeleted: 1, createdAt: -1 });
+companySchema.index({ verificationStatus: 1, isDeleted: 1, createdAt: -1 });
+companySchema.index({ subscriptionStatus: 1, isDeleted: 1, createdAt: -1 });
 companySchema.index({ verificationStatus: 1, subscriptionStatus: 1, isBlocked: 1 });
 
 module.exports = mongoose.model('Company', companySchema);

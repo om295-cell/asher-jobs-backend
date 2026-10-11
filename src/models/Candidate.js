@@ -151,7 +151,12 @@ const candidateSchema = new mongoose.Schema(
   }
 );
 
-// Compound indexes for high-speed recruitment search
+// Compound indexes for high-speed recruitment search and admin listing
+candidateSchema.index({ isDeleted: 1, createdAt: -1 });
+candidateSchema.index({ isDeleted: 1, accountStatus: 1, availabilityStatus: 1, createdAt: -1 });
+candidateSchema.index({ isDeleted: 1, desiredJobId: 1, availabilityStatus: 1, createdAt: -1 });
+candidateSchema.index({ isDeleted: 1, categoryId: 1, availabilityStatus: 1, createdAt: -1 });
+candidateSchema.index({ isDeleted: 1, governorate: 1, area: 1 });
 candidateSchema.index({ desiredJobId: 1, availabilityStatus: 1, governorate: 1 });
 candidateSchema.index({ categoryId: 1, availabilityStatus: 1 });
 candidateSchema.index({ availabilityStatus: 1, accountStatus: 1, isDeleted: 1 });

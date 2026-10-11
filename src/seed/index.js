@@ -74,11 +74,19 @@ async function seedDatabase(force = false) {
 }
 
 /**
- * Runs on every cold start. Only ensures admin + settings exist.
+ * Runs on cold start. Only ensures admin + settings exist if missing.
  * Never wipes categories, jobs, or any admin-created data.
  */
 async function autoSeedIfEmpty() {
-  await seedDatabase(false);
+  try {
+    const adminExists = await User.exists({ role: 'admin' });
+    if (adminExists) {
+      return; // Already initialized, zero overhead
+    }
+    await seedDatabase(false);
+  } catch (err) {
+    console.warn('[Seed] autoSeed check warning:', err.message);
+  }
 }
 
 // Support direct script execution

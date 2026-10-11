@@ -65,5 +65,7 @@ const recruitmentRequestSchema = new mongoose.Schema(
 );
 
 recruitmentRequestSchema.index({ companyId: 1, createdAt: -1 });
+recruitmentRequestSchema.index({ status: 1, createdAt: -1 });
+recruitmentRequestSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('RecruitmentRequest', recruitmentRequestSchema);

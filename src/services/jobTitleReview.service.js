@@ -7,6 +7,7 @@ const { parseLinesFromRawText, extractLinesFromFile, normalizeForComparison } = 
 const { processSingleTitle } = require('./titleExtraction.service');
 const { getCategoryCache, resolveCategoryForTitle } = require('./categoryInference.service');
 const { logActivity } = require('./activity.service');
+const { invalidateCatalogueCache } = require('./admin.service');
 
 function makeBatchNumber() {
   return `JTB-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase()}-${Math.random()
@@ -405,6 +406,7 @@ async function approveReview(id, { finalTitle, categoryId }, actor, req) {
     review.reviewedBy = actor._id;
     review.reviewedAt = new Date();
     await review.save();
+    invalidateCatalogueCache();
     await logActivity({ actorId: actor._id, actorRole: actor.role, action: 'JOB_TITLE_REVIEW_APPROVED', entityType: 'JobTitleReview', entityId: review._id, req });
   } catch (error) {
     review.status = 'Failed';
@@ -553,6 +555,9 @@ async function bulkApproveReviews({ batchId, actor, req }) {
 
   for (const bId of batchIdsToRefresh) {
     await refreshBatch(bId);
+  }
+  if (approvedCount > 0) {
+    invalidateCatalogueCache();
   }
 
   await logActivity({

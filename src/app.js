@@ -99,16 +99,14 @@ app.use(async (req, res, next) => {
       console.warn('[Serverless DB] Connection warning:', err.message);
     }
   }
-  // Run seed once per cold-start after DB is ready
+
+  // Run seed non-blocking once per cold start
   if (!_seeded && mongoose.connection.readyState === 1) {
     _seeded = true;
-    try {
-      const { autoSeedIfEmpty } = require('./seed');
-      await autoSeedIfEmpty();
-      console.log('[Serverless] Seed completed successfully.');
-    } catch (err) {
-      console.warn('[Serverless] Seed warning:', err.message);
-    }
+    const { autoSeedIfEmpty } = require('./seed');
+    autoSeedIfEmpty().catch((err) => {
+      console.warn('[Serverless] Seed background warning:', err.message);
+    });
   }
   next();
 });

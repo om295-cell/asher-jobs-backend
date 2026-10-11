@@ -46,4 +46,7 @@ const jobCategorySchema = new mongoose.Schema(
   }
 );
 
+jobCategorySchema.index({ isActive: 1, sortOrder: 1, name: 1 });
+jobCategorySchema.index({ sortOrder: 1, name: 1 });
+
 module.exports = mongoose.model('JobCategory', jobCategorySchema);

@@ -38,5 +38,8 @@ const jobSchema = new mongoose.Schema(
 );
 
 jobSchema.index({ name: 1, categoryId: 1 }, { unique: true });
+jobSchema.index({ isActive: 1, sortOrder: 1, name: 1 });
+jobSchema.index({ sortOrder: 1, name: 1 });
+jobSchema.index({ categoryId: 1, isActive: 1 });
 
 module.exports = mongoose.model('Job', jobSchema);

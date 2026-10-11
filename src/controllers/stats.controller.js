@@ -23,6 +23,9 @@ async function getTotalVisitors() {
   }
 }
 
+let statsCache = { data: null, expiresAt: 0 };
+const STATS_CACHE_TTL_MS = 30000; // 30 seconds
+
 /**
  * GET /api/stats
  * Pure read-only endpoint returning current real counts:
@@ -32,6 +35,14 @@ async function getTotalVisitors() {
  */
 async function getStats(req, res) {
   try {
+    const now = Date.now();
+    if (statsCache.data && now < statsCache.expiresAt) {
+      return res.status(200).json({
+        success: true,
+        data: statsCache.data
+      });
+    }
+
     const isDbConnected = mongoose.connection.readyState === 1;
 
     let candidateCount = 0;
@@ -53,13 +64,20 @@ async function getStats(req, res) {
       }
     }
 
+    const responseData = {
+      candidates: candidateCount,
+      companies: companyCount,
+      visitors: totalVisitors
+    };
+
+    if (isDbConnected) {
+      statsCache.data = responseData;
+      statsCache.expiresAt = now + STATS_CACHE_TTL_MS;
+    }
+
     return res.status(200).json({
       success: true,
-      data: {
-        candidates: candidateCount,
-        companies: companyCount,
-        visitors: totalVisitors
-      }
+      data: responseData
     });
   } catch (err) {
     console.error('[stats] Error in getStats:', err.message);

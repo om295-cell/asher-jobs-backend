@@ -54,4 +54,7 @@ const candidateReportSchema = new mongoose.Schema(
   }
 );
 
+candidateReportSchema.index({ status: 1, createdAt: -1 });
+candidateReportSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('CandidateReport', candidateReportSchema);

@@ -29,6 +29,9 @@ const jobTitleReviewSchema = new mongoose.Schema(
 );
 
 jobTitleReviewSchema.index({ batchId: 1, sequence: 1 }, { unique: true });
+jobTitleReviewSchema.index({ batchId: 1, status: 1 });
+jobTitleReviewSchema.index({ isArchived: 1, status: 1, createdAt: -1 });
+jobTitleReviewSchema.index({ isArchived: 1, createdAt: -1 });
 jobTitleReviewSchema.index({ status: 1, createdAt: -1 });
 // Auto-delete archived records 60 days after they are archived
 jobTitleReviewSchema.index({ archivedAt: 1 }, { expireAfterSeconds: 60 * 24 * 60 * 60, partialFilterExpression: { isArchived: true } });

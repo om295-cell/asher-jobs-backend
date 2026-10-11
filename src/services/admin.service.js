@@ -443,13 +443,33 @@ async function updateCompanySubscription(companyId, subData, adminUser, req) {
   return company;
 }
 
+// Job & Category catalogue memory cache for ultra-fast response times (<2ms)
+let jobsCache = { active: null, all: null, expiresAt: 0 };
+let categoriesCache = { active: null, all: null, expiresAt: 0 };
+const CATALOG_CACHE_TTL_MS = 60000; // 60 seconds
+
+function invalidateCatalogueCache() {
+  jobsCache = { active: null, all: null, expiresAt: 0 };
+  categoriesCache = { active: null, all: null, expiresAt: 0 };
+}
+
 // Job catalogue management
 async function getAllJobs(includeInactive = false) {
+  const now = Date.now();
+  const cacheKey = includeInactive ? 'all' : 'active';
+  if (jobsCache[cacheKey] && now < jobsCache.expiresAt) {
+    return jobsCache[cacheKey];
+  }
+
   const query = includeInactive ? {} : { isActive: true };
-  return Job.find(query)
+  const jobs = await Job.find(query)
     .populate('categoryId', 'name nameAr sortOrder isActive')
     .sort({ sortOrder: 1, name: 1 })
     .lean();
+
+  jobsCache[cacheKey] = jobs;
+  jobsCache.expiresAt = now + CATALOG_CACHE_TTL_MS;
+  return jobs;
 }
 
 async function createJob(data) {
@@ -457,7 +477,7 @@ async function createJob(data) {
   if (!name || !nameAr || !categoryId) {
     throw { statusCode: 400, message: 'Job name (English & Arabic) and category are required.', code: 'FIELDS_REQUIRED' };
   }
-  return Job.create({
+  const job = await Job.create({
     name: name.trim(),
     nameAr: nameAr.trim(),
     categoryId,
@@ -465,24 +485,38 @@ async function createJob(data) {
     isActive: isActive !== undefined ? isActive : true,
     sortOrder: sortOrder || 0
   });
+  invalidateCatalogueCache();
+  return job;
 }
 
 async function updateJob(id, data) {
   const job = await Job.findByIdAndUpdate(id, data, { new: true });
   if (!job) throw { statusCode: 404, message: 'Job not found.', code: 'JOB_NOT_FOUND' };
+  invalidateCatalogueCache();
   return job;
 }
 
 async function deleteJob(id) {
   const job = await Job.findByIdAndDelete(id);
   if (!job) throw { statusCode: 404, message: 'Job not found.', code: 'JOB_NOT_FOUND' };
+  invalidateCatalogueCache();
   return { success: true };
 }
 
 // Category catalogue management
 async function getAllCategories(includeInactive = false) {
+  const now = Date.now();
+  const cacheKey = includeInactive ? 'all' : 'active';
+  if (categoriesCache[cacheKey] && now < categoriesCache.expiresAt) {
+    return categoriesCache[cacheKey];
+  }
+
   const query = includeInactive ? {} : { isActive: true };
-  return JobCategory.find(query).sort({ sortOrder: 1, name: 1 }).lean();
+  const categories = await JobCategory.find(query).sort({ sortOrder: 1, name: 1 }).lean();
+
+  categoriesCache[cacheKey] = categories;
+  categoriesCache.expiresAt = now + CATALOG_CACHE_TTL_MS;
+  return categories;
 }
 
 async function createCategory(data) {
@@ -490,13 +524,15 @@ async function createCategory(data) {
   if (!name || !nameAr) {
     throw { statusCode: 400, message: 'Category name (English & Arabic) is required.', code: 'FIELDS_REQUIRED' };
   }
-  return JobCategory.create({
+  const category = await JobCategory.create({
     name: name.trim(),
     nameAr: nameAr.trim(),
     description: description || '',
     isActive: isActive !== undefined ? isActive : true,
     sortOrder: sortOrder || 0
   });
+  invalidateCatalogueCache();
+  return category;
 }
 
 async function updateCategory(id, data) {
@@ -505,12 +541,14 @@ async function updateCategory(id, data) {
   const updatePayload = { ...data, manuallyEdited: true };
   const cat = await JobCategory.findByIdAndUpdate(id, updatePayload, { new: true });
   if (!cat) throw { statusCode: 404, message: 'Category not found.', code: 'CATEGORY_NOT_FOUND' };
+  invalidateCatalogueCache();
   return cat;
 }
 
 async function deleteCategory(id) {
   const cat = await JobCategory.findByIdAndDelete(id);
   if (!cat) throw { statusCode: 404, message: 'Category not found.', code: 'CATEGORY_NOT_FOUND' };
+  invalidateCatalogueCache();
   return { success: true };
 }
 
@@ -606,6 +644,7 @@ module.exports = {
   updateCategory,
   deleteCategory,
   getSettings,
-  updateSetting
+  updateSetting,
+  invalidateCatalogueCache
 };
 
