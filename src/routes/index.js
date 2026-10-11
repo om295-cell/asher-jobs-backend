@@ -9,6 +9,7 @@ const recruitmentRequestRoutes = require('./recruitmentRequest.routes');
 const reportRoutes = require('./report.routes');
 const adminRoutes = require('./admin.routes');
 const recommendationRoutes = require('./recommendation.routes');
+const adminNotificationRoutes = require('./adminNotification.routes');
 const { getStats, recordVisit } = require('../controllers/stats.controller');
 
 const mongoose = require('mongoose');
@@ -37,6 +38,7 @@ router.use('/jobs', jobRoutes);
 router.use('/recruitment-requests', recruitmentRequestRoutes);
 router.use('/reports', reportRoutes);
 router.use('/recommendations', recommendationRoutes);
+router.use('/admin/notifications', adminNotificationRoutes);
 router.use('/admin', adminRoutes);
 
 module.exports = router;

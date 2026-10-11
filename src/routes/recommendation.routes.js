@@ -51,5 +51,6 @@ router.get('/track/:requestNumber', trackLimiter, recommendationController.track
 router.get('/admin', authenticate, authorize('admin'), recommendationController.adminList);
 router.get('/admin/:id', authenticate, authorize('admin'), recommendationController.adminGet);
 router.patch('/admin/:id/status', authenticate, authorize('admin'), recommendationController.adminUpdateStatus);
+router.post('/admin/:id/resolve-conflict', authenticate, authorize('admin'), recommendationController.resolveConflict);
 
 module.exports = router;

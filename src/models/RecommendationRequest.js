@@ -67,7 +67,7 @@ const recommendationRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected'],
+      enum: ['pending', 'phone_duplicate_pending', 'approved', 'partially_approved', 'rejected'],
       default: 'pending',
       index: true
     },
@@ -95,6 +95,64 @@ const recommendationRequestSchema = new mongoose.Schema(
     reviewedAt: {
       type: Date
     },
+    // Chain linking (when a previously recommended person submits as main)
+    isChainLinked: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    chainParentRequestNumber: {
+      type: String,
+      default: null,
+      index: true
+    },
+    chainParentSubmitterName: {
+      type: String,
+      default: null
+    },
+    chainParentSubmitterPhone: {
+      type: String,
+      default: null
+    },
+    chainChildrenRequestNumbers: {
+      type: [String],
+      default: []
+    },
+    // Phone conflict (when 2 different names submit the same phone)
+    hasPhoneConflict: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    phoneConflictStatus: {
+      type: String,
+      enum: ['none', 'pending_investigation', 'approved_both', 'rejected_main_kept_recommendations', 'rejected_whole'],
+      default: 'none',
+      index: true
+    },
+    phoneConflictDetails: {
+      conflictingPhone: { type: String, default: null },
+      firstRequestNumber: { type: String, default: null },
+      firstSubmitterName: { type: String, default: null },
+      secondRequestNumber: { type: String, default: null },
+      secondSubmitterName: { type: String, default: null },
+      resolvedAt: { type: Date, default: null },
+      resolutionAction: { type: String, default: null },
+      resolutionNotes: { type: String, default: null }
+    },
+    // Submitter rejection logging when recommendations are kept
+    rejectedSubmitterName: {
+      type: String,
+      default: null
+    },
+    rejectedSubmitterPhone: {
+      type: String,
+      default: null
+    },
+    recommendationsOnlyApproved: {
+      type: Boolean,
+      default: false
+    },
     // Array of exactly 11 people: index 0 is primary submitter, 1-10 are recommendations
     people: {
       type: [personSchema],
@@ -114,6 +172,8 @@ const recommendationRequestSchema = new mongoose.Schema(
 // Indexes for fast lookup
 recommendationRequestSchema.index({ 'people.phoneNormalized': 1 });
 recommendationRequestSchema.index({ status: 1, createdAt: -1 });
+recommendationRequestSchema.index({ hasPhoneConflict: 1, phoneConflictStatus: 1 });
+recommendationRequestSchema.index({ isChainLinked: 1, createdAt: -1 });
 
 module.exports = {
   RecommendationRequest: mongoose.model('RecommendationRequest', recommendationRequestSchema),

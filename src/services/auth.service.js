@@ -91,11 +91,80 @@ async function registerCandidate(data, req) {
 
   // Duplicate candidate prevention by normalized phone number
   const existingCandidate = await Candidate.findOne({ phoneNormalized: phoneCheck.normalized, isDeleted: false });
-  if (existingCandidate) {
+  if (existingCandidate && !existingCandidate.isRecommendation) {
     throw {
       statusCode: 409,
       message: 'A candidate profile with this mobile number already exists. Please log in or update your existing profile.',
       code: 'DUPLICATE_PHONE'
+    };
+  }
+
+  // Format skills array
+  let skillsArray = [];
+  if (Array.isArray(skills)) {
+    skillsArray = skills;
+  } else if (typeof skills === 'string') {
+    skillsArray = skills.split(',').map((s) => s.trim()).filter(Boolean);
+  }
+
+  // If candidate was created via recommendation, upgrade to full main account!
+  if (existingCandidate && existingCandidate.isRecommendation) {
+    let user = await User.findOne({ phoneNormalized: phoneCheck.normalized });
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+    if (user) {
+      user.passwordHash = passwordHash;
+      user.accountStatus = 'active';
+      if (email && email.trim()) user.email = email.trim().toLowerCase();
+      await user.save();
+    } else {
+      user = await User.create({
+        email: email && email.trim() ? email.trim().toLowerCase() : undefined,
+        phone: phoneCheck.local,
+        phoneNormalized: phoneCheck.normalized,
+        passwordHash,
+        role: 'candidate',
+        accountStatus: 'active'
+      });
+      existingCandidate.userId = user._id;
+    }
+
+    existingCandidate.fullName = fullName.trim();
+    existingCandidate.desiredJobId = job._id;
+    existingCandidate.categoryId = job.categoryId;
+    existingCandidate.governorate = governorate || 'Sharqia';
+    existingCandidate.area = area || '10th of Ramadan';
+    existingCandidate.yearsOfExperience = Number(yearsOfExperience) || 0;
+    existingCandidate.qualification = qualification || 'Technical Diploma';
+    existingCandidate.skills = skillsArray;
+    existingCandidate.consentGiven = true;
+    existingCandidate.isRecommendation = false; // Upgraded to main!
+    await existingCandidate.save();
+
+    // Notify Super Admin
+    const AdminNotification = require('../models/AdminNotification');
+    await AdminNotification.create({
+      type: 'CHAIN_LINKED_RECOMMENDATION',
+      priority: 'medium',
+      title: 'ترقية مرشح موصى به إلى حساب رئيسي مكتمل',
+      message: `قام المرشح الموصى به (${fullName.trim()} - ${phoneCheck.local}) باستكمال تسجيله كمرشح رئيسي في المنصة. حسابه مرتبط بسلسلة الترشيح السابقة [${existingCandidate.recommendationRequestNumber || 'طلب ترشيح'}].`,
+      data: {
+        candidateId: existingCandidate._id,
+        phone: phoneCheck.normalized,
+        name: fullName.trim()
+      }
+    }).catch(() => {});
+
+    const token = generateToken(user);
+    return {
+      token,
+      user: {
+        id: user._id,
+        role: user.role,
+        phone: user.phoneNormalized,
+        email: user.email
+      },
+      candidate: existingCandidate
     };
   }
 
@@ -148,12 +217,13 @@ async function registerCandidate(data, req) {
     else myReferralCode = generateReferralCode();
   }
 
-  // Format skills array
-  let skillsArray = [];
-  if (Array.isArray(skills)) {
-    skillsArray = skills;
-  } else if (typeof skills === 'string') {
-    skillsArray = skills.split(',').map((s) => s.trim()).filter(Boolean);
+  // Format skills array if not already parsed
+  if (!skillsArray || skillsArray.length === 0) {
+    if (Array.isArray(skills)) {
+      skillsArray = skills;
+    } else if (typeof skills === 'string') {
+      skillsArray = skills.split(',').map((s) => s.trim()).filter(Boolean);
+    }
   }
 
   // Create Candidate

@@ -129,6 +129,33 @@ const candidateSchema = new mongoose.Schema(
       ref: 'Candidate',
       index: true
     },
+    referredByName: {
+      type: String,
+      default: ''
+    },
+    referredByPhone: {
+      type: String,
+      default: ''
+    },
+    recommendationRequestId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'RecommendationRequest',
+      index: true
+    },
+    recommendationRequestNumber: {
+      type: String,
+      index: true
+    },
+    isRecommendation: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
+    chainParentCandidateId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Candidate',
+      index: true
+    },
     referralCount: {
       type: Number,
       default: 0

@@ -1,8 +1,11 @@
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const { RecommendationRequest, CAREER_LEVELS } = require('../models/RecommendationRequest');
 const Candidate = require('../models/Candidate');
 const User = require('../models/User');
 const Job = require('../models/Job');
+const AdminNotification = require('../models/AdminNotification');
 const { normalizeEgyptianPhone } = require('../utils/phoneNormalizer');
 
 // Name regex: Letters and spaces only, at least one space (two words minimum)
@@ -23,30 +26,49 @@ function validateFullName(name) {
     return { isValid: false, message: 'الاسم يجب أن يتكون من 3 أحرف على الأقل' };
   }
   if (trimmed.length > 70) {
-    return { isValid: false, message: 'الاسم طويل جداً (الحد الأقصى 70 حرف)' };
+    return { isValid: false, message: 'الاسم طويل جداً (الحد الأقصى 70 حرفاً)' };
   }
   if (!NAME_REGEX.test(trimmed)) {
-    return {
-      isValid: false,
-      message: 'الاسم يجب أن يحتوي على حروف فقط وبينهما مسافة واحدة على الأقل (اسم ثنائي أو أكثر)'
-    };
+    return { isValid: false, message: 'يرجى إدخال الاسم ثنائياً على الأقل بحروف فقط بدون أرقام أو رموز' };
   }
   return { isValid: true, sanitized: trimmed };
 }
 
 /**
- * Validates a single phone number string
+ * Helper to determine if two names represent substantially different identities
+ */
+function areNamesSubstantiallyDifferent(name1, name2) {
+  if (!name1 || !name2) return false;
+  const clean = (str) =>
+    String(str)
+      .trim()
+      .toLowerCase()
+      .replace(/[أإآ]/g, 'ا')
+      .replace(/ة/g, 'ه')
+      .replace(/ى/g, 'ي')
+      .replace(/[\u064B-\u065F]/g, '') // tashkeel
+      .replace(/\s+/g, ' ');
+
+  const c1 = clean(name1);
+  const c2 = clean(name2);
+  if (c1 === c2) return false;
+
+  // Compare first two words
+  const words1 = c1.split(' ').slice(0, 2).join(' ');
+  const words2 = c2.split(' ').slice(0, 2).join(' ');
+  return words1 !== words2;
+}
+
+/**
+ * Validates a single Egyptian phone number
  */
 function validatePhoneNumber(phone) {
   if (!phone || typeof phone !== 'string') {
     return { isValid: false, message: 'رقم الهاتف مطلوب' };
   }
-  const digitsOnly = phone.trim().replace(/\D/g, '');
+  const digitsOnly = phone.trim().replace(/\s+/g, '');
   if (!EGYPTIAN_PHONE_REGEX.test(digitsOnly)) {
-    return {
-      isValid: false,
-      message: 'رقم الهاتف يجب أن يتكون من 11 رقماً ويبدأ بـ (010 أو 011 أو 012 أو 015)'
-    };
+    return { isValid: false, message: 'رقم الموبايل غير صحيح. يجب أن يتكون من 11 رقماً ويبدأ بـ 010 أو 011 أو 012 أو 015' };
   }
   const norm = normalizeEgyptianPhone(digitsOnly);
   if (!norm.isValid) {
@@ -56,9 +78,10 @@ function validatePhoneNumber(phone) {
 }
 
 /**
- * Checks whether a single phone number already exists in DB
+ * Checks whether a single phone number already exists in DB with support for
+ * chain linking and different-name phone conflicts.
  */
-async function checkPhoneAvailability(rawPhone) {
+async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName = '') {
   const phoneValidation = validatePhoneNumber(rawPhone);
   if (!phoneValidation.isValid) {
     return {
@@ -69,6 +92,56 @@ async function checkPhoneAvailability(rawPhone) {
   }
 
   const normalized = phoneValidation.normalized;
+
+  // For primary submitters, check for Chain Linking (Case 1) or Name Conflict (Case 2)
+  if (isPrimary) {
+    // Check if phone was previously entered as a recommendation (Case 1: Chain Linking)
+    const prevRecommendation = await RecommendationRequest.findOne({
+      'people': {
+        $elemMatch: {
+          phoneNormalized: normalized,
+          role: 'recommendation'
+        }
+      }
+    }).select('requestNumber people.$').lean();
+
+    if (prevRecommendation) {
+      return {
+        isAvailable: true,
+        isChainLink: true,
+        parentRequestNumber: prevRecommendation.requestNumber,
+        message: `موصى بك سابقاً في الطلب (${prevRecommendation.requestNumber}). سيتم ربط حسابك بشبكة الترشيح واعتماد قائمتك الجديدة دون تكرار.`,
+        phone: phoneValidation.phone,
+        normalized
+      };
+    }
+
+    // Check if phone exists with a different name in RecommendationRequest or Candidate (Case 2: Conflict)
+    const [existingReq, existingCand] = await Promise.all([
+      RecommendationRequest.findOne({ 'people.phoneNormalized': normalized })
+        .sort({ createdAt: -1 })
+        .select('requestNumber people.fullName people.phoneNormalized')
+        .lean(),
+      Candidate.findOne({ phoneNormalized: normalized, isDeleted: false })
+        .select('fullName phoneNormalized')
+        .lean()
+    ]);
+
+    const existingName =
+      existingReq?.people?.find((p) => p.phoneNormalized === normalized)?.fullName ||
+      existingCand?.fullName;
+
+    if (existingName && currentName && areNamesSubstantiallyDifferent(existingName, currentName)) {
+      return {
+        isAvailable: true,
+        isConflict: true,
+        existingName,
+        message: `الرقم مسجل سابقاً باسم (${existingName}). نظراً لاختلاف الاسم، سيتم قبول الطلب وإحالته للمراجعة الإدارية للتحقق (متابعة بعد 24 ساعة).`,
+        phone: phoneValidation.phone,
+        normalized
+      };
+    }
+  }
 
   // 1. Check Candidate collection
   const existingCandidate = await Candidate.findOne({
@@ -101,7 +174,7 @@ async function checkPhoneAvailability(rawPhone) {
 
   // 3. Check existing RecommendationRequests (pending or approved)
   const existingReq = await RecommendationRequest.findOne({
-    status: { $in: ['pending', 'approved'] },
+    status: { $in: ['pending', 'phone_duplicate_pending', 'approved'] },
     'people.phoneNormalized': normalized
   }).select('requestNumber status').lean();
 
@@ -133,12 +206,108 @@ async function generateRequestNumber() {
     if (!exists) return reqNum;
     attempts++;
   }
-  // Fallback with timestamp
   return `REC-${Date.now().toString().slice(-6)}`;
 }
 
 /**
+ * Creates Candidate documents in the database from a RecommendationRequest
+ * so that employers/companies can browse and search them.
+ */
+async function createCandidatesFromRecommendationRequest(request, { includeSubmitter = true } = {}) {
+  const created = [];
+  const primaryPerson = request.people?.[0] || {};
+
+  for (let i = 0; i < request.people.length; i++) {
+    const person = request.people[i];
+    const isSubmitter = i === 0;
+
+    if (isSubmitter && !includeSubmitter) {
+      // Main submitter is rejected and strictly hidden from companies
+      continue;
+    }
+
+    try {
+      // Check if Candidate document already exists
+      let candidate = await Candidate.findOne({
+        phoneNormalized: person.phoneNormalized,
+        isDeleted: false
+      });
+
+      if (candidate) {
+        if (!candidate.recommendationRequestId) {
+          candidate.recommendationRequestId = request._id;
+          candidate.recommendationRequestNumber = request.requestNumber;
+          await candidate.save();
+        }
+        created.push(candidate);
+        continue;
+      }
+
+      // Check or create corresponding User account
+      let user = await User.findOne({ phoneNormalized: person.phoneNormalized });
+      if (!user) {
+        const randomPass = crypto.randomBytes(8).toString('hex') + '@2026';
+        const passwordHash = await bcrypt.hash(randomPass, 10);
+        user = await User.create({
+          phone: person.phone,
+          phoneNormalized: person.phoneNormalized,
+          passwordHash,
+          role: 'candidate',
+          accountStatus: 'active'
+        });
+      }
+
+      // Find job to link category
+      const job = await Job.findById(person.jobId).lean();
+
+      // Calculate approximate experience years
+      let expYears = 2;
+      if (person.careerLevel?.includes('7')) expYears = 8;
+      else if (person.careerLevel?.includes('5')) expYears = 6;
+      else if (person.careerLevel?.includes('3')) expYears = 4;
+
+      const candidateDoc = await Candidate.create({
+        userId: user._id,
+        fullName: person.fullName,
+        phone: person.phone,
+        phoneNormalized: person.phoneNormalized,
+        desiredJobId: person.jobId,
+        categoryId: job?.categoryId || null,
+        governorate: 'Sharqia',
+        area: '10th of Ramadan',
+        yearsOfExperience: expYears,
+        qualification: 'Technical Diploma',
+        skills: [person.jobTitleAr || person.jobTitle || 'Industrial'].filter(Boolean),
+        availabilityStatus: 'Available',
+        accountStatus: 'active',
+        consentGiven: true,
+        consentDate: new Date(),
+        isRecommendation: !isSubmitter,
+        recommendationRequestId: request._id,
+        recommendationRequestNumber: request.requestNumber,
+        referredByName: !isSubmitter ? (request.rejectedSubmitterName || primaryPerson.fullName || '') : '',
+        referredByPhone: !isSubmitter ? (request.rejectedSubmitterPhone || primaryPerson.phone || '') : '',
+        adminNotes: !isSubmitter
+          ? `مرشح موصى به عبر الطلب [${request.requestNumber}]${
+              !includeSubmitter
+                ? ` — مقدم الطلب الأساسي مستبعد (${primaryPerson.fullName} - ${primaryPerson.phone})`
+                : ` — ترشيح بواسطة (${primaryPerson.fullName})`
+            }`
+          : `مقدم طلب الترشيح [${request.requestNumber}]`
+      });
+
+      created.push(candidateDoc);
+    } catch (err) {
+      console.warn(`[Recommendation Candidate Creation] Failed for ${person.fullName}:`, err.message);
+    }
+  }
+
+  return created;
+}
+
+/**
  * Submits a new group recommendation request (exactly 11 people)
+ * Handles Case 1 (Chain Linking) and Case 2 (Phone Conflict / Different Names).
  */
 async function submitRecommendationRequest({ people, legalAccepted, ip = '', userAgent = '' }) {
   if (!legalAccepted) {
@@ -231,54 +400,11 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
     };
   }
 
-  // Check all 11 normalized phones against database
-  const normalizedPhonesList = processedPeople.map(p => p.phoneNormalized);
-
-  const [existingCandidates, existingUsers, existingRecommendations] = await Promise.all([
-    Candidate.find({ phoneNormalized: { $in: normalizedPhonesList }, isDeleted: false }).select('phone phoneNormalized').lean(),
-    User.find({ phoneNormalized: { $in: normalizedPhonesList } }).select('phone phoneNormalized').lean(),
-    RecommendationRequest.find({
-      status: { $in: ['pending', 'approved'] },
-      'people.phoneNormalized': { $in: normalizedPhonesList }
-    }).select('requestNumber people.phoneNormalized people.phone').lean()
-  ]);
-
-  const dbDuplicatePhonesSet = new Set();
-  existingCandidates.forEach(c => dbDuplicatePhonesSet.add(c.phoneNormalized));
-  existingUsers.forEach(u => dbDuplicatePhonesSet.add(u.phoneNormalized));
-  existingRecommendations.forEach(r => {
-    r.people?.forEach(p => {
-      if (normalizedPhonesList.includes(p.phoneNormalized)) {
-        dbDuplicatePhonesSet.add(p.phoneNormalized);
-      }
-    });
-  });
-
-  if (dbDuplicatePhonesSet.size > 0) {
-    const dbDuplicateIndices = [];
-    const dbDuplicatePhoneNumbers = [];
-
-    processedPeople.forEach((p, idx) => {
-      if (dbDuplicatePhonesSet.has(p.phoneNormalized)) {
-        dbDuplicateIndices.push(idx);
-        dbDuplicatePhoneNumbers.push(p.phone);
-      }
-    });
-
-    throw {
-      statusCode: 409,
-      code: 'DUPLICATE_PHONE',
-      message: 'توجد أرقام هواتف مسجلة مسبقاً في قاعدة البيانات. يُرجى استبدال الأرقام المحددة.',
-      duplicateIndices: dbDuplicateIndices,
-      duplicatePhones: dbDuplicatePhoneNumbers
-    };
-  }
-
   // Verify all jobIds exist and pull their titles
-  const jobIds = processedPeople.map(p => p.jobId);
+  const jobIds = processedPeople.map((p) => p.jobId);
   const foundJobs = await Job.find({ _id: { $in: jobIds } }).lean();
   const jobMap = new Map();
-  foundJobs.forEach(j => jobMap.set(j._id.toString(), j));
+  foundJobs.forEach((j) => jobMap.set(j._id.toString(), j));
 
   for (const p of processedPeople) {
     const job = jobMap.get(p.jobId.toString());
@@ -293,26 +419,209 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
     p.jobTitleAr = job.nameAr || job.name || '';
   }
 
+  const primarySubmitter = processedPeople[0];
+  const recommendations = processedPeople.slice(1);
+
   // Generate unique request number
   const requestNumber = await generateRequestNumber();
+
+  // =========================================================================
+  // CASE 1: Chain Linking Check
+  // Has this submitter previously appeared as a recommendation under another submitter?
+  // =========================================================================
+  const parentChainReq = await RecommendationRequest.findOne({
+    'people': {
+      $elemMatch: {
+        phoneNormalized: primarySubmitter.phoneNormalized,
+        role: 'recommendation'
+      }
+    }
+  }).sort({ createdAt: -1 });
+
+  let isChainLinked = false;
+  let chainParentRequestNumber = null;
+  let chainParentSubmitterName = null;
+  let chainParentSubmitterPhone = null;
+
+  if (parentChainReq) {
+    isChainLinked = true;
+    chainParentRequestNumber = parentChainReq.requestNumber;
+    chainParentSubmitterName = parentChainReq.people[0]?.fullName || 'مقدم الطلب السابق';
+    chainParentSubmitterPhone = parentChainReq.people[0]?.phone || '';
+
+    // Register child request in parent request record
+    if (!parentChainReq.chainChildrenRequestNumbers?.includes(requestNumber)) {
+      parentChainReq.chainChildrenRequestNumbers = [
+        ...(parentChainReq.chainChildrenRequestNumbers || []),
+        requestNumber
+      ];
+      await parentChainReq.save().catch(() => {});
+    }
+  }
+
+  // =========================================================================
+  // CASE 2: Phone Conflict Check (2 different names with the same phone)
+  // =========================================================================
+  let hasPhoneConflict = false;
+  let phoneConflictStatus = 'none';
+  let phoneConflictDetails = {};
+
+  const [existingSamePhoneReq, existingSamePhoneCand] = await Promise.all([
+    RecommendationRequest.findOne({
+      'people.phoneNormalized': primarySubmitter.phoneNormalized
+    }).sort({ createdAt: -1 }),
+    Candidate.findOne({
+      phoneNormalized: primarySubmitter.phoneNormalized,
+      isDeleted: false
+    })
+  ]);
+
+  const priorName =
+    existingSamePhoneReq?.people?.find((p) => p.phoneNormalized === primarySubmitter.phoneNormalized)?.fullName ||
+    existingSamePhoneCand?.fullName;
+
+  if (priorName && areNamesSubstantiallyDifferent(priorName, primarySubmitter.fullName)) {
+    // Different names with the same phone number -> CASE 2!
+    hasPhoneConflict = true;
+    phoneConflictStatus = 'pending_investigation';
+    phoneConflictDetails = {
+      conflictingPhone: primarySubmitter.phone,
+      firstRequestNumber: existingSamePhoneReq?.requestNumber || 'CANDIDATE_PROFILE',
+      firstSubmitterName: priorName,
+      secondRequestNumber: requestNumber,
+      secondSubmitterName: primarySubmitter.fullName
+    };
+  }
+
+  // Check recommendations (people 1..10) against existing DB
+  const recPhonesList = recommendations.map((r) => r.phoneNormalized);
+  const [existingRecCandidates, existingRecUsers, existingRecRequests] = await Promise.all([
+    Candidate.find({ phoneNormalized: { $in: recPhonesList }, isDeleted: false }).select('phoneNormalized').lean(),
+    User.find({ phoneNormalized: { $in: recPhonesList } }).select('phoneNormalized').lean(),
+    RecommendationRequest.find({
+      status: { $in: ['pending', 'approved'] },
+      'people.phoneNormalized': { $in: recPhonesList }
+    }).select('requestNumber people.phoneNormalized').lean()
+  ]);
+
+  const existingRecPhonesSet = new Set();
+  existingRecCandidates.forEach((c) => existingRecPhonesSet.add(c.phoneNormalized));
+  existingRecUsers.forEach((u) => existingRecPhonesSet.add(u.phoneNormalized));
+  existingRecRequests.forEach((r) => {
+    r.people?.forEach((p) => {
+      if (recPhonesList.includes(p.phoneNormalized)) {
+        existingRecPhonesSet.add(p.phoneNormalized);
+      }
+    });
+  });
+
+  // If submitter has identical name duplicate (not a conflict, not a chain link), block standard duplicate
+  if (!isChainLinked && !hasPhoneConflict) {
+    const isSubmitterDuplicate =
+      (existingSamePhoneReq && !areNamesSubstantiallyDifferent(priorName, primarySubmitter.fullName)) ||
+      (existingSamePhoneCand && !areNamesSubstantiallyDifferent(priorName, primarySubmitter.fullName));
+
+    if (isSubmitterDuplicate) {
+      throw {
+        statusCode: 409,
+        code: 'DUPLICATE_PHONE',
+        message: 'رقم الهاتف الأساسي مسجل بالفعل بنفس الاسم مسبقاً في قاعدة البيانات.',
+        duplicateIndices: [0],
+        duplicatePhones: [primarySubmitter.phone]
+      };
+    }
+  }
+
+  // Determine initial status:
+  // If phone conflict detected -> 'phone_duplicate_pending' (follow up after 24 hours)
+  // Otherwise -> 'pending'
+  const initialStatus = hasPhoneConflict ? 'phone_duplicate_pending' : 'pending';
 
   // Create request document
   const request = await RecommendationRequest.create({
     requestNumber,
-    status: 'pending',
+    status: initialStatus,
     legalAccepted: true,
     submitterIp: ip,
     submitterUserAgent: userAgent,
+    isChainLinked,
+    chainParentRequestNumber,
+    chainParentSubmitterName,
+    chainParentSubmitterPhone,
+    hasPhoneConflict,
+    phoneConflictStatus,
+    phoneConflictDetails,
     people: processedPeople.map(({ index, ...rest }) => rest)
   });
+
+  // Dispatch Super Admin Notifications
+  if (hasPhoneConflict) {
+    // Notify admin about Case 2
+    await AdminNotification.create({
+      type: 'PHONE_CONFLICT_DIFFERENT_NAMES',
+      priority: 'high',
+      title: 'تضارب هاتف: تسجيل نفس الرقم باسمين مختلفين',
+      message: `تم تسجيل رقم الهاتف (${primarySubmitter.phone}) باسم جديد "${primarySubmitter.fullName}" في الطلب [${requestNumber}]، بينما مسجل سابقاً باسم "${priorName}". الطلب قيد التدقيق الإداري (متابعة 24 ساعة).`,
+      requestId: request._id,
+      requestNumber,
+      data: {
+        conflictingPhone: primarySubmitter.phone,
+        firstListing: {
+          requestNumber: existingSamePhoneReq?.requestNumber || 'CANDIDATE_PROFILE',
+          submitterName: priorName,
+          submitterPhone: primarySubmitter.phone,
+          status: existingSamePhoneReq?.status || 'Active'
+        },
+        secondListing: {
+          requestNumber,
+          submitterName: primarySubmitter.fullName,
+          submitterPhone: primarySubmitter.phone,
+          submittedAt: new Date(),
+          recommendationsCount: recommendations.length,
+          people: recommendations.map((r) => ({
+            fullName: r.fullName,
+            phone: r.phone,
+            jobTitle: r.jobTitleAr || r.jobTitle,
+            careerLevel: r.careerLevel
+          }))
+        }
+      }
+    }).catch((err) => console.error('[Notification Dispatch Error]', err.message));
+  } else if (isChainLinked) {
+    // Notify admin about Case 1
+    await AdminNotification.create({
+      type: 'CHAIN_LINKED_RECOMMENDATION',
+      priority: 'medium',
+      title: 'ارتباط شبكي: مرشح موصى به سابقاً سجل كمرشح رئيسي',
+      message: `قام المرشح "${primarySubmitter.fullName}" الموصى به سابقاً في الطلب [${chainParentRequestNumber}] بواسطة "${chainParentSubmitterName}"، بالتسجيل كمرشح رئيسي برقم [${requestNumber}] وأضاف 10 ترشيحات جديدة تحت حسابه.`,
+      requestId: request._id,
+      requestNumber,
+      data: {
+        chain: {
+          parentRequestNumber: chainParentRequestNumber,
+          parentSubmitterName: chainParentSubmitterName,
+          parentSubmitterPhone: chainParentSubmitterPhone,
+          newRequestNumber: requestNumber,
+          newSubmitterName: primarySubmitter.fullName,
+          newSubmitterPhone: primarySubmitter.phone,
+          recommendationsCount: recommendations.length
+        }
+      }
+    }).catch((err) => console.error('[Notification Dispatch Error]', err.message));
+  }
 
   return {
     success: true,
     requestNumber: request.requestNumber,
     status: request.status,
+    isPendingConflict: hasPhoneConflict,
+    isChainLinked,
     totalPeople: request.people.length,
-    submitterName: request.people[0]?.fullName,
-    createdAt: request.createdAt
+    submitterName: primarySubmitter.fullName,
+    createdAt: request.createdAt,
+    message: hasPhoneConflict
+      ? 'تم تسجيل طلبك برقم مرجعي. نظراً لتطابق رقم الهاتف مع طلب سابق باسم مختلف، الطلب قيد المراجعة الإدارية للتحقق. يُرجى المتابعة بعد 24 ساعة برقم الطلب.'
+      : 'تم تقديم طلب الترشيحات بنجاح، وهو الآن قيد المراجعة والتدقيق الإداري.'
   };
 }
 
@@ -325,7 +634,6 @@ async function trackRequestStatus(requestNumber, primaryPhone = '') {
   }
 
   const cleanReqNum = requestNumber.trim().toUpperCase();
-
   const query = { requestNumber: cleanReqNum };
   const request = await RecommendationRequest.findOne(query).lean();
 
@@ -352,7 +660,7 @@ async function trackRequestStatus(requestNumber, primaryPhone = '') {
   }
 
   // Mask phone numbers for public tracking response (e.g. 010****5678)
-  const maskedPeople = request.people.map(p => {
+  const maskedPeople = request.people.map((p) => {
     const raw = p.phone || '';
     const masked = raw.length === 11 ? `${raw.slice(0, 3)}****${raw.slice(7)}` : raw;
     return {
@@ -368,10 +676,17 @@ async function trackRequestStatus(requestNumber, primaryPhone = '') {
   return {
     requestNumber: request.requestNumber,
     status: request.status,
+    isPendingConflict: request.status === 'phone_duplicate_pending',
+    conflictFollowUpMessage:
+      request.status === 'phone_duplicate_pending'
+        ? 'الطلب قيد المراجعة والتدقيق الإداري للتحقق من تطابق رقم الهاتف. يرجى المتابعة بعد مرور 24 ساعة برقم الطلب.'
+        : '',
     submitterName: submitter.fullName,
     createdAt: request.createdAt,
     reviewedAt: request.reviewedAt,
     adminNotes: request.adminNotes || '',
+    isChainLinked: request.isChainLinked || false,
+    chainParentRequestNumber: request.chainParentRequestNumber || null,
     people: maskedPeople
   };
 }
@@ -408,8 +723,16 @@ async function adminListRequests({ page = 1, limit = 15, status = '', search = '
     ])
   ]);
 
-  const statusCounts = { pending: 0, approved: 0, rejected: 0, total: 0 };
-  counts.forEach(c => {
+  const statusCounts = {
+    pending: 0,
+    phone_duplicate_pending: 0,
+    approved: 0,
+    partially_approved: 0,
+    rejected: 0,
+    total: 0
+  };
+
+  counts.forEach((c) => {
     if (statusCounts[c._id] !== undefined) {
       statusCounts[c._id] = c.count;
     }
@@ -440,10 +763,103 @@ async function adminGetRequestById(id) {
 }
 
 /**
+ * Admin: Resolves a phone conflict through one of the 3 specified options:
+ * 1. approve_both: Approve both listings with the same phone number.
+ * 2. reject_main_keep_recommendations: Reject main number and add recommendations so companies can see them.
+ * 3. reject_whole_listing: Reject the whole listing.
+ */
+async function resolvePhoneConflict(requestId, { action, notes = '' }, adminUserId) {
+  const request = await RecommendationRequest.findById(requestId);
+  if (!request) {
+    throw { statusCode: 404, message: 'طلب الترشيح غير موجود', code: 'NOT_FOUND' };
+  }
+
+  const primaryPerson = request.people[0];
+
+  if (action === 'approve_both') {
+    request.status = 'approved';
+    request.phoneConflictStatus = 'approved_both';
+    request.phoneConflictDetails = {
+      ...request.phoneConflictDetails,
+      resolvedAt: new Date(),
+      resolutionAction: 'approved_both',
+      resolutionNotes: notes
+    };
+    request.adminNotes = notes || 'تم اعتماد وتأكيد الطلبين معاً برقم الهاتف المشترك.';
+    request.reviewedBy = adminUserId;
+    request.reviewedAt = new Date();
+    await request.save();
+
+    // Create Candidate documents for all 11 persons (submitter + recommendations)
+    await createCandidatesFromRecommendationRequest(request, { includeSubmitter: true });
+
+  } else if (action === 'reject_main_keep_recommendations') {
+    request.status = 'partially_approved';
+    request.phoneConflictStatus = 'rejected_main_kept_recommendations';
+    request.recommendationsOnlyApproved = true;
+    request.rejectedSubmitterName = primaryPerson.fullName;
+    request.rejectedSubmitterPhone = primaryPerson.phone;
+    request.phoneConflictDetails = {
+      ...request.phoneConflictDetails,
+      resolvedAt: new Date(),
+      resolutionAction: 'rejected_main_kept_recommendations',
+      resolutionNotes: notes
+    };
+    request.adminNotes =
+      notes ||
+      `تم استبعاد رقم الهاتف الأساسي (${primaryPerson.phone}) واعتماد الـ 10 ترشيحات المرفقة في قاعدة البيانات للشركات.`;
+    request.reviewedBy = adminUserId;
+    request.reviewedAt = new Date();
+    await request.save();
+
+    // Create Candidate documents for recommendations 1..10 only (submitter excluded)
+    await createCandidatesFromRecommendationRequest(request, { includeSubmitter: false });
+
+  } else if (action === 'reject_whole_listing') {
+    request.status = 'rejected';
+    request.phoneConflictStatus = 'rejected_whole';
+    request.phoneConflictDetails = {
+      ...request.phoneConflictDetails,
+      resolvedAt: new Date(),
+      resolutionAction: 'rejected_whole',
+      resolutionNotes: notes
+    };
+    request.adminNotes = notes || 'تم رفض وإلغاء الطلب بالكامل نظراً لتضارب بيانات الهاتف.';
+    request.reviewedBy = adminUserId;
+    request.reviewedAt = new Date();
+    await request.save();
+  } else {
+    throw { statusCode: 400, message: 'إجراء غير صالح', code: 'INVALID_ACTION' };
+  }
+
+  // Update corresponding AdminNotification if present
+  await AdminNotification.updateMany(
+    { requestId: request._id },
+    {
+      status: 'read',
+      'data.resolution': {
+        action,
+        resolvedAt: new Date(),
+        resolvedBy: adminUserId,
+        notes
+      }
+    }
+  );
+
+  return {
+    success: true,
+    requestNumber: request.requestNumber,
+    status: request.status,
+    phoneConflictStatus: request.phoneConflictStatus,
+    actionTaken: action
+  };
+}
+
+/**
  * Admin: Update request status (approve or reject)
  */
 async function adminUpdateRequestStatus(id, { status, adminNotes = '' }, adminUserId) {
-  if (!['approved', 'rejected', 'pending'].includes(status)) {
+  if (!['approved', 'rejected', 'pending', 'partially_approved'].includes(status)) {
     throw { statusCode: 400, message: 'حالة غير صالحة', code: 'INVALID_STATUS' };
   }
 
@@ -458,6 +874,11 @@ async function adminUpdateRequestStatus(id, { status, adminNotes = '' }, adminUs
   request.reviewedAt = new Date();
 
   await request.save();
+
+  // If approved, create candidates so employers can discover them
+  if (status === 'approved') {
+    await createCandidatesFromRecommendationRequest(request, { includeSubmitter: true });
+  }
 
   return {
     success: true,
@@ -476,5 +897,7 @@ module.exports = {
   trackRequestStatus,
   adminListRequests,
   adminGetRequestById,
-  adminUpdateRequestStatus
+  adminUpdateRequestStatus,
+  resolvePhoneConflict,
+  createCandidatesFromRecommendationRequest
 };

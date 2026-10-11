@@ -7,12 +7,12 @@ const { successResponse, errorResponse } = require('../utils/response');
  */
 async function checkPhone(req, res, next) {
   try {
-    const { phone } = req.body;
+    const { phone, isPrimary, fullName } = req.body;
     if (!phone) {
       return errorResponse(res, 'رقم الهاتف مطلوب للتحقق منه', 400, 'PHONE_REQUIRED');
     }
 
-    const result = await recommendationService.checkPhoneAvailability(phone);
+    const result = await recommendationService.checkPhoneAvailability(phone, Boolean(isPrimary), fullName || '');
     return successResponse(res, result);
   } catch (err) {
     next(err);
@@ -125,11 +125,34 @@ async function adminUpdateStatus(req, res, next) {
   }
 }
 
+/**
+ * POST /api/recommendations/admin/:id/resolve-conflict
+ * Admin: Resolve duplicate phone conflict (options 1, 2, or 3)
+ */
+async function resolveConflict(req, res, next) {
+  try {
+    const { id } = req.params;
+    const { action, notes } = req.body;
+    const adminUserId = req.user?._id;
+
+    const result = await recommendationService.resolvePhoneConflict(
+      id,
+      { action, notes },
+      adminUserId
+    );
+
+    return successResponse(res, result, 'تم تنفيذ تسوية تضارب الهاتف وتحديث السجلات بنجاح');
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   checkPhone,
   submitRecommendation,
   trackStatus,
   adminList,
   adminGet,
-  adminUpdateStatus
+  adminUpdateStatus,
+  resolveConflict
 };
