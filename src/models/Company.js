@@ -65,6 +65,27 @@ const companySchema = new mongoose.Schema(
       trim: true,
       default: ''
     },
+    accountType: {
+      type: String,
+      enum: ['company', 'individual_hr'],
+      default: 'company',
+      index: true
+    },
+    verificationMethod: {
+      type: String,
+      enum: ['manual', 'verified_by_company'],
+      default: 'manual',
+      index: true
+    },
+    verifiedByCompanyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      default: null,
+      index: true
+    },
+    verifiedAt: {
+      type: Date
+    },
     verificationStatus: {
       type: String,
       enum: ['Pending', 'Approved', 'Rejected', 'Suspended', 'Blocked'],
@@ -82,6 +103,20 @@ const companySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
+    accountStatus: {
+      type: String,
+      enum: ['active', 'on_hold', 'suspended', 'banned', 'removed'],
+      default: 'active',
+      index: true
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false
+    },
+    createdByAdmin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
     subscriptionStatus: {
       type: String,
       enum: ['active', 'inactive', 'expired'],
@@ -90,8 +125,9 @@ const companySchema = new mongoose.Schema(
     },
     subscriptionPlan: {
       type: String,
-      enum: ['Free', 'Basic', 'Custom'],
-      default: 'Basic'
+      enum: ['Basic', 'Gold', 'Platinum', 'Free', 'Custom'],
+      default: 'Basic',
+      index: true
     },
     subscriptionStartDate: {
       type: Date,
@@ -100,6 +136,10 @@ const companySchema = new mongoose.Schema(
     subscriptionEndDate: {
       type: Date,
       default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+    },
+    subscriptionPriceEgp: {
+      type: Number,
+      default: 0
     },
     monthlyPriceEgp: {
       type: Number,

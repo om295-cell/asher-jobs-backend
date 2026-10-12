@@ -12,6 +12,11 @@ const activityLogSchema = new mongoose.Schema(
       enum: ['admin', 'company', 'candidate', 'system', 'anonymous'],
       default: 'system'
     },
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Company',
+      index: true
+    },
     action: {
       type: String,
       required: true,
@@ -19,7 +24,7 @@ const activityLogSchema = new mongoose.Schema(
     },
     entityType: {
       type: String,
-      enum: ['Candidate', 'Company', 'Job', 'JobCategory', 'RecruitmentRequest', 'Report', 'Subscription', 'User', 'System'],
+      enum: ['Candidate', 'Company', 'Job', 'JobCategory', 'RecruitmentRequest', 'Report', 'Subscription', 'User', 'System', 'Cart'],
       required: true
     },
     entityId: {
@@ -45,5 +50,7 @@ const activityLogSchema = new mongoose.Schema(
 
 activityLogSchema.index({ createdAt: -1 });
 activityLogSchema.index({ action: 1, createdAt: -1 });
+activityLogSchema.index({ companyId: 1, createdAt: -1 });
+activityLogSchema.index({ companyId: 1, action: 1, createdAt: -1 });
 
 module.exports = mongoose.model('ActivityLog', activityLogSchema);

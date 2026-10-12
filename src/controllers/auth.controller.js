@@ -75,11 +75,28 @@ async function updatePassword(req, res, next) {
   }
 }
 
+async function changeInitialPassword(req, res, next) {
+  try {
+    const employerAccountService = require('../services/employerAccount.service');
+    const { currentPassword, newPassword } = req.body;
+    const result = await employerAccountService.changeInitialPassword(
+      req.user._id,
+      currentPassword,
+      newPassword,
+      req
+    );
+    return successResponse(res, result, 'تم تغيير كلمة المرور بنجاح.');
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   registerCandidate,
   registerCompany,
   login,
   logout,
   getMe,
-  updatePassword
+  updatePassword,
+  changeInitialPassword
 };

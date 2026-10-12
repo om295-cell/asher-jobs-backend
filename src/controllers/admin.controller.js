@@ -1,9 +1,11 @@
 const adminService = require('../services/admin.service');
 const reportService = require('../services/report.service');
 const titleExtractionService = require('../services/titleExtraction.service');
+const employerAccountService = require('../services/employerAccount.service');
 const JobSuggestion = require('../models/JobSuggestion');
+const Subscription = require('../models/Subscription');
 const { getActivityLogs } = require('../services/activity.service');
-const { successResponse } = require('../utils/response');
+const { successResponse, errorResponse } = require('../utils/response');
 
 async function getDashboard(req, res, next) {
   try {
@@ -446,6 +448,135 @@ async function reviewJobSuggestion(req, res, next) {
   }
 }
 
+// Employer Accounts Management
+async function createEmployerAccount(req, res, next) {
+  try {
+    const result = await employerAccountService.createEmployerAccount(req.body, req.user, req);
+    return successResponse(res, result, 'تم إنشاء حساب صاحب العمل بنجاح.', 201);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function listEmployerAccounts(req, res, next) {
+  try {
+    const result = await employerAccountService.listEmployerAccounts(req.query);
+    return successResponse(res, result.accounts, 'قائمة حسابات أصحاب العمل', 200, result.pagination);
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getEligibleVerifyingCompanies(req, res, next) {
+  try {
+    const result = await employerAccountService.getEligibleVerifyingCompanies();
+    return successResponse(res, result, 'الشركات المؤهلة للتوثيق');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function resetEmployerPassword(req, res, next) {
+  try {
+    const result = await employerAccountService.resetPasswordByAdmin(req.params.id, req.user, req);
+    return successResponse(res, result, 'تم إعادة تعيين كلمة المرور إلى Temp@1234 بنجاح.');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateEmployerStatus(req, res, next) {
+  try {
+    const { status, reason } = req.body;
+    const result = await employerAccountService.updateAccountStatus(req.params.id, status, reason, req.user, req);
+    return successResponse(res, result, 'تم تحديث حالة الحساب بنجاح.');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateEmployerSubscription(req, res, next) {
+  try {
+    const result = await employerAccountService.updateSubscriptionPlan(req.params.id, req.body, req.user, req);
+    return successResponse(res, result, 'تم تحديث خطة اشتراك الحساب بنجاح.');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getEmployerAccountAnalytics(req, res, next) {
+  try {
+    const result = await employerAccountService.getAccountAnalytics(req.params.id);
+    return successResponse(res, result, 'تحليلات الحساب');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getEmployerActivityRankings(req, res, next) {
+  try {
+    const result = await employerAccountService.getActivityRankings(req.query);
+    return successResponse(res, result, 'ترتيب نشاط الحسابات');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getBulkEmployerAnalytics(req, res, next) {
+  try {
+    const result = await employerAccountService.getBulkEmployerAnalytics();
+    return successResponse(res, result, 'إحصائيات المنصة الشاملة');
+  } catch (err) {
+    next(err);
+  }
+}
+
+// Subscription Plans Management
+async function listSubscriptionPlans(req, res, next) {
+  try {
+    const plans = await Subscription.find().sort({ priceEgp: 1 });
+    return successResponse(res, plans, 'خطط الاشتراك');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateSubscriptionPlan(req, res, next) {
+  try {
+    const { id } = req.params;
+    const {
+      priceEgp,
+      dailySearchLimit,
+      dailyDownloadLimitPerTitle,
+      maxCandidatesPerTitle,
+      cartEnabled,
+      platinumBrowseEnabled,
+      displayNameAr
+    } = req.body;
+
+    const plan = await Subscription.findById(id);
+    if (!plan) {
+      return errorResponse(res, 'خطة الاشتراك غير موجودة', 404, 'PLAN_NOT_FOUND');
+    }
+
+    if (priceEgp !== undefined) {
+      plan.priceEgp = Number(priceEgp);
+      plan.priceMonthlyEgp = Number(priceEgp);
+    }
+    if (dailySearchLimit !== undefined) plan.dailySearchLimit = Number(dailySearchLimit);
+    if (dailyDownloadLimitPerTitle !== undefined) plan.dailyDownloadLimitPerTitle = Number(dailyDownloadLimitPerTitle);
+    if (maxCandidatesPerTitle !== undefined) plan.maxCandidatesPerTitle = Number(maxCandidatesPerTitle);
+    if (cartEnabled !== undefined) plan.cartEnabled = Boolean(cartEnabled);
+    if (platinumBrowseEnabled !== undefined) plan.platinumBrowseEnabled = Boolean(platinumBrowseEnabled);
+    if (displayNameAr) plan.displayNameAr = displayNameAr;
+
+    await plan.save();
+    return successResponse(res, plan, 'تم تحديث خطة الاشتراك وأسعارها بنجاح.');
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getDashboard,
   listCandidates,
@@ -479,6 +610,18 @@ module.exports = {
   confirmSingleJobTitle,
   batchConfirmJobTitles,
   listJobSuggestions,
-  reviewJobSuggestion
+  reviewJobSuggestion,
+  // Employer Accounts & Subscriptions
+  createEmployerAccount,
+  listEmployerAccounts,
+  getEligibleVerifyingCompanies,
+  resetEmployerPassword,
+  updateEmployerStatus,
+  updateEmployerSubscription,
+  getEmployerAccountAnalytics,
+  getEmployerActivityRankings,
+  getBulkEmployerAnalytics,
+  listSubscriptionPlans,
+  updateSubscriptionPlan
 };
 

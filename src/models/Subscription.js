@@ -20,6 +20,34 @@ const subscriptionSchema = new mongoose.Schema(
       required: true,
       default: 50
     },
+    priceEgp: {
+      type: Number,
+      default: 50
+    },
+    billingCycleDays: {
+      type: Number,
+      default: 30
+    },
+    dailySearchLimit: {
+      type: Number,
+      default: 15
+    },
+    dailyDownloadLimitPerTitle: {
+      type: Number,
+      default: 3
+    },
+    maxCandidatesPerTitle: {
+      type: Number,
+      default: 10
+    },
+    cartEnabled: {
+      type: Boolean,
+      default: false
+    },
+    platinumBrowseEnabled: {
+      type: Boolean,
+      default: false
+    },
     searchLimitMonthly: {
       type: Number,
       default: 100

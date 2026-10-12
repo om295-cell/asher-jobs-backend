@@ -4,9 +4,24 @@ const companyController = require('../controllers/company.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
 
-router.get('/me', authenticate, authorize('company'), companyController.getMyCompany);
-router.put('/me', authenticate, authorize('company'), companyController.updateMyCompany);
-router.get('/me/dashboard', authenticate, authorize('company'), companyController.getDashboardStats);
-router.post('/job-suggestions', authenticate, authorize('company'), companyController.suggestJob);
+const { requireApprovedCompany } = require('../middleware/companyApproval.middleware');
+const { requirePasswordChanged } = require('../middleware/mustChangePassword.middleware');
+
+router.use(authenticate, authorize('company'), requirePasswordChanged);
+
+router.get('/me', companyController.getMyCompany);
+router.put('/me', companyController.updateMyCompany);
+router.get('/me/dashboard', companyController.getDashboardStats);
+router.post('/job-suggestions', companyController.suggestJob);
+
+// Entitlements & Quotas
+router.get('/entitlements', requireApprovedCompany, companyController.getEntitlements);
+
+// Multi-title Candidate Cart (Gold & Platinum)
+router.get('/cart', requireApprovedCompany, companyController.getCart);
+router.post('/cart', requireApprovedCompany, companyController.addOrUpdateCart);
+router.delete('/cart/:itemId', requireApprovedCompany, companyController.removeCartItem);
+router.delete('/cart', requireApprovedCompany, companyController.clearCart);
+router.post('/cart/export', requireApprovedCompany, companyController.exportCart);
 
 module.exports = router;

@@ -10,5 +10,6 @@ router.post('/login', authLimiter, authController.login);
 router.post('/logout', authController.logout);
 router.get('/me', authenticate, authController.getMe);
 router.put('/password', authenticate, authController.updatePassword);
+router.post('/change-initial-password', authenticate, authController.changeInitialPassword);
 
 module.exports = router;

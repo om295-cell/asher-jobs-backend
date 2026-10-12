@@ -97,8 +97,17 @@ async function getMyReferrals(req, res, next) {
 
 async function searchCandidates(req, res, next) {
   try {
+    const isCompany = !!req.company && req.user?.role !== 'admin';
+    let quotaInfo = null;
+
+    if (isCompany) {
+      const entitlementService = require('../services/entitlement.service');
+      quotaInfo = await entitlementService.checkAndConsumeSearchQuota(req.company._id, req);
+    }
+
     const result = await searchService.searchCandidates(req.query, req.company, req);
-    return successResponse(res, result.items, 'Candidates retrieved successfully', 200, result.pagination);
+    const pagination = { ...result.pagination, quota: quotaInfo };
+    return successResponse(res, result.items, 'Candidates retrieved successfully', 200, pagination);
   } catch (err) {
     next(err);
   }
@@ -140,6 +149,13 @@ async function exportCandidates(req, res, next) {
           );
         }
       }
+
+      // Enforce daily download quota per job title
+      const targetJobId = req.query.jobId || req.query.desiredJobId;
+      if (targetJobId) {
+        const entitlementService = require('../services/entitlement.service');
+        await entitlementService.checkAndConsumeDownloadQuota(req.company._id, targetJobId, 1, req);
+      }
     }
 
     const format = req.query.format || 'csv';
@@ -155,6 +171,64 @@ async function exportCandidates(req, res, next) {
       res.setHeader('Content-Disposition', 'attachment; filename="asher_jobs_candidates.csv"');
       return res.send(csvData);
     }
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Dedicated Platinum Candidate Database Browsing (Unlimited browsing with filters)
+ */
+async function browseCandidatesPlatinum(req, res, next) {
+  try {
+    const entitlementService = require('../services/entitlement.service');
+    const planLimits = await entitlementService.getPlanLimits(req.company?.subscriptionPlan);
+
+    if (!planLimits.platinumBrowseEnabled) {
+      return errorResponse(
+        res,
+        'خاصية تصفح قاعدة بيانات المرشحين متاحة حصرياً لمشتركي الباقة البلاتينية (Platinum).',
+        403,
+        'PLATINUM_REQUIRED'
+      );
+    }
+
+    const result = await searchService.searchCandidates(req.query, req.company, req);
+    return successResponse(res, result.items, 'Platinum candidate browsing results', 200, result.pagination);
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Platinum Single Candidate View (Strictly 1 candidate at a time)
+ */
+async function getPlatinumCandidateDetail(req, res, next) {
+  try {
+    const entitlementService = require('../services/entitlement.service');
+    await entitlementService.recordPlatinumCandidateAction(req.company._id, req.params.id, 'view', req);
+
+    const candidate = await candidateService.getCandidateByIdForCompany(req.params.id, req.company, req);
+    return successResponse(res, candidate, 'Platinum single candidate details retrieved');
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Platinum Single Candidate Download (Strictly 1 candidate at a time)
+ */
+async function downloadPlatinumCandidateExcel(req, res, next) {
+  try {
+    const entitlementService = require('../services/entitlement.service');
+    await entitlementService.recordPlatinumCandidateAction(req.company._id, req.params.id, 'download', req);
+
+    const query = { candidateIds: [req.params.id], limit: 1 };
+    const buffer = await exportService.exportCandidatesXLSX(query, req.company, req);
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="platinum_candidate_${req.params.id}.xlsx"`);
+    return res.send(buffer);
   } catch (err) {
     next(err);
   }
@@ -191,5 +265,8 @@ module.exports = {
   searchCandidates,
   getCandidateById,
   exportCandidates,
-  recordCandidateInteraction
+  recordCandidateInteraction,
+  browseCandidatesPlatinum,
+  getPlatinumCandidateDetail,
+  downloadPlatinumCandidateExcel
 };

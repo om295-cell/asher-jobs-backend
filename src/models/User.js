@@ -42,6 +42,16 @@ const userSchema = new mongoose.Schema(
       enum: ['active', 'pending', 'suspended', 'deactivated'],
       default: 'active'
     },
+    accountType: {
+      type: String,
+      enum: ['company', 'individual_hr', 'candidate'],
+      default: 'candidate'
+    },
+    mustChangePassword: {
+      type: Boolean,
+      default: false,
+      index: true
+    },
     lastLoginAt: {
       type: Date
     }

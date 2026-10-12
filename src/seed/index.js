@@ -31,22 +31,62 @@ async function seedDatabase(force = false) {
     ]);
   }
 
-  // Subscription plan
-  await Subscription.findOneAndUpdate(
-    { planName: 'Basic' },
+  // Seed Subscription Plans: Basic, Gold, Platinum
+  const plansToSeed = [
     {
       planName: 'Basic',
-      displayName: 'Standard Employer Plan',
-      displayNameAr: 'الباقة الأساسية للشركات',
-      priceMonthlyEgp: 50,
-      searchLimitMonthly: 100,
-      exportLimitMonthly: 25,
-      viewLimitMonthly: 250,
+      displayName: 'Basic Plan',
+      displayNameAr: 'الباقة الأساسية',
+      priceMonthlyEgp: 500,
+      priceEgp: 500,
+      billingCycleDays: 30,
+      dailySearchLimit: 15,
+      dailyDownloadLimitPerTitle: 3,
+      maxCandidatesPerTitle: 10,
+      cartEnabled: false,
+      platinumBrowseEnabled: false,
       isActive: true,
-      description: 'Monthly access to Asher Jobs candidate database for factory recruitment'
+      description: '15 searches/day, 3 downloads/title/day, up to 10 candidates per title'
     },
-    { upsert: true }
-  );
+    {
+      planName: 'Gold',
+      displayName: 'Gold Plan',
+      displayNameAr: 'الباقة الذهبية',
+      priceMonthlyEgp: 1000,
+      priceEgp: 1000,
+      billingCycleDays: 30,
+      dailySearchLimit: 20,
+      dailyDownloadLimitPerTitle: 4,
+      maxCandidatesPerTitle: 10,
+      cartEnabled: true,
+      platinumBrowseEnabled: false,
+      isActive: true,
+      description: '20 searches/day, 4 downloads/title/day, Multi-title candidate cart'
+    },
+    {
+      planName: 'Platinum',
+      displayName: 'Platinum Plan',
+      displayNameAr: 'الباقة البلاتينية',
+      priceMonthlyEgp: 2000,
+      priceEgp: 2000,
+      billingCycleDays: 30,
+      dailySearchLimit: 30,
+      dailyDownloadLimitPerTitle: 6,
+      maxCandidatesPerTitle: 10,
+      cartEnabled: true,
+      platinumBrowseEnabled: true,
+      isActive: true,
+      description: '30 searches/day, 6 downloads/title/day, Multi-title cart, Unlimited database browsing (1 candidate at a time)'
+    }
+  ];
+
+  for (const plan of plansToSeed) {
+    await Subscription.findOneAndUpdate(
+      { planName: plan.planName },
+      plan,
+      { upsert: true, new: true }
+    );
+  }
 
   // System setting
   await SystemSetting.findOneAndUpdate(

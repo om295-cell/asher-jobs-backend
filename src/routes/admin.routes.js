@@ -27,6 +27,21 @@ router.patch('/companies/:id/reject', adminController.rejectCompany);
 router.patch('/companies/:id/block', adminController.toggleBlockCompany);
 router.patch('/companies/:id/subscription', adminController.updateCompanySubscription);
 
+// Employer Accounts Management (Type A, B, C1, C2)
+router.get('/employer-accounts', adminController.listEmployerAccounts);
+router.post('/employer-accounts', adminController.createEmployerAccount);
+router.get('/employer-accounts/eligible-verifiers', adminController.getEligibleVerifyingCompanies);
+router.get('/employer-accounts/analytics/rankings', adminController.getEmployerActivityRankings);
+router.get('/employer-accounts/analytics/bulk', adminController.getBulkEmployerAnalytics);
+router.get('/employer-accounts/:id/analytics', adminController.getEmployerAccountAnalytics);
+router.post('/employer-accounts/:id/reset-password', adminController.resetEmployerPassword);
+router.patch('/employer-accounts/:id/status', adminController.updateEmployerStatus);
+router.patch('/employer-accounts/:id/subscription', adminController.updateEmployerSubscription);
+
+// Subscription Plans Management & Pricing in EGP
+router.get('/subscriptions/plans', adminController.listSubscriptionPlans);
+router.put('/subscriptions/plans/:id', adminController.updateSubscriptionPlan);
+
 // Recruitment Requests Management
 router.get('/requests', adminController.listRequests);
 router.patch('/requests/:id/status', adminController.updateRequestStatus);
