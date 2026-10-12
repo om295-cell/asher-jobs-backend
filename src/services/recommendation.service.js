@@ -153,7 +153,7 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
     return {
       isAvailable: false,
       existsIn: 'candidate',
-      message: 'رقم الهاتف مسجل بالفعل في قاعدة بيانات المرشحين',
+      message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
       phone: phoneValidation.phone
     };
   }
@@ -167,7 +167,7 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
     return {
       isAvailable: false,
       existsIn: 'user',
-      message: 'رقم الهاتف مسجل بالفعل بحساب مستخدم',
+      message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
       phone: phoneValidation.phone
     };
   }
@@ -182,7 +182,7 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
     return {
       isAvailable: false,
       existsIn: 'recommendation',
-      message: `رقم الهاتف مسجل مسبقاً في طلب ترشيح (${existingReq.requestNumber})`,
+      message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
       phone: phoneValidation.phone
     };
   }
@@ -596,7 +596,7 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
     Candidate.find({ phoneNormalized: { $in: recPhonesList }, isDeleted: false }).select('phoneNormalized').lean(),
     User.find({ phoneNormalized: { $in: recPhonesList } }).select('phoneNormalized').lean(),
     RecommendationRequest.find({
-      status: { $in: ['pending', 'approved'] },
+      status: { $in: ['pending', 'phone_duplicate_pending', 'approved'] },
       'people.phoneNormalized': { $in: recPhonesList }
     }).select('requestNumber people.phoneNormalized').lean()
   ]);
@@ -612,6 +612,26 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
     });
   });
 
+  // If any recommended person (indices 1..10) has a phone already in DB, block and identify their indices
+  const duplicateRecIndices = [];
+  const duplicateRecPhones = [];
+  processedPeople.forEach((p, idx) => {
+    if (idx > 0 && existingRecPhonesSet.has(p.phoneNormalized)) {
+      duplicateRecIndices.push(idx);
+      duplicateRecPhones.push(p.phone);
+    }
+  });
+
+  if (duplicateRecIndices.length > 0) {
+    throw {
+      statusCode: 409,
+      code: 'DUPLICATE_PHONE',
+      message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
+      duplicateIndices: duplicateRecIndices,
+      duplicatePhones: duplicateRecPhones
+    };
+  }
+
   // If submitter has identical name duplicate (not a conflict, not a chain link), block standard duplicate
   if (!isChainLinked && !hasPhoneConflict) {
     const isSubmitterDuplicate =
@@ -622,7 +642,7 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
       throw {
         statusCode: 409,
         code: 'DUPLICATE_PHONE',
-        message: 'رقم الهاتف الأساسي مسجل بالفعل بنفس الاسم مسبقاً في قاعدة البيانات.',
+        message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
         duplicateIndices: [0],
         duplicatePhones: [primarySubmitter.phone]
       };
