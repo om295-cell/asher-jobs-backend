@@ -110,6 +110,48 @@ async function seedDatabase(force = false) {
     { upsert: true }
   );
 
+  // Seed sample verified company if no companies exist
+  const companyCount = await Company.countDocuments();
+  if (companyCount === 0) {
+    const compUser = await User.findOneAndUpdate(
+      { email: 'company@asherjobs.com' },
+      {
+        email: 'company@asherjobs.com',
+        phone: '01000000002',
+        phoneNormalized: '+201000000002',
+        passwordHash: defaultPasswordHash,
+        role: 'company',
+        accountType: 'company',
+        accountStatus: 'active',
+        mustChangePassword: false
+      },
+      { upsert: true, new: true }
+    );
+
+    await Company.findOneAndUpdate(
+      { userId: compUser._id },
+      {
+        userId: compUser._id,
+        companyName: 'مجموعة العاشر للصناعات المتطورة',
+        contactPerson: 'م. سامح إبراهيم',
+        email: 'company@asherjobs.com',
+        phone: '01000000002',
+        governorate: 'الشرقية',
+        area: 'العاشر من رمضان',
+        accountType: 'company',
+        verificationMethod: 'manual',
+        verificationStatus: 'Approved',
+        accountStatus: 'active',
+        subscriptionPlan: 'Platinum',
+        subscriptionPriceEgp: 2000,
+        monthlyPriceEgp: 2000,
+        mustChangePassword: false
+      },
+      { upsert: true }
+    );
+    console.log('[Seed] Sample verified company created.');
+  }
+
   console.log('[Seed] Base system configuration initialized.');
 }
 
