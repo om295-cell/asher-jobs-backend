@@ -132,6 +132,12 @@ async function registerCandidate(data, req) {
     existingCandidate.fullName = fullName.trim();
     existingCandidate.desiredJobId = job._id;
     existingCandidate.categoryId = job.categoryId;
+    if (careerLevel) existingCandidate.careerLevel = careerLevel;
+    if (secondJobId) existingCandidate.secondJobId = secondJobId;
+    if (secondCareerLevel) existingCandidate.secondCareerLevel = secondCareerLevel;
+    if (thirdJobId) existingCandidate.thirdJobId = thirdJobId;
+    if (thirdCareerLevel) existingCandidate.thirdCareerLevel = thirdCareerLevel;
+    if (desiredJobs && Array.isArray(desiredJobs)) existingCandidate.desiredJobs = desiredJobs;
     existingCandidate.governorate = governorate || 'Sharqia';
     existingCandidate.area = area || '10th of Ramadan';
     existingCandidate.yearsOfExperience = Number(yearsOfExperience) || 0;
@@ -234,6 +240,14 @@ async function registerCandidate(data, req) {
     phoneNormalized: phoneCheck.normalized,
     email: email && email.trim() ? email.trim().toLowerCase() : '',
     desiredJobId: job._id,
+    careerLevel: careerLevel || '',
+    secondJobId: secondJobId || null,
+    secondCareerLevel: secondCareerLevel || '',
+    thirdJobId: thirdJobId || null,
+    thirdCareerLevel: thirdCareerLevel || '',
+    desiredJobs: desiredJobs && Array.isArray(desiredJobs) ? desiredJobs : [
+      { jobId: job._id, jobTitle: job.name, jobTitleAr: job.nameAr, careerLevel: careerLevel || '', priority: 1 }
+    ],
     categoryId: job.categoryId,
     governorate: governorate || 'Sharqia',
     area: area || '10th of Ramadan',

@@ -7,6 +7,34 @@ const CAREER_LEVELS = [
   'صاحب خبره كبيره (أكثر من 7 سنوات)'
 ];
 
+const personTitleSchema = new mongoose.Schema(
+  {
+    jobId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Job',
+      required: true
+    },
+    jobTitle: {
+      type: String,
+      default: ''
+    },
+    jobTitleAr: {
+      type: String,
+      default: ''
+    },
+    careerLevel: {
+      type: String,
+      required: true,
+      enum: CAREER_LEVELS
+    },
+    priority: {
+      type: Number,
+      default: 1
+    }
+  },
+  { _id: false }
+);
+
 const personSchema = new mongoose.Schema(
   {
     isPrimary: {
@@ -33,6 +61,7 @@ const personSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
+    // Primary / 1st title (kept for backward compatibility)
     jobId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Job',
@@ -50,6 +79,11 @@ const personSchema = new mongoose.Schema(
       type: String,
       required: true,
       enum: CAREER_LEVELS
+    },
+    // Up to 3 titles for each person, each with their own career level & priority (1, 2, 3)
+    titles: {
+      type: [personTitleSchema],
+      default: []
     }
   },
   { _id: true }

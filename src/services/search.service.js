@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Candidate = require('../models/Candidate');
 const { getPagination, formatPagination } = require('../utils/pagination');
 const { logActivity } = require('./activity.service');
@@ -22,9 +23,20 @@ function buildCandidateFilters(queryParams) {
     qualification
   } = queryParams;
 
+  let jobFilterOr = null;
   const targetJobId = jobId || desiredJobId;
   if (targetJobId && targetJobId.trim()) {
-    filter.desiredJobId = targetJobId.trim();
+    const tid = targetJobId.trim();
+    if (mongoose.Types.ObjectId.isValid(tid)) {
+      const objId = new mongoose.Types.ObjectId(tid);
+      jobFilterOr = [
+        { desiredJobId: objId },
+        { secondJobId: objId },
+        { thirdJobId: objId }
+      ];
+    } else {
+      filter.desiredJobId = tid;
+    }
   }
 
   if (candidateIds) {
@@ -70,16 +82,27 @@ function buildCandidateFilters(queryParams) {
     }
   }
 
-  // Keyword search (Full name, skills, area)
+  // Keyword search (Full name, skills, area) combined with job matching
   if (keyword && keyword.trim()) {
     const kw = keyword.trim();
     const regex = new RegExp(kw, 'i');
-    filter.$or = [
+    const keywordOr = [
       { fullName: regex },
       { skills: { $in: [regex] } },
       { area: regex },
       { qualification: regex }
     ];
+
+    if (jobFilterOr) {
+      filter.$and = [
+        { $or: jobFilterOr },
+        { $or: keywordOr }
+      ];
+    } else {
+      filter.$or = keywordOr;
+    }
+  } else if (jobFilterOr) {
+    filter.$or = jobFilterOr;
   }
 
   return filter;
@@ -89,17 +112,74 @@ async function searchCandidates(queryParams, company, req) {
   const filter = buildCandidateFilters(queryParams);
   const { page, limit, skip } = getPagination(queryParams, 20);
 
-  const [items, total] = await Promise.all([
-    Candidate.find(filter)
-      .select('fullName phone email desiredJobId categoryId governorate area yearsOfExperience qualification skills availabilityStatus cvUrl createdAt')
-      .populate('desiredJobId', 'name nameAr')
-      .populate('categoryId', 'name nameAr')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    Candidate.countDocuments(filter)
-  ]);
+  const targetJobId = queryParams.jobId || queryParams.desiredJobId;
+  const isTargetJobValid = targetJobId && targetJobId.trim() && mongoose.Types.ObjectId.isValid(targetJobId.trim());
+  const targetJobObjId = isTargetJobValid ? new mongoose.Types.ObjectId(targetJobId.trim()) : null;
+
+  let items;
+  let total;
+
+  if (targetJobObjId) {
+    // Priority of appearing when companies search: 1st job added → priority 1, 2nd job → priority 2, 3rd job → priority 3
+    const [rawItems, count] = await Promise.all([
+      Candidate.aggregate([
+        { $match: filter },
+        {
+          $addFields: {
+            matchPriority: {
+              $cond: [
+                { $eq: ['$desiredJobId', targetJobObjId] },
+                1,
+                {
+                  $cond: [
+                    { $eq: ['$secondJobId', targetJobObjId] },
+                    2,
+                    {
+                      $cond: [
+                        { $eq: ['$thirdJobId', targetJobObjId] },
+                        3,
+                        4
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        { $sort: { matchPriority: 1, createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit }
+      ]),
+      Candidate.countDocuments(filter)
+    ]);
+
+    total = count;
+    items = await Candidate.populate(rawItems, [
+      { path: 'desiredJobId', select: 'name nameAr' },
+      { path: 'secondJobId', select: 'name nameAr' },
+      { path: 'thirdJobId', select: 'name nameAr' },
+      { path: 'categoryId', select: 'name nameAr' },
+      { path: 'desiredJobs.jobId', select: 'name nameAr' }
+    ]);
+  } else {
+    const [rawItems, count] = await Promise.all([
+      Candidate.find(filter)
+        .select('fullName phone email desiredJobId secondJobId thirdJobId careerLevel secondCareerLevel thirdCareerLevel desiredJobs categoryId governorate area yearsOfExperience qualification skills availabilityStatus cvUrl createdAt')
+        .populate('desiredJobId', 'name nameAr')
+        .populate('secondJobId', 'name nameAr')
+        .populate('thirdJobId', 'name nameAr')
+        .populate('categoryId', 'name nameAr')
+        .populate('desiredJobs.jobId', 'name nameAr')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Candidate.countDocuments(filter)
+    ]);
+    items = rawItems;
+    total = count;
+  }
 
   // If performed by a company, increment searchesUsed and log activity
   if (company) {
@@ -119,10 +199,25 @@ async function searchCandidates(queryParams, company, req) {
   // Transform candidates to company DTO
   const sanitizedItems = items.map((c) => ({
     id: c._id,
+    _id: c._id,
     fullName: c.fullName,
     phone: c.phone,
     email: c.email,
     desiredJob: c.desiredJobId,
+    desiredJobId: c.desiredJobId,
+    secondJob: c.secondJobId,
+    secondJobId: c.secondJobId,
+    thirdJob: c.thirdJobId,
+    thirdJobId: c.thirdJobId,
+    careerLevel: c.careerLevel || '',
+    secondCareerLevel: c.secondCareerLevel || '',
+    thirdCareerLevel: c.thirdCareerLevel || '',
+    desiredJobs: c.desiredJobs || [],
+    matchPriority: c.matchPriority || (targetJobObjId ? (
+      String(c.desiredJobId?._id || c.desiredJobId) === String(targetJobObjId) ? 1 :
+      String(c.secondJobId?._id || c.secondJobId) === String(targetJobObjId) ? 2 :
+      String(c.thirdJobId?._id || c.thirdJobId) === String(targetJobObjId) ? 3 : 1
+    ) : null),
     category: c.categoryId,
     governorate: c.governorate,
     area: c.area,

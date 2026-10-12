@@ -233,12 +233,48 @@ async function createCandidatesFromRecommendationRequest(request, { includeSubmi
         isDeleted: false
       });
 
+      const titles = person.titles && person.titles.length > 0
+        ? person.titles
+        : [{
+            jobId: person.jobId,
+            jobTitle: person.jobTitle || '',
+            jobTitleAr: person.jobTitleAr || '',
+            careerLevel: person.careerLevel,
+            priority: 1
+          }];
+
+      const primaryTitle = titles[0];
+      const secondTitle = titles[1] || null;
+      const thirdTitle = titles[2] || null;
+
       if (candidate) {
+        let changed = false;
         if (!candidate.recommendationRequestId) {
           candidate.recommendationRequestId = request._id;
           candidate.recommendationRequestNumber = request.requestNumber;
-          await candidate.save();
+          changed = true;
         }
+        if (!candidate.secondJobId && secondTitle) {
+          candidate.secondJobId = secondTitle.jobId;
+          candidate.secondCareerLevel = secondTitle.careerLevel || '';
+          changed = true;
+        }
+        if (!candidate.thirdJobId && thirdTitle) {
+          candidate.thirdJobId = thirdTitle.jobId;
+          candidate.thirdCareerLevel = thirdTitle.careerLevel || '';
+          changed = true;
+        }
+        if ((!candidate.desiredJobs || candidate.desiredJobs.length === 0) && titles.length > 0) {
+          candidate.desiredJobs = titles.map((t, idx) => ({
+            jobId: t.jobId,
+            jobTitle: t.jobTitle || '',
+            jobTitleAr: t.jobTitleAr || '',
+            careerLevel: t.careerLevel || '',
+            priority: idx + 1
+          }));
+          changed = true;
+        }
+        if (changed) await candidate.save();
         created.push(candidate);
         continue;
       }
@@ -258,26 +294,42 @@ async function createCandidatesFromRecommendationRequest(request, { includeSubmi
       }
 
       // Find job to link category
-      const job = await Job.findById(person.jobId).lean();
+      const job = await Job.findById(primaryTitle.jobId).lean();
 
       // Calculate approximate experience years
       let expYears = 2;
-      if (person.careerLevel?.includes('7')) expYears = 8;
-      else if (person.careerLevel?.includes('5')) expYears = 6;
-      else if (person.careerLevel?.includes('3')) expYears = 4;
+      if (primaryTitle.careerLevel?.includes('7')) expYears = 8;
+      else if (primaryTitle.careerLevel?.includes('5')) expYears = 6;
+      else if (primaryTitle.careerLevel?.includes('3')) expYears = 4;
+
+      const candidateSkills = titles
+        .map((t) => t.jobTitleAr || t.jobTitle)
+        .filter(Boolean);
 
       const candidateDoc = await Candidate.create({
         userId: user._id,
         fullName: person.fullName,
         phone: person.phone,
         phoneNormalized: person.phoneNormalized,
-        desiredJobId: person.jobId,
+        desiredJobId: primaryTitle.jobId,
+        careerLevel: primaryTitle.careerLevel || '',
+        secondJobId: secondTitle ? secondTitle.jobId : null,
+        secondCareerLevel: secondTitle ? secondTitle.careerLevel || '' : '',
+        thirdJobId: thirdTitle ? thirdTitle.jobId : null,
+        thirdCareerLevel: thirdTitle ? thirdTitle.careerLevel || '' : '',
+        desiredJobs: titles.map((t, idx) => ({
+          jobId: t.jobId,
+          jobTitle: t.jobTitle || '',
+          jobTitleAr: t.jobTitleAr || '',
+          careerLevel: t.careerLevel || '',
+          priority: idx + 1
+        })),
         categoryId: job?.categoryId || null,
         governorate: 'Sharqia',
         area: '10th of Ramadan',
         yearsOfExperience: expYears,
         qualification: 'Technical Diploma',
-        skills: [person.jobTitleAr || person.jobTitle || 'Industrial'].filter(Boolean),
+        skills: candidateSkills.length > 0 ? candidateSkills : ['Industrial'],
         availabilityStatus: 'Available',
         accountStatus: 'active',
         consentGiven: true,
@@ -363,14 +415,46 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
       }
     }
 
-    // 3. Validate Career Level
-    if (!person.careerLevel || !CAREER_LEVELS.includes(person.careerLevel)) {
-      personErrors.careerLevel = 'يرجى اختيار مستوى خبرة صحيح من القائمة المتاحة';
+    // 3. Validate Titles and Career Levels (up to 3 per person)
+    const rawTitles = Array.isArray(person.titles) && person.titles.length > 0
+      ? person.titles.slice(0, 3)
+      : [{ jobId: person.jobId, careerLevel: person.careerLevel }];
+
+    const validTitles = [];
+    const seenJobIdsForPerson = new Set();
+    const titleErrors = [];
+
+    for (let tIdx = 0; tIdx < rawTitles.length; tIdx++) {
+      const t = rawTitles[tIdx] || {};
+      const tErr = {};
+
+      if (!t.jobId || !mongoose.Types.ObjectId.isValid(t.jobId)) {
+        tErr.jobId = 'يرجى اختيار مسمى وظيفي معتمد من القائمة';
+      } else if (seenJobIdsForPerson.has(String(t.jobId))) {
+        tErr.jobId = 'تم اختيار هذا المسمى الوظيفي مسبقاً لنفس الشخص';
+      } else {
+        seenJobIdsForPerson.add(String(t.jobId));
+      }
+
+      if (!t.careerLevel || !CAREER_LEVELS.includes(t.careerLevel)) {
+        tErr.careerLevel = 'يرجى اختيار مستوى خبرة صحيح من القائمة المتاحة';
+      }
+
+      if (Object.keys(tErr).length > 0) {
+        titleErrors[tIdx] = tErr;
+      } else {
+        validTitles.push({
+          jobId: t.jobId,
+          careerLevel: t.careerLevel,
+          priority: tIdx + 1
+        });
+      }
     }
 
-    // 4. Validate Job ID
-    if (!person.jobId || !mongoose.Types.ObjectId.isValid(person.jobId)) {
-      personErrors.jobId = 'يرجى اختيار مسمى وظيفي معتمد من القائمة';
+    if (titleErrors.length > 0 || validTitles.length === 0) {
+      personErrors.titles = titleErrors;
+      if (titleErrors[0]?.jobId) personErrors.jobId = titleErrors[0].jobId;
+      if (titleErrors[0]?.careerLevel) personErrors.careerLevel = titleErrors[0].careerLevel;
     }
 
     if (Object.keys(personErrors).length > 0) {
@@ -383,8 +467,9 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
         fullName: nameVal.sanitized,
         phone: phoneVal.phone,
         phoneNormalized: phoneVal.normalized,
-        jobId: person.jobId,
-        careerLevel: person.careerLevel
+        jobId: validTitles[0].jobId,
+        careerLevel: validTitles[0].careerLevel,
+        titles: validTitles
       });
     }
   }
@@ -400,23 +485,35 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
     };
   }
 
-  // Verify all jobIds exist and pull their titles
-  const jobIds = processedPeople.map((p) => p.jobId);
-  const foundJobs = await Job.find({ _id: { $in: jobIds } }).lean();
+  // Verify all jobIds across all titles exist and pull their titles
+  const allJobIds = [];
+  for (const p of processedPeople) {
+    for (const t of p.titles) {
+      allJobIds.push(t.jobId);
+    }
+  }
+  const foundJobs = await Job.find({ _id: { $in: allJobIds } }).lean();
   const jobMap = new Map();
   foundJobs.forEach((j) => jobMap.set(j._id.toString(), j));
 
   for (const p of processedPeople) {
-    const job = jobMap.get(p.jobId.toString());
-    if (!job) {
-      throw {
-        statusCode: 400,
-        code: 'JOB_NOT_FOUND',
-        message: `الوظيفة المحددة للمرشح "${p.fullName}" غير موجودة في النظام.`
-      };
+    for (const t of p.titles) {
+      const job = jobMap.get(t.jobId.toString());
+      if (!job) {
+        throw {
+          statusCode: 400,
+          code: 'JOB_NOT_FOUND',
+          message: `الوظيفة المحددة للمرشح "${p.fullName}" غير موجودة في النظام.`
+        };
+      }
+      t.jobTitle = job.name || '';
+      t.jobTitleAr = job.nameAr || job.name || '';
     }
-    p.jobTitle = job.name || '';
-    p.jobTitleAr = job.nameAr || job.name || '';
+    // Mirror 1st title to root
+    p.jobTitle = p.titles[0].jobTitle;
+    p.jobTitleAr = p.titles[0].jobTitleAr;
+    p.jobId = p.titles[0].jobId;
+    p.careerLevel = p.titles[0].careerLevel;
   }
 
   const primarySubmitter = processedPeople[0];

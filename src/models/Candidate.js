@@ -37,6 +37,58 @@ const candidateSchema = new mongoose.Schema(
       required: true,
       index: true
     },
+    careerLevel: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    secondJobId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Job',
+      default: null,
+      index: true
+    },
+    secondCareerLevel: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    thirdJobId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Job',
+      default: null,
+      index: true
+    },
+    thirdCareerLevel: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    desiredJobs: [
+      {
+        jobId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Job',
+          required: true
+        },
+        jobTitle: {
+          type: String,
+          default: ''
+        },
+        jobTitleAr: {
+          type: String,
+          default: ''
+        },
+        careerLevel: {
+          type: String,
+          default: ''
+        },
+        priority: {
+          type: Number,
+          default: 1
+        }
+      }
+    ],
     categoryId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobCategory',
@@ -182,6 +234,9 @@ const candidateSchema = new mongoose.Schema(
 candidateSchema.index({ isDeleted: 1, createdAt: -1 });
 candidateSchema.index({ isDeleted: 1, accountStatus: 1, availabilityStatus: 1, createdAt: -1 });
 candidateSchema.index({ isDeleted: 1, desiredJobId: 1, availabilityStatus: 1, createdAt: -1 });
+candidateSchema.index({ isDeleted: 1, secondJobId: 1, availabilityStatus: 1, createdAt: -1 });
+candidateSchema.index({ isDeleted: 1, thirdJobId: 1, availabilityStatus: 1, createdAt: -1 });
+candidateSchema.index({ 'desiredJobs.jobId': 1 });
 candidateSchema.index({ isDeleted: 1, categoryId: 1, availabilityStatus: 1, createdAt: -1 });
 candidateSchema.index({ isDeleted: 1, governorate: 1, area: 1 });
 candidateSchema.index({ desiredJobId: 1, availabilityStatus: 1, governorate: 1 });

@@ -27,6 +27,12 @@ async function updateMyCandidateProfile(userId, updateData) {
     fullName,
     email,
     desiredJobId,
+    careerLevel,
+    secondJobId,
+    secondCareerLevel,
+    thirdJobId,
+    thirdCareerLevel,
+    desiredJobs,
     governorate,
     area,
     yearsOfExperience,
@@ -52,6 +58,32 @@ async function updateMyCandidateProfile(userId, updateData) {
     candidate.categoryId = job.categoryId;
   }
 
+  if (careerLevel !== undefined) candidate.careerLevel = careerLevel;
+
+  if (secondJobId !== undefined) {
+    if (secondJobId) {
+      const j2 = await Job.findById(secondJobId);
+      candidate.secondJobId = j2 ? j2._id : null;
+    } else {
+      candidate.secondJobId = null;
+    }
+  }
+  if (secondCareerLevel !== undefined) candidate.secondCareerLevel = secondCareerLevel;
+
+  if (thirdJobId !== undefined) {
+    if (thirdJobId) {
+      const j3 = await Job.findById(thirdJobId);
+      candidate.thirdJobId = j3 ? j3._id : null;
+    } else {
+      candidate.thirdJobId = null;
+    }
+  }
+  if (thirdCareerLevel !== undefined) candidate.thirdCareerLevel = thirdCareerLevel;
+
+  if (desiredJobs && Array.isArray(desiredJobs)) {
+    candidate.desiredJobs = desiredJobs;
+  }
+
   if (governorate) candidate.governorate = governorate;
   if (area) candidate.area = area;
   if (yearsOfExperience !== undefined) candidate.yearsOfExperience = Number(yearsOfExperience) || 0;
@@ -73,6 +105,8 @@ async function updateMyCandidateProfile(userId, updateData) {
 
   return candidate.populate([
     { path: 'desiredJobId', select: 'name nameAr categoryId' },
+    { path: 'secondJobId', select: 'name nameAr' },
+    { path: 'thirdJobId', select: 'name nameAr' },
     { path: 'categoryId', select: 'name nameAr' }
   ]);
 }

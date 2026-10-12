@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const XLSX = require('xlsx');
 const { stringify } = require('csv-stringify/sync');
 const Candidate = require('../models/Candidate');
@@ -14,20 +15,68 @@ async function getExportRecords(queryParams, company = null) {
     ? Math.min(requestedLimit, maxLimit)
     : maxLimit;
 
-  const candidates = await Candidate.find(filter)
-    .select('fullName phone desiredJobId categoryId governorate area yearsOfExperience qualification skills availabilityStatus createdAt')
-    .populate('desiredJobId', 'name nameAr')
-    .populate('categoryId', 'name nameAr')
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .lean();
+  const targetJobId = queryParams.jobId || queryParams.desiredJobId;
+  const isTargetJobValid = targetJobId && targetJobId.trim() && mongoose.Types.ObjectId.isValid(targetJobId.trim());
+  const targetJobObjId = isTargetJobValid ? new mongoose.Types.ObjectId(targetJobId.trim()) : null;
+
+  let candidates;
+  if (targetJobObjId) {
+    const raw = await Candidate.aggregate([
+      { $match: filter },
+      {
+        $addFields: {
+          matchPriority: {
+            $cond: [
+              { $eq: ['$desiredJobId', targetJobObjId] },
+              1,
+              {
+                $cond: [
+                  { $eq: ['$secondJobId', targetJobObjId] },
+                  2,
+                  {
+                    $cond: [
+                      { $eq: ['$thirdJobId', targetJobObjId] },
+                      3,
+                      4
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      { $sort: { matchPriority: 1, createdAt: -1 } },
+      { $limit: limit }
+    ]);
+    candidates = await Candidate.populate(raw, [
+      { path: 'desiredJobId', select: 'name nameAr' },
+      { path: 'secondJobId', select: 'name nameAr' },
+      { path: 'thirdJobId', select: 'name nameAr' },
+      { path: 'categoryId', select: 'name nameAr' }
+    ]);
+  } else {
+    candidates = await Candidate.find(filter)
+      .select('fullName phone desiredJobId secondJobId thirdJobId careerLevel secondCareerLevel thirdCareerLevel categoryId governorate area yearsOfExperience qualification skills availabilityStatus createdAt')
+      .populate('desiredJobId', 'name nameAr')
+      .populate('secondJobId', 'name nameAr')
+      .populate('thirdJobId', 'name nameAr')
+      .populate('categoryId', 'name nameAr')
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+  }
 
   return candidates.map((c) => ({
     'Candidate Name': c.fullName,
     'Phone': c.phone,
-    'Desired Job': c.desiredJobId ? c.desiredJobId.name : 'N/A',
-    'Desired Job (Arabic)': c.desiredJobId ? c.desiredJobId.nameAr : 'N/A',
-    'Category': c.categoryId ? c.categoryId.name : 'N/A',
+    'Job #1 (Primary)': c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A',
+    'Career Level #1': c.careerLevel || 'N/A',
+    'Job #2': c.secondJobId ? (c.secondJobId.nameAr || c.secondJobId.name) : 'None',
+    'Career Level #2': c.secondCareerLevel || '',
+    'Job #3': c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'None',
+    'Career Level #3': c.thirdCareerLevel || '',
+    'Category': c.categoryId ? (c.categoryId.nameAr || c.categoryId.name) : 'N/A',
     'Governorate': c.governorate,
     'Area': c.area,
     'Years of Experience': c.yearsOfExperience,
