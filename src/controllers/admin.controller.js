@@ -534,7 +534,36 @@ async function getBulkEmployerAnalytics(req, res, next) {
 // Subscription Plans Management
 async function listSubscriptionPlans(req, res, next) {
   try {
-    const plans = await Subscription.find().sort({ priceEgp: 1 });
+    let plans = await Subscription.find().sort({ priceEgp: 1 });
+
+    // Auto-seed if empty (e.g. fresh DB where autoSeed ran before this fix)
+    if (plans.length === 0) {
+      const defaults = [
+        {
+          planName: 'Basic', displayName: 'Basic Plan', displayNameAr: 'الباقة الأساسية',
+          priceMonthlyEgp: 500, priceEgp: 500, billingCycleDays: 30,
+          dailySearchLimit: 15, dailyDownloadLimitPerTitle: 3, maxCandidatesPerTitle: 10,
+          cartEnabled: false, platinumBrowseEnabled: false, isActive: true
+        },
+        {
+          planName: 'Gold', displayName: 'Gold Plan', displayNameAr: 'الباقة الذهبية',
+          priceMonthlyEgp: 1000, priceEgp: 1000, billingCycleDays: 30,
+          dailySearchLimit: 20, dailyDownloadLimitPerTitle: 4, maxCandidatesPerTitle: 10,
+          cartEnabled: true, platinumBrowseEnabled: false, isActive: true
+        },
+        {
+          planName: 'Platinum', displayName: 'Platinum Plan', displayNameAr: 'الباقة البلاتينية',
+          priceMonthlyEgp: 2000, priceEgp: 2000, billingCycleDays: 30,
+          dailySearchLimit: 30, dailyDownloadLimitPerTitle: 6, maxCandidatesPerTitle: 10,
+          cartEnabled: true, platinumBrowseEnabled: true, isActive: true
+        }
+      ];
+      for (const p of defaults) {
+        await Subscription.findOneAndUpdate({ planName: p.planName }, { $setOnInsert: p }, { upsert: true, new: true });
+      }
+      plans = await Subscription.find().sort({ priceEgp: 1 });
+    }
+
     return successResponse(res, plans, 'خطط الاشتراك');
   } catch (err) {
     next(err);

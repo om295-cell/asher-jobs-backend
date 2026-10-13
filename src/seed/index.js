@@ -166,9 +166,66 @@ async function autoSeedIfEmpty() {
       $or: [{ name: 'Uncategorized' }, { nameAr: 'غير مصنف' }]
     }).catch(() => {});
 
+    // Always ensure subscription plans exist (upsert is safe and idempotent)
+    const plansToSeed = [
+      {
+        planName: 'Basic',
+        displayName: 'Basic Plan',
+        displayNameAr: 'الباقة الأساسية',
+        priceMonthlyEgp: 500,
+        priceEgp: 500,
+        billingCycleDays: 30,
+        dailySearchLimit: 15,
+        dailyDownloadLimitPerTitle: 3,
+        maxCandidatesPerTitle: 10,
+        cartEnabled: false,
+        platinumBrowseEnabled: false,
+        isActive: true,
+        description: '15 searches/day, 3 downloads/title/day, up to 10 candidates per title'
+      },
+      {
+        planName: 'Gold',
+        displayName: 'Gold Plan',
+        displayNameAr: 'الباقة الذهبية',
+        priceMonthlyEgp: 1000,
+        priceEgp: 1000,
+        billingCycleDays: 30,
+        dailySearchLimit: 20,
+        dailyDownloadLimitPerTitle: 4,
+        maxCandidatesPerTitle: 10,
+        cartEnabled: true,
+        platinumBrowseEnabled: false,
+        isActive: true,
+        description: '20 searches/day, 4 downloads/title/day, Multi-title candidate cart'
+      },
+      {
+        planName: 'Platinum',
+        displayName: 'Platinum Plan',
+        displayNameAr: 'الباقة البلاتينية',
+        priceMonthlyEgp: 2000,
+        priceEgp: 2000,
+        billingCycleDays: 30,
+        dailySearchLimit: 30,
+        dailyDownloadLimitPerTitle: 6,
+        maxCandidatesPerTitle: 10,
+        cartEnabled: true,
+        platinumBrowseEnabled: true,
+        isActive: true,
+        description: '30 searches/day, 6 downloads/title/day, Multi-title cart, Free database browsing (1 at a time)'
+      }
+    ];
+    for (const plan of plansToSeed) {
+      await Subscription.findOneAndUpdate(
+        { planName: plan.planName },
+        { $setOnInsert: plan }, // only insert if missing, never overwrite admin edits
+        { upsert: true, new: true }
+      );
+    }
+
+    // If admin doesn't exist yet, do the full seed
     const adminExists = await User.exists({ role: 'admin' });
     if (adminExists) {
-      return; // Already initialized, zero overhead
+      return;
     }
     await seedDatabase(false);
   } catch (err) {
