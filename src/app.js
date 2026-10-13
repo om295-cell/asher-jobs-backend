@@ -10,14 +10,8 @@ const { CLIENT_URL, UPLOAD_DIR } = require('./config/env');
 
 const app = express();
 
-// Security HTTP headers
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }
-  })
-);
-
-// CORS configuration supporting credentials and explicit origin
+// ── CORS must be FIRST — before helmet and all other middleware ──────────────
+// This ensures preflight OPTIONS always gets CORS headers even on DB crash/500
 const allowedOrigins = [
   CLIENT_URL,
   'https://asher-jobs-frontend.vercel.app',
@@ -27,23 +21,31 @@ const allowedOrigins = [
   'http://127.0.0.1:3000'
 ];
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      if (!origin) return callback(null, true);
-      try {
-        const host = new URL(origin).hostname;
-        if (host.endsWith('.vercel.app') || allowedOrigins.indexOf(origin) !== -1 || allowedOrigins.includes('*')) {
-          return callback(null, true);
-        }
-      } catch (e) {
-        // Fallback for non-standard origin strings
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true); // curl, mobile, server-to-server
+    try {
+      const host = new URL(origin).hostname;
+      if (host.endsWith('.vercel.app') || allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
-      return callback(null, true);
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+    } catch (e) {}
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Explicit preflight handler
+
+// Security HTTP headers (after CORS)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }
   })
 );
 
