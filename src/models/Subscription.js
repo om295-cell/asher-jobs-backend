@@ -67,6 +67,24 @@ const subscriptionSchema = new mongoose.Schema(
     description: {
       type: String,
       default: ''
+    },
+    discountPct: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
+    discountLabel: {
+      type: String,
+      default: '' // e.g. "عرض محدود", "خصم رمضان"
+    },
+    discountStartsAt: {
+      type: Date,
+      default: null
+    },
+    discountEndsAt: {
+      type: Date,
+      default: null
     }
   },
   {

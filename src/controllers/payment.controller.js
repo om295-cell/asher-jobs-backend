@@ -47,16 +47,31 @@ async function initiatePayment(req, res) {
     const months = Number(billingMonths);
     const basePrice = plan.priceEgp || plan.priceMonthlyEgp;
 
-    // Discount tiers
-    let discountPct = 0;
-    if (months === 3)  discountPct = 5;
-    if (months === 6)  discountPct = 10;
-    if (months === 9)  discountPct = 15;
-    if (months === 12) discountPct = 20;
+    const now = new Date();
+    const isDiscountActive = Boolean(
+      (Number(plan.discountPct) > 0) &&
+      (!plan.discountStartsAt || new Date(plan.discountStartsAt) <= now) &&
+      (!plan.discountEndsAt || new Date(plan.discountEndsAt) >= now)
+    );
 
-    const totalBeforeDiscount = basePrice * months;
-    const discountAmount = Math.round(totalBeforeDiscount * discountPct / 100);
-    const totalAmountEgp = totalBeforeDiscount - discountAmount;
+    // Plan-level promo discount (configured by admin on the package)
+    const planDiscountPct = isDiscountActive ? Math.min(100, Math.max(0, Number(plan.discountPct) || 0)) : 0;
+    const priceAfterPlanDiscount = basePrice * (1 - planDiscountPct / 100);
+
+    // Billing cycle duration loyalty discount
+    let cycleDiscountPct = 0;
+    if (months === 3)  cycleDiscountPct = 5;
+    if (months === 6)  cycleDiscountPct = 10;
+    if (months === 9)  cycleDiscountPct = 15;
+    if (months === 12) cycleDiscountPct = 20;
+
+    const totalBeforeCycleDiscount = priceAfterPlanDiscount * months;
+    const cycleDiscountAmount = Math.round(totalBeforeCycleDiscount * cycleDiscountPct / 100);
+    const totalAmountEgp = Math.max(0, Math.round(totalBeforeCycleDiscount - cycleDiscountAmount));
+
+    const totalBeforeAnyDiscount = basePrice * months;
+    const totalDiscountAmount = Math.max(0, totalBeforeAnyDiscount - totalAmountEgp);
+    const effectiveDiscountPct = totalBeforeAnyDiscount > 0 ? Math.round((totalDiscountAmount / totalBeforeAnyDiscount) * 100) : 0;
 
     // Create internal order record
     const order = await PaymentOrder.create({
@@ -99,8 +114,11 @@ async function initiatePayment(req, res) {
         planName,
         billingMonths: months,
         basePricePerMonth: basePrice,
-        discountPct,
-        discountAmount,
+        planDiscountPct,
+        planDiscountLabel: plan.discountLabel || '',
+        cycleDiscountPct,
+        discountPct: effectiveDiscountPct,
+        discountAmount: totalDiscountAmount,
         totalAmountEgp
       }
     });

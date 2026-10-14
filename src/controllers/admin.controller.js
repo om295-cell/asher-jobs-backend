@@ -580,7 +580,11 @@ async function updateSubscriptionPlan(req, res, next) {
       maxCandidatesPerTitle,
       cartEnabled,
       platinumBrowseEnabled,
-      displayNameAr
+      displayNameAr,
+      discountPct,
+      discountLabel,
+      discountStartsAt,
+      discountEndsAt
     } = req.body;
 
     const plan = await Subscription.findById(id);
@@ -598,6 +602,14 @@ async function updateSubscriptionPlan(req, res, next) {
     if (cartEnabled !== undefined) plan.cartEnabled = Boolean(cartEnabled);
     if (platinumBrowseEnabled !== undefined) plan.platinumBrowseEnabled = Boolean(platinumBrowseEnabled);
     if (displayNameAr) plan.displayNameAr = displayNameAr;
+    if (discountPct !== undefined) plan.discountPct = Math.min(100, Math.max(0, Number(discountPct)));
+    if (discountLabel !== undefined) plan.discountLabel = discountLabel;
+    if (discountStartsAt !== undefined) {
+      plan.discountStartsAt = discountStartsAt ? new Date(discountStartsAt) : null;
+    }
+    if (discountEndsAt !== undefined) {
+      plan.discountEndsAt = discountEndsAt ? new Date(discountEndsAt) : null;
+    }
 
     await plan.save();
     return successResponse(res, plan, 'تم تحديث خطة الاشتراك وأسعارها بنجاح.');
