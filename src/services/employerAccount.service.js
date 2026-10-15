@@ -111,7 +111,7 @@ async function createEmployerAccount(data, adminUser, req = null) {
 
   const resolvedCompanyName = companyName && companyName.trim()
     ? companyName.trim()
-    : `HR - ${contactPerson.trim()}`;
+    : (accountType === 'individual_hr' ? contactPerson.trim() : `HR - ${contactPerson.trim()}`);
 
   // Create Company document
   const company = await Company.create({
