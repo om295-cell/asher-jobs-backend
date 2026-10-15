@@ -227,10 +227,10 @@ async function resetPasswordByAdmin(companyId, adminUser, req = null) {
 }
 
 /**
- * User changes their temporary password on first login
+ * User changes their temporary password on first login (no current password required)
  */
-async function changeInitialPassword(userId, currentPassword, newPassword, req = null) {
-  if (!currentPassword || !newPassword || newPassword.length < 6) {
+async function changeInitialPassword(userId, newPassword, req = null) {
+  if (!newPassword || newPassword.length < 6) {
     throw {
       statusCode: 400,
       message: 'كلمة المرور الجديدة يجب أن تتكون من 6 أحرف على الأقل.',
@@ -243,9 +243,8 @@ async function changeInitialPassword(userId, currentPassword, newPassword, req =
     throw { statusCode: 404, message: 'User not found.', code: 'USER_NOT_FOUND' };
   }
 
-  const isMatch = await bcrypt.compare(currentPassword, user.passwordHash);
-  if (!isMatch) {
-    throw { statusCode: 400, message: 'كلمة المرور الحالية غير صحيحة.', code: 'INCORRECT_CURRENT_PASSWORD' };
+  if (!user.mustChangePassword) {
+    throw { statusCode: 403, message: 'غير مصرح: الحساب لا يحتاج لتغيير كلمة المرور.', code: 'NOT_REQUIRED' };
   }
 
   const salt = await bcrypt.genSalt(10);

@@ -78,10 +78,9 @@ async function updatePassword(req, res, next) {
 async function changeInitialPassword(req, res, next) {
   try {
     const employerAccountService = require('../services/employerAccount.service');
-    const { currentPassword, newPassword } = req.body;
+    const { newPassword } = req.body;
     const result = await employerAccountService.changeInitialPassword(
       req.user._id,
-      currentPassword,
       newPassword,
       req
     );
