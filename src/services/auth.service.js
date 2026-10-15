@@ -465,7 +465,8 @@ async function login(credential, password, req) {
       email: user.email,
       phone: user.phone,
       role: user.role,
-      accountStatus: user.accountStatus
+      accountStatus: user.accountStatus,
+      mustChangePassword: user.mustChangePassword || false
     },
     profile,
     token
@@ -494,7 +495,8 @@ async function getMe(userId) {
       phone: user.phone,
       role: user.role,
       accountStatus: user.accountStatus,
-      isBlocked: user.isBlocked
+      isBlocked: user.isBlocked,
+      mustChangePassword: user.mustChangePassword || false
     },
     profile
   };
