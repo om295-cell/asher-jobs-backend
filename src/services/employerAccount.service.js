@@ -23,6 +23,9 @@ async function createEmployerAccount(data, adminUser, req = null) {
     verifiedByCompanyId = null,
     subscriptionPlan = 'Basic',
     subscriptionPriceEgp,
+    subscriptionDurationDays = 30,
+    paymentMethod = 'cash', // 'online' | 'cash' | 'free'
+    subscriptionStatus = 'active',
     phone = '01000000000',
     governorate = 'Sharqia',
     area = '10th of Ramadan'
@@ -133,9 +136,10 @@ async function createEmployerAccount(data, adminUser, req = null) {
     subscriptionPlan,
     subscriptionPriceEgp: planPrice,
     monthlyPriceEgp: planPrice,
-    subscriptionStatus: 'active',
+    paymentMethod,
+    subscriptionStatus,
     subscriptionStartDate: new Date(),
-    subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    subscriptionEndDate: new Date(Date.now() + Number(subscriptionDurationDays) * 24 * 60 * 60 * 1000)
   });
 
   if (adminUser) {
@@ -151,7 +155,9 @@ async function createEmployerAccount(data, adminUser, req = null) {
         verificationMethod,
         verifiedByCompanyId: finalVerifiedByCompanyId,
         subscriptionPlan,
-        planPrice
+        planPrice,
+        paymentMethod,
+        subscriptionDurationDays
       },
       req
     }).catch(() => {});
@@ -320,8 +326,9 @@ async function updateAccountStatus(companyId, status, reason = '', adminUser, re
 
 /**
  * Super Admin updates company subscription plan and pricing
+ * paymentMethod: 'online' | 'cash' | 'free'
  */
-async function updateSubscriptionPlan(companyId, { plan, priceEgp, durationDays = 30, status = 'active' }, adminUser, req = null) {
+async function updateSubscriptionPlan(companyId, { plan, priceEgp, durationDays = 30, status = 'active', paymentMethod = 'cash', notes = '' }, adminUser, req = null) {
   const company = await Company.findById(companyId);
   if (!company || company.isDeleted) {
     throw { statusCode: 404, message: 'Company not found.', code: 'COMPANY_NOT_FOUND' };
@@ -336,6 +343,7 @@ async function updateSubscriptionPlan(companyId, { plan, priceEgp, durationDays 
   company.subscriptionPriceEgp = Number(priceEgp) || 0;
   company.monthlyPriceEgp = company.subscriptionPriceEgp;
   company.subscriptionStatus = status;
+  company.paymentMethod = paymentMethod;
   company.subscriptionStartDate = new Date();
   company.subscriptionEndDate = new Date(Date.now() + Number(durationDays) * 24 * 60 * 60 * 1000);
 
@@ -348,7 +356,7 @@ async function updateSubscriptionPlan(companyId, { plan, priceEgp, durationDays 
     action: 'ADMIN_SUBSCRIPTION_UPDATE',
     entityType: 'Company',
     entityId: company._id,
-    metadata: { plan, priceEgp, durationDays, status },
+    metadata: { plan, priceEgp, durationDays, status, paymentMethod, notes },
     req
   }).catch(() => {});
 

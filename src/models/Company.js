@@ -141,6 +141,11 @@ const companySchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
+    paymentMethod: {
+      type: String,
+      enum: ['online', 'cash', 'free'],
+      default: 'cash'
+    },
     monthlyPriceEgp: {
       type: Number,
       default: 50
