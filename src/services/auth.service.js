@@ -486,6 +486,17 @@ async function getMe(userId) {
       .populate('categoryId', 'name nameAr');
   } else if (user.role === 'company') {
     profile = await Company.findOne({ userId: user._id, isDeleted: false });
+
+    // Auto-expire subscription if end date has passed
+    if (
+      profile &&
+      profile.subscriptionStatus === 'active' &&
+      profile.subscriptionEndDate &&
+      new Date(profile.subscriptionEndDate) < new Date()
+    ) {
+      profile.subscriptionStatus = 'expired';
+      await profile.save().catch(() => {});
+    }
   }
 
   return {
@@ -501,6 +512,7 @@ async function getMe(userId) {
     profile
   };
 }
+
 
 async function updatePassword(userId, currentPassword, newPassword) {
   if (!currentPassword || !newPassword || newPassword.length < 6) {

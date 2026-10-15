@@ -60,6 +60,16 @@ async function requireApprovedCompany(req, res, next) {
       );
     }
 
+    // Auto-expire subscription if end date has passed
+    if (
+      company.subscriptionStatus === 'active' &&
+      company.subscriptionEndDate &&
+      new Date(company.subscriptionEndDate) < new Date()
+    ) {
+      company.subscriptionStatus = 'expired';
+      await company.save().catch(() => {});
+    }
+
     req.company = company;
     next();
   } catch (err) {
@@ -70,3 +80,4 @@ async function requireApprovedCompany(req, res, next) {
 module.exports = {
   requireApprovedCompany
 };
+
