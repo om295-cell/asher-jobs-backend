@@ -6,13 +6,52 @@ const { successResponse, errorResponse } = require('../utils/response');
 
 // ─────────────────────────────────────────────────────────────
 // GET /payments/plans  → public: list active plans for company-side display
+// Dynamically marks the plan with the most completed orders/subscribers as isMostChosen
 // ─────────────────────────────────────────────────────────────
 async function listPlans(req, res) {
   try {
     const plans = await Subscription.find({ isActive: true })
       .sort({ priceEgp: 1 })
       .lean();
-    return successResponse(res, plans);
+
+    // Dynamically calculate "الأكثر اختياراً" based on real completed payments and active subscriptions
+    const [paidOrderCounts, companyCounts] = await Promise.all([
+      PaymentOrder.aggregate([
+        { $match: { status: 'paid' } },
+        { $group: { _id: '$planName', count: { $sum: 1 } } }
+      ]).catch(() => []),
+      Company.aggregate([
+        { $match: { subscriptionStatus: 'active', subscriptionPlan: { $ne: null } } },
+        { $group: { _id: '$subscriptionPlan', count: { $sum: 1 } } }
+      ]).catch(() => [])
+    ]);
+
+    const planStats = {};
+    for (const item of paidOrderCounts || []) {
+      if (item._id) planStats[item._id] = (planStats[item._id] || 0) + item.count * 2;
+    }
+    for (const item of companyCounts || []) {
+      if (item._id) planStats[item._id] = (planStats[item._id] || 0) + item.count;
+    }
+
+    // Determine the top plan
+    let topPlanName = null;
+    let maxScore = 0;
+    for (const [name, score] of Object.entries(planStats)) {
+      if (score > maxScore) {
+        maxScore = score;
+        topPlanName = name;
+      }
+    }
+
+    // If there are real choices (> 0), mark the top one. If no data exists yet, default to 'Gold'
+    const enrichedPlans = plans.map(p => ({
+      ...p,
+      isMostChosen: topPlanName ? p.planName === topPlanName : p.planName === 'Gold',
+      totalSubscribers: planStats[p.planName] || 0
+    }));
+
+    return successResponse(res, enrichedPlans);
   } catch (err) {
     return errorResponse(res, 'Failed to fetch plans', 500);
   }
