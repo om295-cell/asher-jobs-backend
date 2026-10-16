@@ -11,10 +11,18 @@ const cookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
 };
 
+const clientCookieOptions = {
+  httpOnly: false, // readable by client-side JS for instant zero-wait hydration
+  secure: isProd,
+  sameSite: isProd ? 'none' : 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000
+};
+
 async function registerCandidate(req, res, next) {
   try {
     const result = await authService.registerCandidate(req.body, req);
     res.cookie('token', result.token, cookieOptions);
+    res.cookie('asher_logged_in', '1', clientCookieOptions);
     return successResponse(res, result, 'Candidate registered successfully', 201);
   } catch (err) {
     next(err);
@@ -25,6 +33,7 @@ async function registerCompany(req, res, next) {
   try {
     const result = await authService.registerCompany(req.body, req);
     res.cookie('token', result.token, cookieOptions);
+    res.cookie('asher_logged_in', '1', clientCookieOptions);
     return successResponse(
       res,
       result,
@@ -41,6 +50,7 @@ async function login(req, res, next) {
     const { credential, password } = req.body;
     const result = await authService.login(credential, password, req);
     res.cookie('token', result.token, cookieOptions);
+    res.cookie('asher_logged_in', '1', clientCookieOptions);
     return successResponse(res, result, 'Logged in successfully');
   } catch (err) {
     next(err);
@@ -50,6 +60,7 @@ async function login(req, res, next) {
 async function logout(req, res, next) {
   try {
     res.clearCookie('token', cookieOptions);
+    res.clearCookie('asher_logged_in', clientCookieOptions);
     return successResponse(res, null, 'Logged out successfully');
   } catch (err) {
     next(err);
