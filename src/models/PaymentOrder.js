@@ -32,15 +32,17 @@ const paymentOrderSchema = new mongoose.Schema(
     paymobOrderId: { type: String, default: null, index: true },
     paymobPaymentKey: { type: String, default: null },
     paymobTransactionId: { type: String, default: null, index: true },
-    // Status: pending → paid | failed | expired
+    // Status: pending → paid | failed | expired | refunded
     status: {
       type: String,
-      enum: ['pending', 'paid', 'failed', 'expired'],
+      enum: ['pending', 'paid', 'failed', 'expired', 'refunded'],
       default: 'pending',
       index: true
     },
     paidAt: { type: Date, default: null },
     failureReason: { type: String, default: '' },
+    refundedAt: { type: Date, default: null },
+    refundReason: { type: String, default: '' },
     // Snapshot of plan limits at time of purchase (for audit)
     planSnapshot: { type: Object, default: {} }
   },

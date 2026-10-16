@@ -239,13 +239,16 @@ async function handleCallback(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// GET /payments/my-orders  → company's payment history
+// GET /payments/my-orders  → company's payment history (only completed/paid and refunded)
 // ─────────────────────────────────────────────────────────────
 async function getMyOrders(req, res) {
   try {
-    const orders = await PaymentOrder.find({ companyId: req.company._id })
+    const orders = await PaymentOrder.find({
+      companyId: req.company._id,
+      status: { $in: ['paid', 'refunded'] }
+    })
       .sort({ createdAt: -1 })
-      .limit(20)
+      .limit(50)
       .lean();
     return successResponse(res, orders);
   } catch (err) {

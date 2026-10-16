@@ -4,6 +4,8 @@ const titleExtractionService = require('../services/titleExtraction.service');
 const employerAccountService = require('../services/employerAccount.service');
 const JobSuggestion = require('../models/JobSuggestion');
 const Subscription = require('../models/Subscription');
+const PaymentOrder = require('../models/PaymentOrder');
+const Company = require('../models/Company');
 const { getActivityLogs } = require('../services/activity.service');
 const { successResponse, errorResponse } = require('../utils/response');
 
@@ -107,6 +109,68 @@ async function updateCompanySubscription(req, res, next) {
   try {
     const company = await adminService.updateCompanySubscription(req.params.id, req.body, req.user, req);
     return successResponse(res, company, 'Company subscription updated successfully');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getCompanyOrders(req, res, next) {
+  try {
+    const { id } = req.params;
+    const orders = await PaymentOrder.find({ companyId: id })
+      .sort({ createdAt: -1 })
+      .lean();
+    return successResponse(res, orders, 'Company payment orders retrieved');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateCompanyOrderStatus(req, res, next) {
+  try {
+    const { id, orderId } = req.params;
+    const { status, reason } = req.body;
+
+    if (!['paid', 'refunded'].includes(status)) {
+      return errorResponse(res, 'الحالة يجب أن تكون مدفوع (paid) أو مسترد (refunded)', 400);
+    }
+
+    const order = await PaymentOrder.findOne({ _id: orderId, companyId: id });
+    if (!order) {
+      return errorResponse(res, 'طلب الدفع غير موجود', 404);
+    }
+
+    order.status = status;
+    if (status === 'refunded') {
+      order.refundedAt = new Date();
+      order.refundReason = reason || 'Manual refund processed by admin';
+      // Deactivate subscription
+      const company = await Company.findById(id);
+      if (company && company.subscriptionStatus === 'active') {
+        company.subscriptionStatus = 'inactive';
+        await company.save();
+      }
+    } else if (status === 'paid') {
+      order.paidAt = order.paidAt || new Date();
+      order.refundedAt = null;
+      order.refundReason = '';
+      // Activate subscription
+      const company = await Company.findById(id);
+      if (company) {
+        const months = order.billingMonths || 1;
+        const startDate = new Date();
+        const endDate = new Date(startDate);
+        endDate.setMonth(endDate.getMonth() + months);
+        company.subscriptionPlan = order.planName;
+        company.subscriptionStatus = 'active';
+        company.subscriptionStartDate = startDate;
+        company.subscriptionEndDate = endDate;
+        await company.save();
+      }
+    }
+
+    await order.save();
+    return successResponse(res, order, `تم تحديث حالة العملية بنجاح إلى ${status === 'refunded' ? 'مسترد' : 'مدفوع'}`);
   } catch (err) {
     next(err);
   }
@@ -632,6 +696,8 @@ module.exports = {
   rejectCompany,
   toggleBlockCompany,
   updateCompanySubscription,
+  getCompanyOrders,
+  updateCompanyOrderStatus,
   listRequests,
   updateRequestStatus,
   listJobs,

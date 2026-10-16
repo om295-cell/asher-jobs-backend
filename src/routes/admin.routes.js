@@ -26,6 +26,8 @@ router.patch('/companies/:id/approve', adminController.approveCompany);
 router.patch('/companies/:id/reject', adminController.rejectCompany);
 router.patch('/companies/:id/block', adminController.toggleBlockCompany);
 router.patch('/companies/:id/subscription', adminController.updateCompanySubscription);
+router.get('/companies/:id/orders', adminController.getCompanyOrders);
+router.patch('/companies/:id/orders/:orderId/status', adminController.updateCompanyOrderStatus);
 
 // Employer Accounts Management (Type A, B, C1, C2)
 router.get('/employer-accounts', adminController.listEmployerAccounts);
