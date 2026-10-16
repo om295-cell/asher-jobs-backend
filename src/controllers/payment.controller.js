@@ -14,27 +14,33 @@ async function listPlans(req, res) {
       .sort({ priceEgp: 1 })
       .lean();
 
-    // Dynamically calculate "الأكثر اختياراً" based on real completed payments and active subscriptions
-    const [paidOrderCounts, companyCounts] = await Promise.all([
+    // Dynamically calculate "الأكثر اختياراً" based on real completed payments, active subscriptions, and user choices
+    const [paidOrderCounts, totalOrderCounts, companyCounts] = await Promise.all([
       PaymentOrder.aggregate([
         { $match: { status: 'paid' } },
         { $group: { _id: '$planName', count: { $sum: 1 } } }
       ]).catch(() => []),
+      PaymentOrder.aggregate([
+        { $group: { _id: '$planName', count: { $sum: 1 } } }
+      ]).catch(() => []),
       Company.aggregate([
-        { $match: { subscriptionStatus: 'active', subscriptionPlan: { $ne: null } } },
+        { $match: { subscriptionStatus: 'active', subscriptionPlan: { $in: ['Basic', 'Gold', 'Platinum'] } } },
         { $group: { _id: '$subscriptionPlan', count: { $sum: 1 } } }
       ]).catch(() => [])
     ]);
 
     const planStats = {};
     for (const item of paidOrderCounts || []) {
-      if (item._id) planStats[item._id] = (planStats[item._id] || 0) + item.count * 2;
+      if (item._id) planStats[item._id] = (planStats[item._id] || 0) + item.count * 10;
     }
     for (const item of companyCounts || []) {
-      if (item._id) planStats[item._id] = (planStats[item._id] || 0) + item.count;
+      if (item._id) planStats[item._id] = (planStats[item._id] || 0) + item.count * 5;
+    }
+    for (const item of totalOrderCounts || []) {
+      if (item._id) planStats[item._id] = (planStats[item._id] || 0) + item.count * 1;
     }
 
-    // Determine the top plan
+    // Determine the real top chosen plan
     let topPlanName = null;
     let maxScore = 0;
     for (const [name, score] of Object.entries(planStats)) {
@@ -44,12 +50,16 @@ async function listPlans(req, res) {
       }
     }
 
-    // If there are real choices (> 0), mark the top one. If no data exists yet, default to 'Gold'
-    const enrichedPlans = plans.map(p => ({
-      ...p,
-      isMostChosen: topPlanName ? p.planName === topPlanName : p.planName === 'Gold',
-      totalSubscribers: planStats[p.planName] || 0
-    }));
+    // Only set isMostChosen if there are REAL choices (maxScore > 0)
+    // NEVER fake or default to Gold if nobody actually chose it
+    const enrichedPlans = plans.map(p => {
+      const isTop = Boolean(topPlanName && maxScore > 0 && p.planName === topPlanName);
+      return {
+        ...p,
+        isMostChosen: isTop,
+        choiceScore: planStats[p.planName] || 0
+      };
+    });
 
     return successResponse(res, enrichedPlans);
   } catch (err) {
