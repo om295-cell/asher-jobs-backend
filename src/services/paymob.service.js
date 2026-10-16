@@ -13,10 +13,11 @@
 const axios = require('axios');
 const crypto = require('crypto');
 
-const PAYMOB_API_KEY   = process.env.PAYMOB_API_KEY   || '';
-const PAYMOB_HMAC_KEY  = process.env.PAYMOB_HMAC_KEY  || '';
-const PAYMOB_IFRAME_ID = process.env.PAYMOB_IFRAME_ID || '';
-const PAYMOB_INTEGRATION_ID = process.env.PAYMOB_INTEGRATION_ID || ''; // card integration
+const PAYMOB_API_KEY   = (process.env.PAYMOB_API_KEY   || '').trim();
+const PAYMOB_HMAC_KEY  = (process.env.PAYMOB_HMAC_KEY  || '').trim();
+// Strip non-digit characters in case an accidental prefix (like 'Y') or whitespace was copied
+const PAYMOB_IFRAME_ID = (process.env.PAYMOB_IFRAME_ID || '').trim().replace(/\D/g, '');
+const PAYMOB_INTEGRATION_ID = (process.env.PAYMOB_INTEGRATION_ID || '').trim().replace(/\D/g, ''); // card integration
 
 const PAYMOB_BASE = 'https://accept.paymob.com/api';
 
