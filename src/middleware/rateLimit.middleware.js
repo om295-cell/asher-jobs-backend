@@ -53,9 +53,13 @@ const searchLimiter = rateLimit({
 // OWASP A04: Global API rate limiter to protect server from Denial of Service (DoS)
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 300, // 300 requests per IP per 15 minutes
+  max: 2000, // 2000 requests per IP per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    // Exclude authenticated admin requests from global rate limit
+    return Boolean(req.headers.authorization || req.cookies?.token);
+  },
   message: {
     success: false,
     message: 'Too many requests to the server. Please slow down.',
