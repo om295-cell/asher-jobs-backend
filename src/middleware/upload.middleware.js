@@ -34,16 +34,23 @@ const fileFilter = (req, file, cb) => {
   const allowedExts = ['.pdf', '.doc', '.docx'];
   const ext = path.extname(file.originalname).toLowerCase();
 
+  // OWASP A08: Block double extensions and embedded script/executable extensions (e.g. cv.php.pdf)
+  const lowerName = file.originalname.toLowerCase();
+  const dangerousTokens = ['.php', '.exe', '.sh', '.bat', '.js', '.py', '.html', '.htm', '.phtml', '.jsp'];
+  if (dangerousTokens.some(token => lowerName.includes(token))) {
+    return cb(new Error('Dangerous file format or double extension detected.'), false);
+  }
+
   const allowedMimeTypes = [
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
   ];
 
-  if (allowedExts.includes(ext) && (allowedMimeTypes.includes(file.mimetype) || file.mimetype === 'application/octet-stream')) {
+  if (allowedExts.includes(ext) && allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only PDF, DOC, and DOCX documents are allowed.'), false);
+    cb(new Error('Only valid PDF, DOC, and DOCX documents are allowed.'), false);
   }
 };
 

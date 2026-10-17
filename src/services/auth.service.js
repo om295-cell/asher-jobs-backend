@@ -399,7 +399,8 @@ async function registerCompany(data, req) {
 }
 
 async function login(credential, password, req) {
-  if (!credential || !password) {
+  // OWASP A03/A07: Validate that credential and password are strictly strings
+  if (typeof credential !== 'string' || typeof password !== 'string' || !credential.trim() || !password) {
     throw { statusCode: 400, message: 'Email or phone and password are required.', code: 'CREDENTIALS_REQUIRED' };
   }
 

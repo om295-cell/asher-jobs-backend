@@ -1,9 +1,15 @@
 const express = require('express');
 const router = express.Router();
+const multer = require('multer');
 const adminController = require('../controllers/admin.controller');
 const jobTitleReviewController = require('../controllers/jobTitleReview.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
+
+const uploadFileDoc = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 }
+});
 
 // All admin routes require authentication and role === 'admin'
 router.use(authenticate, authorize('admin'));
@@ -13,6 +19,9 @@ router.get('/dashboard', adminController.getDashboard);
 
 // Candidates Management
 router.get('/candidates', adminController.listCandidates);
+router.get('/candidates/search-main', adminController.searchMainCandidates);
+router.post('/candidates/extract-excel', uploadFileDoc.single('file'), adminController.extractCandidatesExcel);
+router.post('/candidates/import-batch', adminController.executeCandidateImport);
 router.get('/candidates/:id', adminController.getCandidate);
 router.put('/candidates/:id', adminController.updateCandidate);
 router.patch('/candidates/:id/status', adminController.updateCandidateStatus);
@@ -48,16 +57,10 @@ router.put('/subscriptions/plans/:id', adminController.updateSubscriptionPlan);
 router.get('/requests', adminController.listRequests);
 router.patch('/requests/:id/status', adminController.updateRequestStatus);
 
-const multer = require('multer');
-const uploadTitleDoc = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 15 * 1024 * 1024 }
-});
-
 // Persisted Super Admin review queue. Every imported title receives its own
 // database record; uploading a file is never handled as one DB transaction.
 router.post('/job-title-batches/manual', jobTitleReviewController.createManualBatch);
-router.post('/job-title-batches/file', uploadTitleDoc.single('file'), jobTitleReviewController.createFileBatch);
+router.post('/job-title-batches/file', uploadFileDoc.single('file'), jobTitleReviewController.createFileBatch);
 router.get('/job-title-batches', jobTitleReviewController.listBatches);
 router.get('/job-title-batches/:id', jobTitleReviewController.getBatch);
 router.get('/job-title-reviews', jobTitleReviewController.listReviews);
@@ -76,7 +79,7 @@ router.get('/jobs', adminController.listJobs);
 router.post('/jobs', adminController.createJob);
 router.put('/jobs/:id', adminController.updateJob);
 router.delete('/jobs/:id', adminController.deleteJob);
-router.post('/jobs/extract-titles', uploadTitleDoc.single('file'), adminController.extractJobTitles);
+router.post('/jobs/extract-titles', uploadFileDoc.single('file'), adminController.extractJobTitles);
 router.post('/jobs/confirm-title', adminController.confirmSingleJobTitle);
 router.post('/jobs/batch-confirm-titles', adminController.batchConfirmJobTitles);
 router.get('/jobs/suggestions', adminController.listJobSuggestions);

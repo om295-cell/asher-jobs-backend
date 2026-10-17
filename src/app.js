@@ -6,12 +6,16 @@ const path = require('path');
 const mongoose = require('mongoose');
 const routes = require('./routes');
 const { errorHandler } = require('./middleware/error.middleware');
-const { CLIENT_URL, UPLOAD_DIR } = require('./config/env');
+const { sanitizeInput } = require('./middleware/sanitize.middleware');
+const { apiLimiter } = require('./middleware/rateLimit.middleware');
+const { CLIENT_URL } = require('./config/env');
 
 const app = express();
 
-// ── CORS must be FIRST — before helmet and all other middleware ──────────────
-// This ensures preflight OPTIONS always gets CORS headers even on DB crash/500
+// OWASP A05: Disable X-Powered-By header to prevent server fingerprinting
+app.disable('x-powered-by');
+
+// ── OWASP A05: Strict CORS Configuration ─────────────────────────────────────
 const allowedOrigins = [
   CLIENT_URL,
   'https://asher-jobs-frontend.vercel.app',
@@ -19,19 +23,17 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
   'http://localhost:3000',
   'http://127.0.0.1:3000'
-];
+].filter(Boolean);
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin) return callback(null, true); // curl, mobile, server-to-server
-    try {
-      const host = new URL(origin).hostname;
-      if (host.endsWith('.vercel.app') || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-    } catch (e) {}
+    if (!origin) return callback(null, true); // Mobile apps, curl, or server-to-server
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    // In development only, allow localhost origins
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
-    return callback(new Error('Not allowed by CORS'));
+    return callback(new Error('Blocked by CORS policy (Unauthorized Origin)'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -42,25 +44,28 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // Explicit preflight handler
 
-// Security HTTP headers (after CORS)
+// OWASP A05: Enhanced Security HTTP headers
 app.use(
   helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    xContentTypeOptions: true, // Prevent MIME-type sniffing
+    xFrameOptions: { action: 'deny' }, // Anti-clickjacking
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true
+    }
   })
 );
 
-// Body parsers
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// OWASP A04: Body parsers with strictly limited payload size (2MB) to prevent memory exhaustion DoS
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(cookieParser());
 
-// Static files for uploaded CVs
-try {
-  const { cvDir } = require('./middleware/upload.middleware');
-  app.use('/uploads', express.static(path.dirname(cvDir)));
-} catch (e) {
-  // Fallback
-}
+// OWASP A03: Sanitize all inputs against NoSQL injection and XSS
+app.use(sanitizeInput);
 
 // Favicon handler
 app.get('/favicon.ico', (req, res) => res.status(204).end());
@@ -113,8 +118,8 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// Main API Routes
-app.use('/api', routes);
+// Main API Routes (Protected by global apiLimiter for DoS defense)
+app.use('/api', apiLimiter, routes);
 
 // 404 handler
 app.use((req, res) => {

@@ -1,0 +1,637 @@
+const xlsx = require('xlsx');
+const Candidate = require('../models/Candidate');
+const User = require('../models/User');
+const Job = require('../models/Job');
+const JobCategory = require('../models/JobCategory');
+const { CAREER_LEVELS } = require('../models/RecommendationRequest');
+const { normalizeEgyptianPhone } = require('../utils/phoneNormalizer');
+const { normalizeForComparison } = require('./titleExtraction.service');
+const { logActivity } = require('./activity.service');
+const crypto = require('crypto');
+const bcrypt = require('bcryptjs');
+
+// Standard Egyptian mobile regex (11 digits starting with 010, 011, 012, 015)
+const EGYPTIAN_PHONE_REGEX = /^01[0125][0-9]{8}$/;
+
+function cleanCandidateName(rawName) {
+  if (!rawName || typeof rawName !== 'string') return '';
+  return rawName.trim().replace(/\s+/g, ' ');
+}
+
+function normalizeCareerLevel(rawLevel) {
+  if (!rawLevel || typeof rawLevel !== 'string') return CAREER_LEVELS[1]; // Default to 'متوسط (3-5 سنوات)'
+  const str = rawLevel.trim().toLowerCase();
+
+  if (str.includes('مبتدئ') || str.includes('junior') || str.includes('entry') || str.includes('1-3') || str.includes('سنة') || str.includes('سنتين')) {
+    return CAREER_LEVELS[0];
+  }
+  if (str.includes('متوسط') || str.includes('mid') || str.includes('3-5') || str.includes('4') || str.includes('3 سنوات')) {
+    return CAREER_LEVELS[1];
+  }
+  if (str.includes('متقدم') || str.includes('senior') || str.includes('5-7') || str.includes('6 سنوات')) {
+    return CAREER_LEVELS[2];
+  }
+  if (str.includes('كبير') || str.includes('خبير') || str.includes('lead') || str.includes('expert') || str.includes('7') || str.includes('أكثر')) {
+    return CAREER_LEVELS[3];
+  }
+
+  // Exact match check
+  const exact = CAREER_LEVELS.find((l) => l.toLowerCase() === str);
+  if (exact) return exact;
+
+  return CAREER_LEVELS[1];
+}
+
+function calculateExpYears(levelStr) {
+  if (!levelStr) return 2;
+  if (levelStr.includes('7') || levelStr.includes('كبير')) return 8;
+  if (levelStr.includes('5') || levelStr.includes('متقدم')) return 6;
+  if (levelStr.includes('3') || levelStr.includes('متوسط')) return 4;
+  return 2;
+}
+
+function generateReferralCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = 'ASH-';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+/**
+ * Extracts and analyzes candidate rows from an Excel or CSV file buffer
+ */
+async function extractCandidatesFromExcel({ buffer, originalname, mimetype, defaultCategoryId }) {
+  if (!buffer) {
+    throw { statusCode: 400, message: 'ملف الإكسيل مطلوب للاستخراج' };
+  }
+
+  const workbook = xlsx.read(buffer, { type: 'buffer' });
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) {
+    throw { statusCode: 400, message: 'الملف المرفوع لا يحتوي على أي أوراق عمل (Sheets)' };
+  }
+
+  const sheet = workbook.Sheets[firstSheetName];
+  const rawRows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+
+  if (!rawRows || rawRows.length < 2) {
+    throw { statusCode: 400, message: 'الملف المرفوع فارغ أو لا يحتوي على صفوف بيانات كافية' };
+  }
+
+  // Identify header indices
+  let nameCol = -1;
+  let phoneCol = -1;
+  let jobCol = -1;
+  let levelCol = -1;
+  let headerRowIndex = 0;
+
+  // Search first 5 rows for header keywords
+  for (let r = 0; r < Math.min(5, rawRows.length); r++) {
+    const row = rawRows[r];
+    if (!Array.isArray(row)) continue;
+
+    for (let c = 0; c < row.length; c++) {
+      const cell = String(row[c] || '').trim().toLowerCase();
+      if (!cell) continue;
+
+      if (nameCol === -1 && (
+        cell.includes('اسم') || cell.includes('مرشح') || cell.includes('name') || cell.includes('person')
+      )) {
+        nameCol = c;
+      }
+      if (phoneCol === -1 && (
+        cell.includes('هاتف') || cell.includes('موبايل') || cell.includes('تليفون') || cell.includes('جوال') ||
+        cell.includes('phone') || cell.includes('mobile') || cell.includes('tel') || cell.includes('cell')
+      )) {
+        phoneCol = c;
+      }
+      if (jobCol === -1 && (
+        cell.includes('وظيفة') || cell.includes('مسمى') || cell.includes('مهنة') || cell.includes('تخصص') ||
+        cell.includes('job') || cell.includes('title') || cell.includes('position') || cell.includes('role')
+      )) {
+        jobCol = c;
+      }
+      if (levelCol === -1 && (
+        cell.includes('مستوى') || cell.includes('خبرة') || cell.includes('level') || cell.includes('experience')
+      )) {
+        levelCol = c;
+      }
+    }
+
+    if (nameCol !== -1 && phoneCol !== -1) {
+      headerRowIndex = r;
+      break;
+    }
+  }
+
+  // Fallbacks if not detected by header text
+  if (nameCol === -1) nameCol = 0;
+  if (phoneCol === -1) phoneCol = 1;
+  if (jobCol === -1) jobCol = 2;
+  if (levelCol === -1 && rawRows[0]?.length > 3) levelCol = 3;
+
+  // Pre-load reference catalogs for fast evaluation
+  const [existingJobs, existingCandidates, existingCategories] = await Promise.all([
+    Job.find({}).populate('categoryId', 'name nameAr').lean(),
+    Candidate.find({ isDeleted: false }, 'fullName phone phoneNormalized desiredJobId careerLevel')
+      .populate('desiredJobId', 'name nameAr')
+      .lean(),
+    JobCategory.find({}).lean()
+  ]);
+
+  // Build Job lookup Map by normalized title
+  const jobMap = new Map();
+  for (const job of existingJobs) {
+    if (job.name) jobMap.set(normalizeForComparison(job.name), job);
+    if (job.nameAr) jobMap.set(normalizeForComparison(job.nameAr), job);
+  }
+
+  // Build Candidate lookup Map by phone and phoneNormalized
+  const candidatePhoneMap = new Map();
+  for (const cand of existingCandidates) {
+    if (cand.phoneNormalized) candidatePhoneMap.set(cand.phoneNormalized, cand);
+    if (cand.phone) candidatePhoneMap.set(cand.phone, cand);
+  }
+
+  // Categories default fallback
+  const fallbackCategory = existingCategories.find((c) => c._id.toString() === String(defaultCategoryId)) ||
+    existingCategories.find((c) => c.name === 'Uncategorized' || c.nameAr === 'غير مصنف') ||
+    existingCategories[0];
+
+  const items = [];
+  const seenPhonesInBatch = new Set();
+  let phoneConflictCount = 0;
+  let newTitlesCount = 0;
+  let existingTitlesCount = 0;
+
+  for (let r = headerRowIndex + 1; r < rawRows.length; r++) {
+    const row = rawRows[r];
+    if (!Array.isArray(row) || row.length === 0) continue;
+
+    const rawName = String(row[nameCol] !== undefined ? row[nameCol] : '').trim();
+    const rawPhone = String(row[phoneCol] !== undefined ? row[phoneCol] : '').trim();
+    const rawJob = jobCol !== -1 && row[jobCol] !== undefined ? String(row[jobCol]).trim() : '';
+    const rawLevel = levelCol !== -1 && row[levelCol] !== undefined ? String(row[levelCol]).trim() : '';
+
+    // Skip empty rows
+    if (!rawName && !rawPhone && !rawJob) continue;
+
+    const name = cleanCandidateName(rawName);
+    const careerLevel = normalizeCareerLevel(rawLevel);
+
+    // Validate and normalize phone
+    let phone = rawPhone.replace(/\s+/g, '');
+    let phoneNormalized = '';
+    let isPhoneValid = false;
+    let phoneError = '';
+
+    const phoneCheck = normalizeEgyptianPhone(phone);
+    if (phoneCheck.isValid) {
+      isPhoneValid = true;
+      phone = phoneCheck.local;
+      phoneNormalized = phoneCheck.normalized;
+    } else {
+      phoneError = phoneCheck.error || 'رقم هاتف غير صالح';
+    }
+
+    // Check Duplicate Phone in Database (Requirement 2)
+    let phoneExists = false;
+    let existingCandidate = null;
+    let replaceChoice = 'replace'; // Default choice for admin
+
+    if (isPhoneValid) {
+      if (candidatePhoneMap.has(phoneNormalized) || candidatePhoneMap.has(phone)) {
+        phoneExists = true;
+        const matchedCand = candidatePhoneMap.get(phoneNormalized) || candidatePhoneMap.get(phone);
+        existingCandidate = {
+          id: matchedCand._id,
+          fullName: matchedCand.fullName,
+          phone: matchedCand.phone,
+          currentJobTitle: matchedCand.desiredJobId?.nameAr || matchedCand.desiredJobId?.name || 'غير محدد',
+          careerLevel: matchedCand.careerLevel || 'غير محدد'
+        };
+        phoneConflictCount++;
+      } else if (seenPhonesInBatch.has(phoneNormalized)) {
+        phoneError = 'مكرر داخل نفس ملف الإكسيل المرفوع';
+        isPhoneValid = false;
+      } else {
+        seenPhonesInBatch.add(phoneNormalized);
+      }
+    }
+
+    // Check Job Title in Database (Requirement 3)
+    const normJob = normalizeForComparison(rawJob);
+    let titleExists = false;
+    let matchedJob = null;
+    let suggestedCategoryId = fallbackCategory ? fallbackCategory._id.toString() : '';
+    let suggestedCategoryName = fallbackCategory ? (fallbackCategory.nameAr || fallbackCategory.name) : '';
+
+    if (normJob && jobMap.has(normJob)) {
+      titleExists = true;
+      const jobDoc = jobMap.get(normJob);
+      matchedJob = {
+        id: jobDoc._id,
+        name: jobDoc.name,
+        nameAr: jobDoc.nameAr,
+        categoryId: jobDoc.categoryId?._id || jobDoc.categoryId,
+        categoryName: jobDoc.categoryId?.nameAr || jobDoc.categoryId?.name || ''
+      };
+      suggestedCategoryId = jobDoc.categoryId?._id?.toString() || jobDoc.categoryId?.toString() || suggestedCategoryId;
+      suggestedCategoryName = jobDoc.categoryId?.nameAr || jobDoc.categoryId?.name || suggestedCategoryName;
+      existingTitlesCount++;
+    } else {
+      titleExists = false;
+      if (rawJob) {
+        newTitlesCount++;
+      }
+    }
+
+    items.push({
+      id: `cand-${Date.now()}-${r}`,
+      rowIndex: r + 1,
+      name: name || rawName,
+      phone: phone || rawPhone,
+      phoneNormalized,
+      isPhoneValid,
+      phoneError,
+      phoneExists,
+      existingCandidate,
+      replaceChoice, // 'replace' | 'skip'
+      rawJobTitle: rawJob,
+      jobTitle: rawJob,
+      titleExists,
+      matchedJob,
+      approveNewTitle: !titleExists && !!rawJob, // Admin approval flag
+      categoryId: suggestedCategoryId,
+      categoryName: suggestedCategoryName,
+      careerLevel,
+      includeInImport: isPhoneValid && !!name // Checked by default if valid
+    });
+  }
+
+  return {
+    totalRows: items.length,
+    validRowsCount: items.filter((i) => i.isPhoneValid && i.name).length,
+    phoneConflictCount,
+    newTitlesCount,
+    existingTitlesCount,
+    defaultCategoryId: fallbackCategory ? fallbackCategory._id : null,
+    items
+  };
+}
+
+/**
+ * Searches candidates by name or phone for designating as the Main Candidate
+ */
+async function searchCandidatesForMain({ search = '', limit = 10 }) {
+  const query = { isDeleted: false };
+  if (search && search.trim()) {
+    const s = search.trim();
+    query.$or = [
+      { fullName: { $regex: s, $options: 'i' } },
+      { phone: { $regex: s, $options: 'i' } },
+      { phoneNormalized: { $regex: s, $options: 'i' } }
+    ];
+  }
+
+  const candidates = await Candidate.find(query)
+    .populate('desiredJobId', 'name nameAr')
+    .populate('categoryId', 'name nameAr')
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .lean();
+
+  return candidates.map((c) => ({
+    id: c._id,
+    fullName: c.fullName,
+    phone: c.phone,
+    jobTitle: c.desiredJobId?.nameAr || c.desiredJobId?.name || 'غير محدد',
+    careerLevel: c.careerLevel || '',
+    categoryName: c.categoryId?.nameAr || c.categoryId?.name || '',
+    referralCount: c.referralCount || 0
+  }));
+}
+
+/**
+ * Executes the candidate batch import with approval handling for Job titles,
+ * Phone conflict replacement, and linking under the Main Candidate as recommendations.
+ */
+async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    throw { statusCode: 400, message: 'لا توجد بيانات مرشحين للاستيراد' };
+  }
+
+  if (!mainCandidate) {
+    throw { statusCode: 400, message: 'يجب اختيار أو إضافة مرشح رئيسي لتسجيل التوصيات تحته' };
+  }
+
+  // 1. Resolve or Create Main Candidate (Requirement 1)
+  let mainCandidateDoc = null;
+
+  if (mainCandidate.mode === 'existing') {
+    if (!mainCandidate.candidateId) {
+      throw { statusCode: 400, message: 'يرجى اختيار المرشح الرئيسي المسجل' };
+    }
+    mainCandidateDoc = await Candidate.findById(mainCandidate.candidateId);
+    if (!mainCandidateDoc) {
+      throw { statusCode: 404, message: 'تعذر العثور على المرشح الرئيسي المختار' };
+    }
+  } else if (mainCandidate.mode === 'new') {
+    const { fullName, phone, jobTitle, careerLevel, categoryId } = mainCandidate;
+    if (!fullName || !phone || !jobTitle) {
+      throw { statusCode: 400, message: 'بيانات المرشح الرئيسي الجديد غير مكتملة (الاسم، الهاتف، المسمى الوظيفي)' };
+    }
+
+    const phoneCheck = normalizeEgyptianPhone(phone);
+    if (!phoneCheck.isValid) {
+      throw { statusCode: 400, message: phoneCheck.error || 'رقم هاتف المرشح الرئيسي غير صالح' };
+    }
+
+    // Check if main candidate already exists by phone
+    mainCandidateDoc = await Candidate.findOne({ phoneNormalized: phoneCheck.normalized });
+
+    if (!mainCandidateDoc) {
+      // Find or create Job for main candidate
+      let job = await Job.findOne({
+        $or: [
+          { name: jobTitle },
+          { nameAr: jobTitle }
+        ]
+      });
+
+      if (!job) {
+        job = await Job.create({
+          name: jobTitle,
+          nameAr: jobTitle,
+          categoryId: categoryId || (await JobCategory.findOne({}))?._id,
+          isActive: true
+        });
+      }
+
+      // Find or create User for main candidate
+      let user = await User.findOne({ phoneNormalized: phoneCheck.normalized });
+      if (!user) {
+        const tempPassword = crypto.randomBytes(8).toString('hex');
+        const passwordHash = await bcrypt.hash(tempPassword, 10);
+        user = await User.create({
+          phone: phoneCheck.local,
+          phoneNormalized: phoneCheck.normalized,
+          passwordHash,
+          role: 'candidate',
+          accountStatus: 'active'
+        });
+      }
+
+      // Generate unique referral code
+      let referralCode = generateReferralCode();
+      let unique = false;
+      while (!unique) {
+        const existingCode = await Candidate.findOne({ referralCode });
+        if (!existingCode) unique = true;
+        else referralCode = generateReferralCode();
+      }
+
+      mainCandidateDoc = await Candidate.create({
+        userId: user._id,
+        fullName: cleanCandidateName(fullName),
+        phone: phoneCheck.local,
+        phoneNormalized: phoneCheck.normalized,
+        desiredJobId: job._id,
+        careerLevel: careerLevel || CAREER_LEVELS[1],
+        desiredJobs: [
+          { jobId: job._id, jobTitle: job.name, jobTitleAr: job.nameAr, careerLevel: careerLevel || CAREER_LEVELS[1], priority: 1 }
+        ],
+        categoryId: job.categoryId,
+        governorate: 'Sharqia',
+        area: '10th of Ramadan',
+        yearsOfExperience: calculateExpYears(careerLevel),
+        qualification: 'Technical Diploma',
+        skills: [jobTitle],
+        availabilityStatus: 'Available',
+        accountStatus: 'active',
+        consentGiven: true,
+        consentDate: new Date(),
+        referralCode,
+        isRecommendation: false,
+        adminNotes: `تم إنشاؤه كمرشح رئيسي عبر استيراد إكسيل بتاريخ ${new Date().toLocaleDateString('ar-EG')}`
+      });
+    }
+  }
+
+  // 2. Pre-process and Create New Approved Job Titles (Requirement 3)
+  const jobTitleMap = new Map();
+  // Pre-load all jobs
+  const allJobs = await Job.find({}).lean();
+  for (const j of allJobs) {
+    if (j.name) jobTitleMap.set(normalizeForComparison(j.name), j);
+    if (j.nameAr) jobTitleMap.set(normalizeForComparison(j.nameAr), j);
+  }
+
+  let newJobsCreatedCount = 0;
+
+  for (const item of items) {
+    if (!item.includeInImport) continue;
+    const title = (item.jobTitle || item.rawJobTitle || '').trim();
+    if (!title) continue;
+
+    const norm = normalizeForComparison(title);
+    if (!jobTitleMap.has(norm) && item.approveNewTitle) {
+      try {
+        let catId = item.categoryId;
+        if (!catId) {
+          const fallbackCat = (await JobCategory.findOne({}))?._id;
+          catId = fallbackCat;
+        }
+
+        const newJob = await Job.create({
+          name: title,
+          nameAr: title,
+          categoryId: catId,
+          isActive: true
+        });
+
+        jobTitleMap.set(norm, newJob);
+        newJobsCreatedCount++;
+      } catch (err) {
+        console.warn(`[Candidate Import] Title creation error for "${title}":`, err.message);
+      }
+    }
+  }
+
+  // 3. Process candidate rows (Requirement 2 & Requirement 1)
+  let createdCount = 0;
+  let replacedCount = 0;
+  let skippedCount = 0;
+  const errors = [];
+
+  for (const item of items) {
+    if (!item.includeInImport) {
+      skippedCount++;
+      continue;
+    }
+
+    try {
+      const phoneCheck = normalizeEgyptianPhone(item.phone);
+      if (!phoneCheck.isValid) {
+        errors.push({ name: item.name, phone: item.phone, error: phoneCheck.error });
+        continue;
+      }
+
+      // Resolve Job
+      const normTitle = normalizeForComparison(item.jobTitle || item.rawJobTitle);
+      const matchedJob = jobTitleMap.get(normTitle) || allJobs[0];
+      const jobId = matchedJob?._id;
+      const jobCategory = matchedJob?.categoryId;
+      const careerLevel = normalizeCareerLevel(item.careerLevel);
+      const expYears = calculateExpYears(careerLevel);
+
+      // Check if candidate exists by phone
+      const existingCandidate = await Candidate.findOne({ phoneNormalized: phoneCheck.normalized });
+
+      if (existingCandidate) {
+        // Requirement 2: Admin choice for phone conflict
+        if (item.replaceChoice === 'skip') {
+          skippedCount++;
+          continue;
+        }
+
+        // Admin chose 'replace': Update existing candidate record
+        existingCandidate.fullName = cleanCandidateName(item.name);
+        existingCandidate.desiredJobId = jobId;
+        existingCandidate.careerLevel = careerLevel;
+        existingCandidate.categoryId = jobCategory;
+        existingCandidate.yearsOfExperience = expYears;
+        existingCandidate.desiredJobs = [
+          {
+            jobId,
+            jobTitle: matchedJob?.name || item.jobTitle,
+            jobTitleAr: matchedJob?.nameAr || item.jobTitle,
+            careerLevel,
+            priority: 1
+          }
+        ];
+        // Link under main candidate as recommendation
+        existingCandidate.isRecommendation = true;
+        existingCandidate.invitedBy = mainCandidateDoc._id;
+        existingCandidate.referredByName = mainCandidateDoc.fullName;
+        existingCandidate.referredByPhone = mainCandidateDoc.phone;
+        existingCandidate.chainParentCandidateId = mainCandidateDoc._id;
+        existingCandidate.adminNotes = `${existingCandidate.adminNotes || ''}\n[استيراد إكسيل]: تم تحديث البيانات وربطه كتوصية تحت (${mainCandidateDoc.fullName} - ${mainCandidateDoc.phone}) بتاريخ ${new Date().toLocaleDateString('ar-EG')}`;
+
+        await existingCandidate.save();
+        replacedCount++;
+      } else {
+        // Create new User if not exists
+        let user = await User.findOne({ phoneNormalized: phoneCheck.normalized });
+        if (!user) {
+          const tempPassword = crypto.randomBytes(8).toString('hex');
+          const passwordHash = await bcrypt.hash(tempPassword, 10);
+          user = await User.create({
+            phone: phoneCheck.local,
+            phoneNormalized: phoneCheck.normalized,
+            passwordHash,
+            role: 'candidate',
+            accountStatus: 'active'
+          });
+        }
+
+        // Generate unique referral code
+        let referralCode = generateReferralCode();
+        let unique = false;
+        while (!unique) {
+          const codeExists = await Candidate.findOne({ referralCode });
+          if (!codeExists) unique = true;
+          else referralCode = generateReferralCode();
+        }
+
+        // Create new Candidate linked under main candidate
+        await Candidate.create({
+          userId: user._id,
+          fullName: cleanCandidateName(item.name),
+          phone: phoneCheck.local,
+          phoneNormalized: phoneCheck.normalized,
+          desiredJobId: jobId,
+          careerLevel,
+          categoryId: jobCategory,
+          desiredJobs: [
+            {
+              jobId,
+              jobTitle: matchedJob?.name || item.jobTitle,
+              jobTitleAr: matchedJob?.nameAr || item.jobTitle,
+              careerLevel,
+              priority: 1
+            }
+          ],
+          governorate: 'Sharqia',
+          area: '10th of Ramadan',
+          yearsOfExperience: expYears,
+          qualification: 'Technical Diploma',
+          skills: [item.jobTitle || 'Industrial'],
+          availabilityStatus: 'Available',
+          accountStatus: 'active',
+          consentGiven: true,
+          consentDate: new Date(),
+          referralCode,
+          isRecommendation: true,
+          invitedBy: mainCandidateDoc._id,
+          referredByName: mainCandidateDoc.fullName,
+          referredByPhone: mainCandidateDoc.phone,
+          chainParentCandidateId: mainCandidateDoc._id,
+          adminNotes: `تم استيراده عبر إكسيل كتوصية تحت المرشح الرئيسي (${mainCandidateDoc.fullName} - ${mainCandidateDoc.phone})`
+        });
+
+        createdCount++;
+      }
+    } catch (rowErr) {
+      console.error(`[Candidate Import] Error processing row for ${item.name}:`, rowErr.message);
+      errors.push({ name: item.name, phone: item.phone, error: rowErr.message });
+    }
+  }
+
+  // 4. Update Main Candidate Referral Count
+  const totalLinked = createdCount + replacedCount;
+  if (totalLinked > 0) {
+    mainCandidateDoc.referralCount = (mainCandidateDoc.referralCount || 0) + totalLinked;
+    await mainCandidateDoc.save();
+  }
+
+  // 5. Log Activity
+  await logActivity({
+    adminId: adminUserId,
+    action: 'CANDIDATE_EXCEL_IMPORT',
+    targetModel: 'Candidate',
+    targetId: mainCandidateDoc._id,
+    details: {
+      mainCandidate: { id: mainCandidateDoc._id, fullName: mainCandidateDoc.fullName, phone: mainCandidateDoc.phone },
+      totalItems: items.length,
+      createdCount,
+      replacedCount,
+      skippedCount,
+      newJobsCreatedCount,
+      errorsCount: errors.length
+    }
+  });
+
+  return {
+    success: true,
+    mainCandidate: {
+      id: mainCandidateDoc._id,
+      fullName: mainCandidateDoc.fullName,
+      phone: mainCandidateDoc.phone
+    },
+    totalProcessed: items.length,
+    createdCount,
+    replacedCount,
+    skippedCount,
+    newJobsCreatedCount,
+    errors
+  };
+}
+
+module.exports = {
+  extractCandidatesFromExcel,
+  searchCandidatesForMain,
+  executeCandidateImport
+};

@@ -1,13 +1,39 @@
 const rateLimit = require('express-rate-limit');
 
-const authLimiter = rateLimit({
+// OWASP A07: Strict limiter on login to protect against brute-force and credential stuffing
+const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // limit each IP to 50 auth requests per windowMs
+  max: 10, // max 10 failed/successful attempts per IP per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
   message: {
     success: false,
-    message: 'Too many login or registration attempts. Please try again after 15 minutes.',
+    message: 'Too many login attempts from this IP. Please try again after 15 minutes.',
+    code: 'LOGIN_RATE_LIMIT_EXCEEDED'
+  }
+});
+
+// OWASP A04: Limiter on registration to prevent automated bot account creation
+const registerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // max 10 registration attempts per IP per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many registration requests. Please wait before registering again.',
+    code: 'REGISTER_RATE_LIMIT_EXCEEDED'
+  }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many authentication requests. Please try again later.',
     code: 'RATE_LIMIT_EXCEEDED'
   }
 });
@@ -24,7 +50,23 @@ const searchLimiter = rateLimit({
   }
 });
 
+// OWASP A04: Global API rate limiter to protect server from Denial of Service (DoS)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // 300 requests per IP per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests to the server. Please slow down.',
+    code: 'GLOBAL_RATE_LIMIT_EXCEEDED'
+  }
+});
+
 module.exports = {
+  loginLimiter,
+  registerLimiter,
   authLimiter,
-  searchLimiter
+  searchLimiter,
+  apiLimiter
 };

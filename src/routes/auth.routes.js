@@ -2,14 +2,14 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
 const { authenticate } = require('../middleware/auth.middleware');
-const { authLimiter } = require('../middleware/rateLimit.middleware');
+const { authLimiter, loginLimiter, registerLimiter } = require('../middleware/rateLimit.middleware');
 
-router.post('/register/candidate', authLimiter, authController.registerCandidate);
-router.post('/register/company', authLimiter, authController.registerCompany);
-router.post('/login', authLimiter, authController.login);
+router.post('/register/candidate', registerLimiter, authController.registerCandidate);
+router.post('/register/company', registerLimiter, authController.registerCompany);
+router.post('/login', loginLimiter, authController.login);
 router.post('/logout', authController.logout);
 router.get('/me', authenticate, authController.getMe);
-router.put('/password', authenticate, authController.updatePassword);
-router.post('/change-initial-password', authenticate, authController.changeInitialPassword);
+router.put('/password', authenticate, authLimiter, authController.updatePassword);
+router.post('/change-initial-password', authenticate, authLimiter, authController.changeInitialPassword);
 
 module.exports = router;

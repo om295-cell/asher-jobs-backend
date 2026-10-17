@@ -29,7 +29,11 @@ function errorHandler(err, req, res, next) {
   }
 
   const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
+  // OWASP A05: In production, never expose raw internal server error details or stack traces
+  const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+  const message = (statusCode === 500 && isProduction)
+    ? 'An unexpected error occurred. Please contact support if the issue persists.'
+    : (err.message || 'Internal Server Error');
 
   return errorResponse(res, message, statusCode, err.code || 'SERVER_ERROR');
 }

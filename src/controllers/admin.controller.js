@@ -1,6 +1,7 @@
 const adminService = require('../services/admin.service');
 const reportService = require('../services/report.service');
 const titleExtractionService = require('../services/titleExtraction.service');
+const candidateImportService = require('../services/candidateImport.service');
 const employerAccountService = require('../services/employerAccount.service');
 const JobSuggestion = require('../models/JobSuggestion');
 const Subscription = require('../models/Subscription');
@@ -682,6 +683,66 @@ async function updateSubscriptionPlan(req, res, next) {
   }
 }
 
+// Candidate Database Excel Import
+// ==========================================
+
+async function extractCandidatesExcel(req, res, next) {
+  try {
+    const buffer = req.file?.buffer;
+    const originalname = req.file?.originalname;
+    const mimetype = req.file?.mimetype;
+    const defaultCategoryId = req.body?.defaultCategoryId;
+
+    if (!buffer) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى رفع ملف إكسيل صالح لاستخراج بيانات المرشحين'
+      });
+    }
+
+    const result = await candidateImportService.extractCandidatesFromExcel({
+      buffer,
+      originalname,
+      mimetype,
+      defaultCategoryId
+    });
+
+    return successResponse(res, result, 'تم استخراج بيانات المرشحين بنجاح للمراجعة');
+  } catch (err) {
+    console.error('[Admin] extractCandidatesExcel error:', err.message);
+    next(err);
+  }
+}
+
+async function searchMainCandidates(req, res, next) {
+  try {
+    const search = req.query?.search || '';
+    const candidates = await candidateImportService.searchCandidatesForMain({ search });
+    return successResponse(res, candidates, 'Candidates found for main selection');
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function executeCandidateImport(req, res, next) {
+  try {
+    const { items, mainCandidate } = req.body;
+    const adminUserId = req.user?._id;
+
+    const result = await candidateImportService.executeCandidateImport({
+      items,
+      mainCandidate,
+      adminUserId
+    });
+
+    return successResponse(res, result, 'تم استيراد قاعدة بيانات المرشحين واعتماد المسميات بنجاح');
+  } catch (err) {
+    console.error('[Admin] executeCandidateImport error:', err.message);
+    next(err);
+  }
+}
+
+
 module.exports = {
   getDashboard,
   listCandidates,
@@ -729,6 +790,9 @@ module.exports = {
   getEmployerActivityRankings,
   getBulkEmployerAnalytics,
   listSubscriptionPlans,
-  updateSubscriptionPlan
+  updateSubscriptionPlan,
+  extractCandidatesExcel,
+  searchMainCandidates,
+  executeCandidateImport
 };
 
