@@ -187,14 +187,14 @@ const recommendationRequestSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
-    // Array of exactly 11 people: index 0 is primary submitter, 1-10 are recommendations
+    // Array of people: index 0 is primary submitter, index 1+ are recommendations (minimum 1 recommendation)
     people: {
       type: [personSchema],
       validate: {
         validator: function (v) {
-          return Array.isArray(v) && v.length === 11;
+          return Array.isArray(v) && v.length >= 2;
         },
-        message: 'A recommendation request must contain exactly 11 people (1 submitter + 10 recommendations).'
+        message: 'A recommendation request must contain at least 2 people (1 submitter + at least 1 recommendation).'
       }
     }
   },

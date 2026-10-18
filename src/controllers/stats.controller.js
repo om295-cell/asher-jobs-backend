@@ -32,48 +32,47 @@ const STATS_CACHE_TTL_MS = 30000; // 30 seconds
  * - candidates
  * - approved companies
  * - real total site visitors
+/**
+ * GET /api/stats
+ * Read-only endpoint returning current counts:
+ * - candidates
+ * - approved companies
+ * - live total site visitors (always fresh)
  */
 async function getStats(req, res) {
   try {
     const now = Date.now();
-    if (statsCache.data && now < statsCache.expiresAt) {
-      return res.status(200).json({
-        success: true,
-        data: statsCache.data
-      });
-    }
-
     const isDbConnected = mongoose.connection.readyState === 1;
 
     let candidateCount = 0;
     let companyCount = 0;
-    let totalVisitors = 0;
 
-    if (isDbConnected) {
+    if (statsCache.data && now < statsCache.expiresAt) {
+      candidateCount = statsCache.data.candidates;
+      companyCount = statsCache.data.companies;
+    } else if (isDbConnected) {
       try {
-        const [cand, comp, vis] = await Promise.all([
+        const [cand, comp] = await Promise.all([
           Candidate.countDocuments({ isDeleted: false, accountStatus: 'active' }),
-          Company.countDocuments({ verificationStatus: 'Approved', isDeleted: false }),
-          getTotalVisitors()
+          Company.countDocuments({ verificationStatus: 'Approved', isDeleted: false })
         ]);
         candidateCount = cand;
         companyCount = comp;
-        totalVisitors = vis;
+        statsCache.data = { candidates: candidateCount, companies: companyCount };
+        statsCache.expiresAt = now + STATS_CACHE_TTL_MS;
       } catch (dbErr) {
         console.warn('[stats] DB query warning:', dbErr.message);
       }
     }
+
+    // Always fetch live visitor count directly so reloading immediately shows the incremented number
+    const totalVisitors = await getTotalVisitors();
 
     const responseData = {
       candidates: candidateCount,
       companies: companyCount,
       visitors: totalVisitors
     };
-
-    if (isDbConnected) {
-      statsCache.data = responseData;
-      statsCache.expiresAt = now + STATS_CACHE_TTL_MS;
-    }
 
     return res.status(200).json({
       success: true,
@@ -94,8 +93,7 @@ async function getStats(req, res) {
 
 /**
  * POST /api/stats/visit
- * Records real unique visitor session.
- * Deduplicates by client IP per day in SiteVisit.
+ * Records every site visit (increments total count on each visit/reload).
  */
 async function recordVisit(req, res) {
   try {
@@ -108,23 +106,15 @@ async function recordVisit(req, res) {
       const forwarded = req.headers['x-forwarded-for'];
       const clientIp = (forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress) || '127.0.0.1';
 
-      // Check if this IP was already recorded today
-      const alreadyVisitedToday = await SiteVisit.findOne({
-        date: today,
-        ips: clientIp
-      }).lean();
-
-      if (!alreadyVisitedToday) {
-        // Unique visitor today: increment daily count and store IP
-        await SiteVisit.findOneAndUpdate(
-          { date: today },
-          {
-            $inc: { count: 1 },
-            $addToSet: { ips: clientIp }
-          },
-          { upsert: true, new: true, setDefaultsOnInsert: true }
-        );
-      }
+      // Increment visitor count on every visit (no deduplication)
+      await SiteVisit.findOneAndUpdate(
+        { date: today },
+        {
+          $inc: { count: 1 },
+          $addToSet: { ips: clientIp }
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
     }
 
     const realTotal = await getTotalVisitors();

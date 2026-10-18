@@ -358,7 +358,7 @@ async function createCandidatesFromRecommendationRequest(request, { includeSubmi
 }
 
 /**
- * Submits a new group recommendation request (exactly 11 people)
+ * Submits a new group recommendation request (submitter + at least 1 recommendation)
  * Handles Case 1 (Chain Linking) and Case 2 (Phone Conflict / Different Names).
  */
 async function submitRecommendationRequest({ people, legalAccepted, ip = '', userAgent = '' }) {
@@ -370,11 +370,11 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
     };
   }
 
-  if (!Array.isArray(people) || people.length !== 11) {
+  if (!Array.isArray(people) || people.length < 2) {
     throw {
       statusCode: 400,
       code: 'INVALID_PEOPLE_COUNT',
-      message: 'يجب إدخال بيانات 11 شخصاً بالضبط (مقدم الطلب + 10 مرشحين موصى بهم).'
+      message: 'يجب إدخال بيانات شخصين على الأقل (مقدم الطلب + مرشح موصى به واحد على الأقل).'
     };
   }
 
@@ -710,7 +710,7 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
       type: 'CHAIN_LINKED_RECOMMENDATION',
       priority: 'medium',
       title: 'ارتباط شبكي: مرشح موصى به سابقاً سجل كمرشح رئيسي',
-      message: `قام المرشح "${primarySubmitter.fullName}" الموصى به سابقاً في الطلب [${chainParentRequestNumber}] بواسطة "${chainParentSubmitterName}"، بالتسجيل كمرشح رئيسي برقم [${requestNumber}] وأضاف 10 ترشيحات جديدة تحت حسابه.`,
+      message: `قام المرشح "${primarySubmitter.fullName}" الموصى به سابقاً في الطلب [${chainParentRequestNumber}] بواسطة "${chainParentSubmitterName}"، بالتسجيل كمرشح رئيسي برقم [${requestNumber}] وأضاف ${recommendations.length} ترشيحات جديدة تحت حسابه.`,
       requestId: request._id,
       requestNumber,
       data: {
@@ -924,7 +924,7 @@ async function resolvePhoneConflict(requestId, { action, notes = '' }, adminUser
     };
     request.adminNotes =
       notes ||
-      `تم استبعاد رقم الهاتف الأساسي (${primaryPerson.phone}) واعتماد الـ 10 ترشيحات المرفقة في قاعدة البيانات للشركات.`;
+      `تم استبعاد رقم الهاتف الأساسي (${primaryPerson.phone}) واعتماد الـ ${(request.people?.length || 1) - 1} ترشيحات المرفقة في قاعدة البيانات للشركات.`;
     request.reviewedBy = adminUserId;
     request.reviewedAt = new Date();
     await request.save();
