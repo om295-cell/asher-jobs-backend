@@ -95,8 +95,9 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
 
   // For primary submitters, check for Chain Linking (Case 1) or Name Conflict (Case 2)
   if (isPrimary) {
-    // Check if phone was previously entered as a recommendation (Case 1: Chain Linking)
+    // Check if phone was previously entered as a recommendation (Case 1: Chain Linking) - excluding rejected requests
     const prevRecommendation = await RecommendationRequest.findOne({
+      status: { $in: ['pending', 'phone_duplicate_pending', 'approved', 'partially_approved'] },
       'people': {
         $elemMatch: {
           phoneNormalized: normalized,
@@ -116,20 +117,38 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
       };
     }
 
-    // Check if phone exists with a different name in RecommendationRequest or Candidate (Case 2: Conflict)
+    // Check if phone exists with a different name in RecommendationRequest or Candidate (Case 2: Conflict) - excluding rejected requests
     const [existingReq, existingCand] = await Promise.all([
-      RecommendationRequest.findOne({ 'people.phoneNormalized': normalized })
+      RecommendationRequest.findOne({
+        status: { $in: ['pending', 'phone_duplicate_pending', 'approved', 'partially_approved'] },
+        'people.phoneNormalized': normalized
+      })
         .sort({ createdAt: -1 })
-        .select('requestNumber people.fullName people.phoneNormalized')
+        .select('requestNumber people.fullName people.phoneNormalized status rejectedSubmitterPhone')
         .lean(),
       Candidate.findOne({ phoneNormalized: normalized, isDeleted: false })
-        .select('fullName phoneNormalized')
+        .select('fullName phoneNormalized recommendationRequestId')
         .lean()
     ]);
 
+    // If candidate belongs to a rejected request, ignore
+    let validCand = existingCand;
+    if (existingCand?.recommendationRequestId) {
+      const parentReq = await RecommendationRequest.findById(existingCand.recommendationRequestId).select('status').lean();
+      if (parentReq && parentReq.status === 'rejected') {
+        validCand = null;
+      }
+    }
+
+    // If existing request is partially_approved and this phone is the rejected submitter, ignore
+    let validReq = existingReq;
+    if (existingReq?.status === 'partially_approved' && existingReq.rejectedSubmitterPhone === normalized) {
+      validReq = null;
+    }
+
     const existingName =
-      existingReq?.people?.find((p) => p.phoneNormalized === normalized)?.fullName ||
-      existingCand?.fullName;
+      validReq?.people?.find((p) => p.phoneNormalized === normalized)?.fullName ||
+      validCand?.fullName;
 
     if (existingName && currentName && areNamesSubstantiallyDifferent(existingName, currentName)) {
       return {
@@ -143,48 +162,80 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
     }
   }
 
-  // 1. Check Candidate collection
+  // 1. Check Candidate collection (excluding candidates linked to rejected requests)
   const existingCandidate = await Candidate.findOne({
     phoneNormalized: normalized,
     isDeleted: false
-  }).select('_id fullName').lean();
+  }).select('_id fullName recommendationRequestId').lean();
 
   if (existingCandidate) {
-    return {
-      isAvailable: false,
-      existsIn: 'candidate',
-      message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
-      phone: phoneValidation.phone
-    };
+    let isCandidateValid = true;
+    if (existingCandidate.recommendationRequestId) {
+      const parentReq = await RecommendationRequest.findById(existingCandidate.recommendationRequestId).select('status').lean();
+      if (parentReq && parentReq.status === 'rejected') {
+        isCandidateValid = false;
+      }
+    }
+    if (isCandidateValid) {
+      return {
+        isAvailable: false,
+        existsIn: 'candidate',
+        message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
+        phone: phoneValidation.phone
+      };
+    }
   }
 
-  // 2. Check User collection
+  // 2. Check User collection (only block if user has an active non-rejected Candidate profile)
   const existingUser = await User.findOne({
     phoneNormalized: normalized
   }).select('_id phone').lean();
 
   if (existingUser) {
-    return {
-      isAvailable: false,
-      existsIn: 'user',
-      message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
-      phone: phoneValidation.phone
-    };
+    const activeCand = await Candidate.findOne({
+      $or: [{ userId: existingUser._id }, { phoneNormalized: normalized }],
+      isDeleted: false
+    }).select('_id recommendationRequestId').lean();
+
+    let isUserBlocked = false;
+    if (activeCand) {
+      if (activeCand.recommendationRequestId) {
+        const parentReq = await RecommendationRequest.findById(activeCand.recommendationRequestId).select('status').lean();
+        if (!parentReq || parentReq.status !== 'rejected') {
+          isUserBlocked = true;
+        }
+      } else {
+        isUserBlocked = true;
+      }
+    }
+
+    if (isUserBlocked) {
+      return {
+        isAvailable: false,
+        existsIn: 'user',
+        message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
+        phone: phoneValidation.phone
+      };
+    }
   }
 
-  // 3. Check existing RecommendationRequests (pending or approved)
+  // 3. Check existing RecommendationRequests (pending or approved, excluding rejected requests and rejected submitters)
   const existingReq = await RecommendationRequest.findOne({
-    status: { $in: ['pending', 'phone_duplicate_pending', 'approved'] },
+    status: { $in: ['pending', 'phone_duplicate_pending', 'approved', 'partially_approved'] },
     'people.phoneNormalized': normalized
-  }).select('requestNumber status').lean();
+  }).select('requestNumber status rejectedSubmitterPhone').lean();
 
   if (existingReq) {
-    return {
-      isAvailable: false,
-      existsIn: 'recommendation',
-      message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
-      phone: phoneValidation.phone
-    };
+    const isRejectedSubmitter =
+      existingReq.status === 'partially_approved' && existingReq.rejectedSubmitterPhone === normalized;
+    if (!isRejectedSubmitter) {
+      return {
+        isAvailable: false,
+        existsIn: 'recommendation',
+        message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
+        phone: phoneValidation.phone
+      };
+    }
   }
 
   return {
@@ -525,8 +576,10 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
   // =========================================================================
   // CASE 1: Chain Linking Check
   // Has this submitter previously appeared as a recommendation under another submitter?
+  // (Excluding rejected requests)
   // =========================================================================
   const parentChainReq = await RecommendationRequest.findOne({
+    status: { $in: ['pending', 'phone_duplicate_pending', 'approved', 'partially_approved'] },
     'people': {
       $elemMatch: {
         phoneNormalized: primarySubmitter.phoneNormalized,
@@ -558,6 +611,7 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
 
   // =========================================================================
   // CASE 2: Phone Conflict Check (2 different names with the same phone)
+  // (Excluding rejected requests)
   // =========================================================================
   let hasPhoneConflict = false;
   let phoneConflictStatus = 'none';
@@ -565,6 +619,7 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
 
   const [existingSamePhoneReq, existingSamePhoneCand] = await Promise.all([
     RecommendationRequest.findOne({
+      status: { $in: ['pending', 'phone_duplicate_pending', 'approved', 'partially_approved'] },
       'people.phoneNormalized': primarySubmitter.phoneNormalized
     }).sort({ createdAt: -1 }),
     Candidate.findOne({
@@ -573,9 +628,27 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
     })
   ]);
 
+  // If candidate belongs to a rejected request, ignore
+  let activeSubmitterCand = existingSamePhoneCand;
+  if (existingSamePhoneCand?.recommendationRequestId) {
+    const pReq = await RecommendationRequest.findById(existingSamePhoneCand.recommendationRequestId).select('status').lean();
+    if (pReq && pReq.status === 'rejected') {
+      activeSubmitterCand = null;
+    }
+  }
+
+  // If request was partially_approved and this phone was the rejected submitter, ignore
+  let activeSubmitterReq = existingSamePhoneReq;
+  if (
+    existingSamePhoneReq?.status === 'partially_approved' &&
+    existingSamePhoneReq.rejectedSubmitterPhone === primarySubmitter.phoneNormalized
+  ) {
+    activeSubmitterReq = null;
+  }
+
   const priorName =
-    existingSamePhoneReq?.people?.find((p) => p.phoneNormalized === primarySubmitter.phoneNormalized)?.fullName ||
-    existingSamePhoneCand?.fullName;
+    activeSubmitterReq?.people?.find((p) => p.phoneNormalized === primarySubmitter.phoneNormalized)?.fullName ||
+    activeSubmitterCand?.fullName;
 
   if (priorName && areNamesSubstantiallyDifferent(priorName, primarySubmitter.fullName)) {
     // Different names with the same phone number -> CASE 2!
@@ -583,31 +656,62 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
     phoneConflictStatus = 'pending_investigation';
     phoneConflictDetails = {
       conflictingPhone: primarySubmitter.phone,
-      firstRequestNumber: existingSamePhoneReq?.requestNumber || 'CANDIDATE_PROFILE',
+      firstRequestNumber: activeSubmitterReq?.requestNumber || 'CANDIDATE_PROFILE',
       firstSubmitterName: priorName,
       secondRequestNumber: requestNumber,
       secondSubmitterName: primarySubmitter.fullName
     };
   }
 
-  // Check recommendations (people 1..10) against existing DB
+  // Check recommendations (people 1..10) against existing DB (excluding rejected requests)
   const recPhonesList = recommendations.map((r) => r.phoneNormalized);
   const [existingRecCandidates, existingRecUsers, existingRecRequests] = await Promise.all([
-    Candidate.find({ phoneNormalized: { $in: recPhonesList }, isDeleted: false }).select('phoneNormalized').lean(),
-    User.find({ phoneNormalized: { $in: recPhonesList } }).select('phoneNormalized').lean(),
+    Candidate.find({ phoneNormalized: { $in: recPhonesList }, isDeleted: false }).select('phoneNormalized recommendationRequestId').lean(),
+    User.find({ phoneNormalized: { $in: recPhonesList } }).select('_id phoneNormalized').lean(),
     RecommendationRequest.find({
-      status: { $in: ['pending', 'phone_duplicate_pending', 'approved'] },
+      status: { $in: ['pending', 'phone_duplicate_pending', 'approved', 'partially_approved'] },
       'people.phoneNormalized': { $in: recPhonesList }
-    }).select('requestNumber people.phoneNormalized').lean()
+    }).select('requestNumber people.phoneNormalized status rejectedSubmitterPhone').lean()
   ]);
 
+  // Exclude candidates belonging to a rejected request
+  const candidateReqIds = existingRecCandidates.map((c) => c.recommendationRequestId).filter(Boolean);
+  const rejectedReqIdsSet = new Set();
+  if (candidateReqIds.length > 0) {
+    const rejectedReqs = await RecommendationRequest.find({
+      _id: { $in: candidateReqIds },
+      status: 'rejected'
+    }).select('_id').lean();
+    rejectedReqs.forEach((r) => rejectedReqIdsSet.add(r._id.toString()));
+  }
+
   const existingRecPhonesSet = new Set();
-  existingRecCandidates.forEach((c) => existingRecPhonesSet.add(c.phoneNormalized));
-  existingRecUsers.forEach((u) => existingRecPhonesSet.add(u.phoneNormalized));
+  existingRecCandidates.forEach((c) => {
+    if (!c.recommendationRequestId || !rejectedReqIdsSet.has(c.recommendationRequestId.toString())) {
+      existingRecPhonesSet.add(c.phoneNormalized);
+    }
+  });
+
+  // For users, only block if they have an active candidate profile not tied to a rejected request
+  for (const u of existingRecUsers) {
+    if (!existingRecPhonesSet.has(u.phoneNormalized)) {
+      const uCand = await Candidate.findOne({ userId: u._id, isDeleted: false }).select('recommendationRequestId').lean();
+      if (uCand) {
+        if (!uCand.recommendationRequestId || !rejectedReqIdsSet.has(uCand.recommendationRequestId.toString())) {
+          existingRecPhonesSet.add(u.phoneNormalized);
+        }
+      }
+    }
+  }
+
   existingRecRequests.forEach((r) => {
     r.people?.forEach((p) => {
       if (recPhonesList.includes(p.phoneNormalized)) {
-        existingRecPhonesSet.add(p.phoneNormalized);
+        // If it was a rejected submitter in partially_approved request, don't block
+        const isRejectedSubmitter = r.status === 'partially_approved' && r.rejectedSubmitterPhone === p.phoneNormalized;
+        if (!isRejectedSubmitter) {
+          existingRecPhonesSet.add(p.phoneNormalized);
+        }
       }
     });
   });
@@ -635,8 +739,8 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
   // If submitter has identical name duplicate (not a conflict, not a chain link), block standard duplicate
   if (!isChainLinked && !hasPhoneConflict) {
     const isSubmitterDuplicate =
-      (existingSamePhoneReq && !areNamesSubstantiallyDifferent(priorName, primarySubmitter.fullName)) ||
-      (existingSamePhoneCand && !areNamesSubstantiallyDifferent(priorName, primarySubmitter.fullName));
+      (activeSubmitterReq && !areNamesSubstantiallyDifferent(priorName, primarySubmitter.fullName)) ||
+      (activeSubmitterCand && !areNamesSubstantiallyDifferent(priorName, primarySubmitter.fullName));
 
     if (isSubmitterDuplicate) {
       throw {
@@ -929,6 +1033,18 @@ async function resolvePhoneConflict(requestId, { action, notes = '' }, adminUser
     request.reviewedAt = new Date();
     await request.save();
 
+    // Clean up main submitter candidate if it was previously created
+    const mainCand = await Candidate.findOne({
+      recommendationRequestId: request._id,
+      phoneNormalized: primaryPerson.phoneNormalized
+    });
+    if (mainCand) {
+      await Candidate.deleteOne({ _id: mainCand._id });
+      if (mainCand.userId) {
+        await User.deleteOne({ _id: mainCand.userId, role: 'candidate' });
+      }
+    }
+
     // Create Candidate documents for recommendations 1..10 only (submitter excluded)
     await createCandidatesFromRecommendationRequest(request, { includeSubmitter: false });
 
@@ -945,6 +1061,14 @@ async function resolvePhoneConflict(requestId, { action, notes = '' }, adminUser
     request.reviewedBy = adminUserId;
     request.reviewedAt = new Date();
     await request.save();
+
+    // Clean up any candidate documents and auto-created user accounts created for this request
+    const linkedCandidates = await Candidate.find({ recommendationRequestId: request._id });
+    const userIds = linkedCandidates.map((c) => c.userId).filter(Boolean);
+    await Candidate.deleteMany({ recommendationRequestId: request._id });
+    if (userIds.length > 0) {
+      await User.deleteMany({ _id: { $in: userIds }, role: 'candidate' });
+    }
   } else {
     throw { statusCode: 400, message: 'إجراء غير صالح', code: 'INVALID_ACTION' };
   }
@@ -995,6 +1119,16 @@ async function adminUpdateRequestStatus(id, { status, adminNotes = '' }, adminUs
   // If approved, create candidates so employers can discover them
   if (status === 'approved') {
     await createCandidatesFromRecommendationRequest(request, { includeSubmitter: true });
+  }
+
+  // If rejected, clean up any candidate documents and auto-created user accounts previously generated for this request
+  if (status === 'rejected') {
+    const linkedCandidates = await Candidate.find({ recommendationRequestId: request._id });
+    const userIds = linkedCandidates.map((c) => c.userId).filter(Boolean);
+    await Candidate.deleteMany({ recommendationRequestId: request._id });
+    if (userIds.length > 0) {
+      await User.deleteMany({ _id: { $in: userIds }, role: 'candidate' });
+    }
   }
 
   return {
