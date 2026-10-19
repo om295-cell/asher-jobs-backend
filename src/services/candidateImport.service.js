@@ -437,7 +437,7 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
     if (!title) continue;
 
     const norm = normalizeForComparison(title);
-    if (!jobTitleMap.has(norm) && item.approveNewTitle) {
+    if (!item.jobId && !jobTitleMap.has(norm) && item.approveNewTitle) {
       try {
         let catId = item.categoryId;
         if (!catId) {
@@ -479,9 +479,15 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
         continue;
       }
 
-      // Resolve Job
-      const normTitle = normalizeForComparison(item.jobTitle || item.rawJobTitle);
-      const matchedJob = jobTitleMap.get(normTitle) || allJobs[0];
+      // Resolve Job: Prefer explicitly selected system jobId, fallback to normalized title match
+      let matchedJob = null;
+      if (item.jobId) {
+        matchedJob = await Job.findById(item.jobId).lean();
+      }
+      if (!matchedJob) {
+        const normTitle = normalizeForComparison(item.jobTitle || item.rawJobTitle);
+        matchedJob = jobTitleMap.get(normTitle) || allJobs[0];
+      }
       const jobId = matchedJob?._id;
       const jobCategory = matchedJob?.categoryId;
       const careerLevel = normalizeCareerLevel(item.careerLevel);
