@@ -118,13 +118,7 @@ function formatCandidateRow(c, jobTitleName) {
     'Primary Job': c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A',
     'Career Level': c.careerLevel || 'N/A',
     'Secondary Job': c.secondJobId ? (c.secondJobId.nameAr || c.secondJobId.name) : 'None',
-    'Tertiary Job': c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'None',
-    'Governorate': c.governorate || '',
-    'Area': c.area || '',
-    'Years of Experience': c.yearsOfExperience || 0,
-    'Qualification': c.qualification || '',
-    'Skills': Array.isArray(c.skills) ? c.skills.join(', ') : '',
-    'Availability': c.availabilityStatus || 'Available'
+    'Tertiary Job': c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'None'
   };
 }
 

@@ -76,14 +76,7 @@ async function getExportRecords(queryParams, company = null) {
     'Career Level #2': c.secondCareerLevel || '',
     'Job #3': c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'None',
     'Career Level #3': c.thirdCareerLevel || '',
-    'Category': c.categoryId ? (c.categoryId.nameAr || c.categoryId.name) : 'N/A',
-    'Governorate': c.governorate,
-    'Area': c.area,
-    'Years of Experience': c.yearsOfExperience,
-    'Qualification': c.qualification,
-    'Skills': Array.isArray(c.skills) ? c.skills.join(', ') : '',
-    'Availability': c.availabilityStatus,
-    'Registration Date': c.createdAt ? new Date(c.createdAt).toLocaleDateString('en-GB') : ''
+    'Category': c.categoryId ? (c.categoryId.nameAr || c.categoryId.name) : 'N/A'
   }));
 }
 
