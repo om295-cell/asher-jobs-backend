@@ -18,6 +18,26 @@ function cleanCandidateName(rawName) {
   return rawName.trim().replace(/\s+/g, ' ');
 }
 
+function cleanExcelPhone(val) {
+  if (val === null || val === undefined) return '';
+  let str = String(val).trim();
+  // Strip trailing decimals like .0 or .00
+  str = str.replace(/\.0+$/, '');
+  // If scientific notation e.g. 1.012345678e+9 or 1.012345678e+10
+  if (/^\d+\.?\d*e\+\d+$/i.test(str)) {
+    try {
+      str = BigInt(Math.round(Number(str))).toString();
+    } catch (e) {}
+  }
+  // Remove non-digit characters except leading plus
+  str = str.replace(/[\s\-\(\)\.]/g, '');
+  // If 10 digits starting with 1, Excel stripped the leading 0 -> prepend '0'
+  if (/^1[0125]\d{8}$/.test(str)) {
+    str = '0' + str;
+  }
+  return str;
+}
+
 function normalizeCareerLevel(rawLevel) {
   if (!rawLevel || typeof rawLevel !== 'string') return CAREER_LEVELS[1]; // Default to 'متوسط (3-5 سنوات)'
   const str = rawLevel.trim().toLowerCase();
@@ -52,11 +72,11 @@ function calculateExpYears(levelStr) {
 
 function generateReferralCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = 'ASH-';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  let rand = '';
+  for (let i = 0; i < 4; i++) {
+    rand += chars.charAt(Math.floor(Math.random() * chars.length));
   }
-  return code;
+  return `ASH-${Date.now().toString(36).toUpperCase()}-${rand}`;
 }
 
 /**
@@ -67,14 +87,37 @@ async function extractCandidatesFromExcel({ buffer, originalname, mimetype, defa
     throw { statusCode: 400, message: 'ملف الإكسيل مطلوب للاستخراج' };
   }
 
-  const workbook = xlsx.read(buffer, { type: 'buffer' });
+  const workbook = xlsx.read(buffer, { type: 'buffer', codepage: 65001, cellDates: true });
   const firstSheetName = workbook.SheetNames[0];
   if (!firstSheetName) {
     throw { statusCode: 400, message: 'الملف المرفوع لا يحتوي على أي أوراق عمل (Sheets)' };
   }
 
   const sheet = workbook.Sheets[firstSheetName];
-  const rawRows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+  if (!sheet) {
+    throw { statusCode: 400, message: 'تعذر قراءة ورقة العمل من الملف المرفوع' };
+  }
+
+  // Recalculate sheet['!ref'] dynamically to guarantee that sheet_to_json does not truncate at 40-50 rows
+  let minR = Infinity, maxR = -Infinity, minC = Infinity, maxC = -Infinity;
+  for (const key of Object.keys(sheet)) {
+    if (key.startsWith('!')) continue;
+    try {
+      const decoded = xlsx.utils.decode_cell(key);
+      if (decoded.r < minR) minR = decoded.r;
+      if (decoded.r > maxR) maxR = decoded.r;
+      if (decoded.c < minC) minC = decoded.c;
+      if (decoded.c > maxC) maxC = decoded.c;
+    } catch (e) {}
+  }
+  if (maxR >= 0 && maxC >= 0) {
+    sheet['!ref'] = xlsx.utils.encode_range({
+      s: { r: Math.min(minR, 0), c: Math.min(minC, 0) },
+      e: { r: maxR, c: maxC }
+    });
+  }
+
+  const rawRows = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '', blankrows: false });
 
   if (!rawRows || rawRows.length < 2) {
     throw { statusCode: 400, message: 'الملف المرفوع فارغ أو لا يحتوي على صفوف بيانات كافية' };
@@ -87,8 +130,8 @@ async function extractCandidatesFromExcel({ buffer, originalname, mimetype, defa
   let levelCol = -1;
   let headerRowIndex = 0;
 
-  // Search first 5 rows for header keywords
-  for (let r = 0; r < Math.min(5, rawRows.length); r++) {
+  // Search first 10 rows for header keywords
+  for (let r = 0; r < Math.min(10, rawRows.length); r++) {
     const row = rawRows[r];
     if (!Array.isArray(row)) continue;
 
@@ -167,108 +210,113 @@ async function extractCandidatesFromExcel({ buffer, originalname, mimetype, defa
   let existingTitlesCount = 0;
 
   for (let r = headerRowIndex + 1; r < rawRows.length; r++) {
-    const row = rawRows[r];
-    if (!Array.isArray(row) || row.length === 0) continue;
+    try {
+      const row = rawRows[r];
+      if (!Array.isArray(row) || row.length === 0) continue;
 
-    const rawName = String(row[nameCol] !== undefined ? row[nameCol] : '').trim();
-    const rawPhone = String(row[phoneCol] !== undefined ? row[phoneCol] : '').trim();
-    const rawJob = jobCol !== -1 && row[jobCol] !== undefined ? String(row[jobCol]).trim() : '';
-    const rawLevel = levelCol !== -1 && row[levelCol] !== undefined ? String(row[levelCol]).trim() : '';
+      const rawName = String(row[nameCol] !== undefined ? row[nameCol] : '').trim();
+      const rawPhoneRaw = row[phoneCol] !== undefined ? row[phoneCol] : '';
+      const cleanedPhone = cleanExcelPhone(rawPhoneRaw);
+      const rawJob = jobCol !== -1 && row[jobCol] !== undefined ? String(row[jobCol]).trim() : '';
+      const rawLevel = levelCol !== -1 && row[levelCol] !== undefined ? String(row[levelCol]).trim() : '';
 
-    // Skip empty rows
-    if (!rawName && !rawPhone && !rawJob) continue;
+      // Skip empty rows
+      if (!rawName && !cleanedPhone && !rawJob) continue;
 
-    const name = cleanCandidateName(rawName);
-    const careerLevel = normalizeCareerLevel(rawLevel);
+      const name = cleanCandidateName(rawName);
+      const careerLevel = normalizeCareerLevel(rawLevel);
 
-    // Validate and normalize phone
-    let phone = rawPhone.replace(/\s+/g, '');
-    let phoneNormalized = '';
-    let isPhoneValid = false;
-    let phoneError = '';
+      // Validate and normalize phone
+      let phone = cleanedPhone;
+      let phoneNormalized = '';
+      let isPhoneValid = false;
+      let phoneError = '';
 
-    const phoneCheck = normalizeEgyptianPhone(phone);
-    if (phoneCheck.isValid) {
-      isPhoneValid = true;
-      phone = phoneCheck.local;
-      phoneNormalized = phoneCheck.normalized;
-    } else {
-      phoneError = phoneCheck.error || 'رقم هاتف غير صالح';
-    }
-
-    // Check Duplicate Phone in Database (Requirement 2)
-    let phoneExists = false;
-    let existingCandidate = null;
-    let replaceChoice = 'replace'; // Default choice for admin
-
-    if (isPhoneValid) {
-      if (candidatePhoneMap.has(phoneNormalized) || candidatePhoneMap.has(phone)) {
-        phoneExists = true;
-        const matchedCand = candidatePhoneMap.get(phoneNormalized) || candidatePhoneMap.get(phone);
-        existingCandidate = {
-          id: matchedCand._id,
-          fullName: matchedCand.fullName,
-          phone: matchedCand.phone,
-          currentJobTitle: matchedCand.desiredJobId?.nameAr || matchedCand.desiredJobId?.name || 'غير محدد',
-          careerLevel: matchedCand.careerLevel || 'غير محدد'
-        };
-        phoneConflictCount++;
-      } else if (seenPhonesInBatch.has(phoneNormalized)) {
-        phoneError = 'مكرر داخل نفس ملف الإكسيل المرفوع';
-        isPhoneValid = false;
+      const phoneCheck = normalizeEgyptianPhone(phone);
+      if (phoneCheck.isValid) {
+        isPhoneValid = true;
+        phone = phoneCheck.local;
+        phoneNormalized = phoneCheck.normalized;
       } else {
-        seenPhonesInBatch.add(phoneNormalized);
+        phoneError = phoneCheck.error || 'رقم هاتف غير صالح';
       }
-    }
 
-    // Check Job Title in Database (Requirement 3)
-    const normJob = normalizeForComparison(rawJob);
-    let titleExists = false;
-    let matchedJob = null;
-    let suggestedCategoryId = fallbackCategory ? fallbackCategory._id.toString() : '';
-    let suggestedCategoryName = fallbackCategory ? (fallbackCategory.nameAr || fallbackCategory.name) : '';
+      // Check Duplicate Phone in Database (Requirement 2)
+      let phoneExists = false;
+      let existingCandidate = null;
+      let replaceChoice = 'replace'; // Default choice for admin
 
-    if (normJob && jobMap.has(normJob)) {
-      titleExists = true;
-      const jobDoc = jobMap.get(normJob);
-      matchedJob = {
-        id: jobDoc._id,
-        name: jobDoc.name,
-        nameAr: jobDoc.nameAr,
-        categoryId: jobDoc.categoryId?._id || jobDoc.categoryId,
-        categoryName: jobDoc.categoryId?.nameAr || jobDoc.categoryId?.name || ''
-      };
-      suggestedCategoryId = jobDoc.categoryId?._id?.toString() || jobDoc.categoryId?.toString() || suggestedCategoryId;
-      suggestedCategoryName = jobDoc.categoryId?.nameAr || jobDoc.categoryId?.name || suggestedCategoryName;
-      existingTitlesCount++;
-    } else {
-      titleExists = false;
-      if (rawJob) {
-        newTitlesCount++;
+      if (isPhoneValid) {
+        if (candidatePhoneMap.has(phoneNormalized) || candidatePhoneMap.has(phone)) {
+          phoneExists = true;
+          const matchedCand = candidatePhoneMap.get(phoneNormalized) || candidatePhoneMap.get(phone);
+          existingCandidate = {
+            id: matchedCand._id,
+            fullName: matchedCand.fullName,
+            phone: matchedCand.phone,
+            currentJobTitle: matchedCand.desiredJobId?.nameAr || matchedCand.desiredJobId?.name || 'غير محدد',
+            careerLevel: matchedCand.careerLevel || 'غير محدد'
+          };
+          phoneConflictCount++;
+        } else if (seenPhonesInBatch.has(phoneNormalized)) {
+          phoneError = 'مكرر داخل نفس ملف الإكسيل المرفوع';
+          isPhoneValid = false;
+        } else {
+          seenPhonesInBatch.add(phoneNormalized);
+        }
       }
-    }
 
-    items.push({
-      id: `cand-${Date.now()}-${r}`,
-      rowIndex: r + 1,
-      name: name || rawName,
-      phone: phone || rawPhone,
-      phoneNormalized,
-      isPhoneValid,
-      phoneError,
-      phoneExists,
-      existingCandidate,
-      replaceChoice, // 'replace' | 'skip'
-      rawJobTitle: rawJob,
-      jobTitle: rawJob,
-      titleExists,
-      matchedJob,
-      approveNewTitle: !titleExists && !!rawJob, // Admin approval flag
-      categoryId: suggestedCategoryId,
-      categoryName: suggestedCategoryName,
-      careerLevel,
-      includeInImport: isPhoneValid && !!name // Checked by default if valid
-    });
+      // Check Job Title in Database (Requirement 3)
+      const normJob = normalizeForComparison(rawJob);
+      let titleExists = false;
+      let matchedJob = null;
+      let suggestedCategoryId = fallbackCategory ? fallbackCategory._id.toString() : '';
+      let suggestedCategoryName = fallbackCategory ? (fallbackCategory.nameAr || fallbackCategory.name) : '';
+
+      if (normJob && jobMap.has(normJob)) {
+        titleExists = true;
+        const jobDoc = jobMap.get(normJob);
+        matchedJob = {
+          id: jobDoc._id,
+          name: jobDoc.name,
+          nameAr: jobDoc.nameAr,
+          categoryId: jobDoc.categoryId?._id || jobDoc.categoryId,
+          categoryName: jobDoc.categoryId?.nameAr || jobDoc.categoryId?.name || ''
+        };
+        suggestedCategoryId = jobDoc.categoryId?._id?.toString() || jobDoc.categoryId?.toString() || suggestedCategoryId;
+        suggestedCategoryName = jobDoc.categoryId?.nameAr || jobDoc.categoryId?.name || suggestedCategoryName;
+        existingTitlesCount++;
+      } else {
+        titleExists = false;
+        if (rawJob) {
+          newTitlesCount++;
+        }
+      }
+
+      items.push({
+        id: `cand-${Date.now()}-${r}`,
+        rowIndex: r + 1,
+        name: name || rawName,
+        phone: phone || String(rawPhoneRaw || '').trim(),
+        phoneNormalized,
+        isPhoneValid,
+        phoneError,
+        phoneExists,
+        existingCandidate,
+        replaceChoice, // 'replace' | 'skip'
+        rawJobTitle: rawJob,
+        jobTitle: rawJob,
+        titleExists,
+        matchedJob,
+        approveNewTitle: !titleExists && !!rawJob, // Admin approval flag
+        categoryId: suggestedCategoryId,
+        categoryName: suggestedCategoryName,
+        careerLevel,
+        includeInImport: isPhoneValid && !!name // Checked by default if valid
+      });
+    } catch (rowError) {
+      console.warn(`[Candidate Extract] Error parsing row ${r + 1}:`, rowError.message);
+    }
   }
 
   return {
@@ -362,10 +410,19 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
       });
 
       if (!job) {
+        let mainCatId = categoryId;
+        if (!mainCatId) {
+          let fallbackCat = await JobCategory.findOne({});
+          if (!fallbackCat) {
+            fallbackCat = await JobCategory.create({ name: 'General', nameAr: 'عام' });
+          }
+          mainCatId = fallbackCat._id;
+        }
+
         job = await Job.create({
           name: jobTitle,
           nameAr: jobTitle,
-          categoryId: categoryId || (await JobCategory.findOne({}))?._id,
+          categoryId: mainCatId,
           isActive: true
         });
       }
@@ -384,14 +441,7 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
         });
       }
 
-      // Generate unique referral code
-      let referralCode = generateReferralCode();
-      let unique = false;
-      while (!unique) {
-        const existingCode = await Candidate.findOne({ referralCode });
-        if (!existingCode) unique = true;
-        else referralCode = generateReferralCode();
-      }
+      const referralCode = generateReferralCode();
 
       mainCandidateDoc = await Candidate.create({
         userId: user._id,
@@ -421,10 +471,12 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
   }
 
   // 2. Pre-process and Create New Approved Job Titles (Requirement 3)
-  const jobTitleMap = new Map();
-  // Pre-load all jobs
   const allJobs = await Job.find({}).lean();
+  const jobByIdMap = new Map();
+  const jobTitleMap = new Map();
+
   for (const j of allJobs) {
+    jobByIdMap.set(String(j._id), j);
     if (j.name) jobTitleMap.set(normalizeForComparison(j.name), j);
     if (j.nameAr) jobTitleMap.set(normalizeForComparison(j.nameAr), j);
   }
@@ -441,8 +493,11 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
       try {
         let catId = item.categoryId;
         if (!catId) {
-          const fallbackCat = (await JobCategory.findOne({}))?._id;
-          catId = fallbackCat;
+          let fallbackCat = await JobCategory.findOne({});
+          if (!fallbackCat) {
+            fallbackCat = await JobCategory.create({ name: 'General', nameAr: 'عام' });
+          }
+          catId = fallbackCat._id;
         }
 
         const newJob = await Job.create({
@@ -452,7 +507,9 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
           isActive: true
         });
 
-        jobTitleMap.set(norm, newJob);
+        const newJobLean = newJob.toObject ? newJob.toObject() : newJob;
+        jobByIdMap.set(String(newJob._id), newJobLean);
+        jobTitleMap.set(norm, newJobLean);
         newJobsCreatedCount++;
       } catch (err) {
         console.warn(`[Candidate Import] Title creation error for "${title}":`, err.message);
@@ -460,7 +517,49 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
     }
   }
 
-  // 3. Process candidate rows (Requirement 2 & Requirement 1)
+  // 3. Batch Pre-fetch all Existing Candidates and Users to eliminate roundtrips
+  const includedItems = items.filter((i) => i.includeInImport);
+  const normalizedPhones = [];
+  const localPhones = [];
+  for (const it of includedItems) {
+    const pCheck = normalizeEgyptianPhone(it.phone);
+    if (pCheck.isValid) {
+      normalizedPhones.push(pCheck.normalized);
+      localPhones.push(pCheck.local);
+    }
+  }
+
+  const [existingCandidateDocs, existingUserDocs] = await Promise.all([
+    Candidate.find({
+      $or: [
+        { phoneNormalized: { $in: normalizedPhones } },
+        { phone: { $in: localPhones } }
+      ]
+    }),
+    User.find({
+      $or: [
+        { phoneNormalized: { $in: normalizedPhones } },
+        { phone: { $in: localPhones } }
+      ]
+    })
+  ]);
+
+  const candidateByPhoneMap = new Map();
+  for (const c of existingCandidateDocs) {
+    if (c.phoneNormalized) candidateByPhoneMap.set(c.phoneNormalized, c);
+    if (c.phone) candidateByPhoneMap.set(c.phone, c);
+  }
+
+  const userByPhoneMap = new Map();
+  for (const u of existingUserDocs) {
+    if (u.phoneNormalized) userByPhoneMap.set(u.phoneNormalized, u);
+    if (u.phone) userByPhoneMap.set(u.phone, u);
+  }
+
+  // Pre-generate shared password hash ONCE to prevent CPU blocking on large batches
+  const sharedPasswordHash = await bcrypt.hash('AsherCandidate@' + crypto.randomBytes(4).toString('hex'), 10);
+
+  // 4. Process candidate rows (Requirement 2 & Requirement 1)
   let createdCount = 0;
   let replacedCount = 0;
   let skippedCount = 0;
@@ -481,20 +580,20 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
 
       // Resolve Job: Prefer explicitly selected system jobId, fallback to normalized title match
       let matchedJob = null;
-      if (item.jobId) {
-        matchedJob = await Job.findById(item.jobId).lean();
+      if (item.jobId && jobByIdMap.has(String(item.jobId))) {
+        matchedJob = jobByIdMap.get(String(item.jobId));
       }
       if (!matchedJob) {
         const normTitle = normalizeForComparison(item.jobTitle || item.rawJobTitle);
         matchedJob = jobTitleMap.get(normTitle) || allJobs[0];
       }
       const jobId = matchedJob?._id;
-      const jobCategory = matchedJob?.categoryId;
+      const jobCategory = matchedJob?.categoryId?._id || matchedJob?.categoryId;
       const careerLevel = normalizeCareerLevel(item.careerLevel);
       const expYears = calculateExpYears(careerLevel);
 
-      // Check if candidate exists by phone
-      const existingCandidate = await Candidate.findOne({ phoneNormalized: phoneCheck.normalized });
+      // Check if candidate exists by phone in in-memory map
+      const existingCandidate = candidateByPhoneMap.get(phoneCheck.normalized) || candidateByPhoneMap.get(phoneCheck.local);
 
       if (existingCandidate) {
         // Requirement 2: Admin choice for phone conflict
@@ -529,31 +628,24 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
         await existingCandidate.save();
         replacedCount++;
       } else {
-        // Create new User if not exists
-        let user = await User.findOne({ phoneNormalized: phoneCheck.normalized });
+        // Find or create User
+        let user = userByPhoneMap.get(phoneCheck.normalized) || userByPhoneMap.get(phoneCheck.local);
         if (!user) {
-          const tempPassword = crypto.randomBytes(8).toString('hex');
-          const passwordHash = await bcrypt.hash(tempPassword, 10);
           user = await User.create({
             phone: phoneCheck.local,
             phoneNormalized: phoneCheck.normalized,
-            passwordHash,
+            passwordHash: sharedPasswordHash,
             role: 'candidate',
             accountStatus: 'active'
           });
+          userByPhoneMap.set(phoneCheck.normalized, user);
+          userByPhoneMap.set(phoneCheck.local, user);
         }
 
-        // Generate unique referral code
-        let referralCode = generateReferralCode();
-        let unique = false;
-        while (!unique) {
-          const codeExists = await Candidate.findOne({ referralCode });
-          if (!codeExists) unique = true;
-          else referralCode = generateReferralCode();
-        }
+        const referralCode = generateReferralCode();
 
         // Create new Candidate linked under main candidate
-        await Candidate.create({
+        const newCandidateDoc = await Candidate.create({
           userId: user._id,
           fullName: cleanCandidateName(item.name),
           phone: phoneCheck.local,
@@ -588,6 +680,8 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
           adminNotes: `تم استيراده عبر إكسيل كتوصية تحت المرشح الرئيسي (${mainCandidateDoc.fullName} - ${mainCandidateDoc.phone})`
         });
 
+        candidateByPhoneMap.set(phoneCheck.normalized, newCandidateDoc);
+        candidateByPhoneMap.set(phoneCheck.local, newCandidateDoc);
         createdCount++;
       }
     } catch (rowErr) {
@@ -596,20 +690,21 @@ async function executeCandidateImport({ items, mainCandidate, adminUserId }) {
     }
   }
 
-  // 4. Update Main Candidate Referral Count
+  // 5. Update Main Candidate Referral Count
   const totalLinked = createdCount + replacedCount;
   if (totalLinked > 0) {
     mainCandidateDoc.referralCount = (mainCandidateDoc.referralCount || 0) + totalLinked;
     await mainCandidateDoc.save();
   }
 
-  // 5. Log Activity
+  // 6. Log Activity
   await logActivity({
-    adminId: adminUserId,
+    actorId: adminUserId,
+    actorRole: 'admin',
     action: 'CANDIDATE_EXCEL_IMPORT',
-    targetModel: 'Candidate',
-    targetId: mainCandidateDoc._id,
-    details: {
+    entityType: 'Candidate',
+    entityId: mainCandidateDoc._id,
+    metadata: {
       mainCandidate: { id: mainCandidateDoc._id, fullName: mainCandidateDoc.fullName, phone: mainCandidateDoc.phone },
       totalItems: items.length,
       createdCount,
