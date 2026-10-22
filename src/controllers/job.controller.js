@@ -6,12 +6,13 @@ async function getJobs(req, res, next) {
   try {
     let jobs = await adminService.getAllJobs(false);
 
-    // If database still contains the legacy unclassified accounting dump (> 30 jobs in accounting) or manual refresh requested
+    // Trigger sync if: no jobs exist (empty/fresh DB), >30 accounting jobs (legacy dump), or manual refresh
     const accountingJobs = jobs.filter(
       (j) => j.categoryId?.nameAr === 'محاسبة ومالية' || j.categoryId?.name === 'Accounting & Finance'
     );
-    if (accountingJobs.length > 30 || req.query.refresh === 'true') {
-      console.log(`[JobController] Detected ${accountingJobs.length} jobs in Accounting. Running full catalog synchronization...`);
+    const needsSync = jobs.length === 0 || accountingJobs.length > 30 || req.query.refresh === 'true';
+    if (needsSync) {
+      console.log(`[JobController] Catalog sync triggered (total jobs: ${jobs.length}, accounting: ${accountingJobs.length}). Synchronizing...`);
       await syncJobCatalog();
       adminService.invalidateCatalogueCache();
       jobs = await adminService.getAllJobs(false);
