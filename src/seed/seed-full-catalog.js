@@ -127,7 +127,7 @@ async function syncJobCatalog() {
   const driversCatId = catMap['Drivers & Logistics'];
   const specializedCatId = catMap['Specialized & Other'];
 
-  // 2. Ensure each canonical master job exists and is up-to-date
+  // 2. Ensure each canonical master job exists and is up-to-date (upsert-safe)
   const masterJobMap = new Map(); // canonicalName.toLowerCase() -> JobDoc
   let createdCount = 0;
   let updatedCount = 0;
@@ -137,55 +137,57 @@ async function syncJobCatalog() {
     const targetCatId = catMap[m.category];
     if (!targetCatId) continue;
 
-    // Search for existing job matching either English name or Arabic name
-    let jobDoc = await Job.findOne({
-      $or: [
-        { name: m.name },
-        { nameAr: m.nameAr },
-        { name: new RegExp(`^${m.name.trim()}$`, 'i') }
-      ]
-    });
+    try {
+      // Use findOneAndUpdate with upsert to avoid duplicate key errors
+      const jobDoc = await Job.findOneAndUpdate(
+        { name: m.name, categoryId: targetCatId },
+        {
+          $set: {
+            name: m.name,
+            nameAr: m.nameAr,
+            categoryId: targetCatId,
+            isActive: true,
+            sortOrder: i + 1
+          }
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
 
-    if (jobDoc) {
-      let needsSave = false;
-      if (String(jobDoc.categoryId) !== String(targetCatId)) {
-        jobDoc.categoryId = targetCatId;
-        needsSave = true;
-      }
-      if (jobDoc.name !== m.name) {
-        jobDoc.name = m.name;
-        needsSave = true;
-      }
-      if (jobDoc.nameAr !== m.nameAr) {
-        jobDoc.nameAr = m.nameAr;
-        needsSave = true;
-      }
-      if (!jobDoc.isActive) {
-        jobDoc.isActive = true;
-        needsSave = true;
-      }
-      jobDoc.sortOrder = i + 1;
-      if (needsSave) {
-        await jobDoc.save();
+      // Clean up any stale duplicate with same name but wrong category
+      const stale = await Job.findOne({ name: m.name, categoryId: { $ne: targetCatId } });
+      if (stale) {
+        await mongoose.model('Candidate').updateMany(
+          { desiredJobId: stale._id },
+          { $set: { desiredJobId: jobDoc._id, jobTitle: jobDoc.nameAr } }
+        ).catch(() => {});
+        await Job.deleteOne({ _id: stale._id });
         updatedCount++;
       }
-    } else {
-      try {
-        jobDoc = await Job.create({
-          name: m.name,
-          nameAr: m.nameAr,
-          categoryId: targetCatId,
-          isActive: true,
-          sortOrder: i + 1
-        });
-        createdCount++;
-      } catch (err) {
-        jobDoc = await Job.findOne({ name: m.name });
+
+      // Also clean up any stale duplicate matched by Arabic name with wrong category
+      const staleAr = await Job.findOne({ nameAr: m.nameAr, _id: { $ne: jobDoc._id } });
+      if (staleAr) {
+        await mongoose.model('Candidate').updateMany(
+          { desiredJobId: staleAr._id },
+          { $set: { desiredJobId: jobDoc._id, jobTitle: jobDoc.nameAr } }
+        ).catch(() => {});
+        await Job.deleteOne({ _id: staleAr._id });
+        updatedCount++;
       }
-    }
-    if (jobDoc) {
-      masterJobMap.set(m.name.toLowerCase().trim(), jobDoc);
-      masterJobMap.set(m.nameAr.trim(), jobDoc);
+
+      if (jobDoc) {
+        masterJobMap.set(m.name.toLowerCase().trim(), jobDoc);
+        masterJobMap.set(m.nameAr.trim(), jobDoc);
+        if (jobDoc.isNew !== false) createdCount++;
+      }
+    } catch (jobErr) {
+      console.warn(`[JobCatalog] Warning syncing job "${m.name}": ${jobErr.message}`);
+      // Try to find existing and add to map
+      const existing = await Job.findOne({ name: m.name }).catch(() => null);
+      if (existing) {
+        masterJobMap.set(m.name.toLowerCase().trim(), existing);
+        masterJobMap.set(m.nameAr.trim(), existing);
+      }
     }
   }
 
