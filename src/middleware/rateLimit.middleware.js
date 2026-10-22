@@ -56,10 +56,6 @@ const apiLimiter = rateLimit({
   max: 2000, // 2000 requests per IP per 15 minutes
   standardHeaders: true,
   legacyHeaders: false,
-  skip: (req) => {
-    // Exclude authenticated admin requests from global rate limit
-    return Boolean(req.headers.authorization || req.cookies?.token);
-  },
   message: {
     success: false,
     message: 'Too many requests to the server. Please slow down.',

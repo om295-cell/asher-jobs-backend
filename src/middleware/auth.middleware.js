@@ -7,6 +7,7 @@ async function authenticate(req, res, next) {
   try {
     let token = null;
 
+    let isCookieAuth = false;
     // Check Authorization header
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -16,10 +17,27 @@ async function authenticate(req, res, next) {
     // Fallback to cookie
     if (!token && req.cookies && req.cookies.token) {
       token = req.cookies.token;
+      isCookieAuth = true;
     }
 
     if (!token) {
       return errorResponse(res, 'Authentication required. No token provided.', 401, 'AUTH_REQUIRED');
+    }
+
+    // OWASP A01: CSRF Defense for cookie-based authentication on mutating requests
+    if (isCookieAuth && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+      const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+      const { CLIENT_URL } = require('../config/env');
+      const validOrigins = [
+        CLIENT_URL,
+        'https://asher-jobs-frontend.vercel.app',
+        'http://localhost:5173',
+        'http://127.0.0.1:5173'
+      ].filter(Boolean);
+
+      if (origin && !validOrigins.includes(origin) && process.env.NODE_ENV === 'production') {
+        return errorResponse(res, 'Cross-site request blocked (CSRF protection).', 403, 'CSRF_BLOCKED');
+      }
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);

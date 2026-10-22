@@ -106,13 +106,10 @@ async function recordVisit(req, res) {
       const forwarded = req.headers['x-forwarded-for'];
       const clientIp = (forwarded ? forwarded.split(',')[0].trim() : req.socket.remoteAddress) || '127.0.0.1';
 
-      // Increment visitor count on every visit (no deduplication)
+      // Increment visitor count atomically without unbounded IP array
       await SiteVisit.findOneAndUpdate(
         { date: today },
-        {
-          $inc: { count: 1 },
-          $addToSet: { ips: clientIp }
-        },
+        { $inc: { count: 1 } },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
     }

@@ -63,15 +63,29 @@ async function downloadCv(req, res, next) {
 
     if (req.user.role === 'candidate') {
       candidate = await Candidate.findOne({ userId: req.user._id });
-    } else if (req.user.role === 'admin' || (req.user.role === 'company' && req.company)) {
+    } else if (req.user.role === 'admin') {
       candidate = await Candidate.findById(id);
+    } else if (req.user.role === 'company') {
+      const Company = require('../models/Company');
+      const company = req.company || await Company.findOne({ userId: req.user._id, isDeleted: false });
+      if (!company || company.verificationStatus !== 'Approved') {
+        return errorResponse(res, 'Only approved companies can download candidate CVs.', 403, 'COMPANY_NOT_APPROVED');
+      }
+      candidate = await Candidate.findById(id);
+    } else {
+      return errorResponse(res, 'Access denied.', 403, 'ACCESS_DENIED');
     }
 
-    if (!candidate || !candidate.cvUrl || !fs.existsSync(candidate.cvUrl)) {
+    if (!candidate || !candidate.cvUrl) {
       return errorResponse(res, 'CV file not found or has not been uploaded.', 404, 'CV_NOT_FOUND');
     }
 
-    return res.download(candidate.cvUrl, candidate.cvOriginalName || 'candidate_cv.pdf');
+    const resolvedPath = path.resolve(candidate.cvUrl);
+    if (!fs.existsSync(resolvedPath)) {
+      return errorResponse(res, 'CV file not found on storage.', 404, 'CV_NOT_FOUND');
+    }
+
+    return res.download(resolvedPath, candidate.cvOriginalName || 'candidate_cv.pdf');
   } catch (err) {
     next(err);
   }

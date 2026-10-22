@@ -81,8 +81,8 @@ async function registerCandidate(data, req) {
     };
   }
 
-  if (!password || password.length < 6) {
-    throw { statusCode: 400, message: 'Password must be at least 6 characters.', code: 'INVALID_PASSWORD' };
+  if (!password || password.length < 8) {
+    throw { statusCode: 400, message: 'Password must be at least 8 characters.', code: 'INVALID_PASSWORD' };
   }
 
   if (passwordConfirm && password !== passwordConfirm) {
@@ -325,8 +325,8 @@ async function registerCompany(data, req) {
     throw { statusCode: 400, message: 'Contact phone is required.', code: 'PHONE_REQUIRED' };
   }
 
-  if (!password || password.length < 6) {
-    throw { statusCode: 400, message: 'Password must be at least 6 characters.', code: 'INVALID_PASSWORD' };
+  if (!password || password.length < 8) {
+    throw { statusCode: 400, message: 'Password must be at least 8 characters.', code: 'INVALID_PASSWORD' };
   }
 
   if (passwordConfirm && password !== passwordConfirm) {
@@ -516,8 +516,8 @@ async function getMe(userId) {
 
 
 async function updatePassword(userId, currentPassword, newPassword) {
-  if (!currentPassword || !newPassword || newPassword.length < 6) {
-    throw { statusCode: 400, message: 'New password must be at least 6 characters.', code: 'INVALID_PASSWORD' };
+  if (!currentPassword || !newPassword || newPassword.length < 8) {
+    throw { statusCode: 400, message: 'New password must be at least 8 characters.', code: 'INVALID_PASSWORD' };
   }
 
   const user = await User.findById(userId).select('+passwordHash');

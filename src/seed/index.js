@@ -95,8 +95,9 @@ async function seedDatabase(force = false) {
     { upsert: true }
   );
 
-  // Admin account
-  const defaultPasswordHash = await bcrypt.hash('Admin@123456', 10);
+  // Admin account - use environment variable or fallback with forced password reset
+  const adminPassword = process.env.INITIAL_ADMIN_PASSWORD || 'Admin@123456';
+  const defaultPasswordHash = await bcrypt.hash(adminPassword, 10);
   await User.findOneAndUpdate(
     { email: 'admin@asherjobs.com' },
     {
@@ -105,7 +106,8 @@ async function seedDatabase(force = false) {
       phoneNormalized: '+201000000001',
       passwordHash: defaultPasswordHash,
       role: 'admin',
-      accountStatus: 'active'
+      accountStatus: 'active',
+      mustChangePassword: true
     },
     { upsert: true }
   );

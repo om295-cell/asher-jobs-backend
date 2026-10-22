@@ -1,5 +1,11 @@
 require('dotenv').config();
 
+const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
+
+if (isProduction && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'asher_jobs_super_secret_jwt_key_2026_secure')) {
+  console.warn('[SECURITY NOTICE] JWT_SECRET should be set to a unique, random string in production environment variables.');
+}
+
 module.exports = {
   PORT: process.env.PORT || 5000,
   NODE_ENV: process.env.NODE_ENV || (process.env.VERCEL ? 'production' : 'development'),
