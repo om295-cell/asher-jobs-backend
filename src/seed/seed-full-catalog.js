@@ -127,21 +127,22 @@ async function syncJobCatalog() {
   const driversCatId = catMap['Drivers & Logistics'];
   const specializedCatId = catMap['Specialized & Other'];
 
-  // 2. Ensure each canonical master job exists and is up-to-date (upsert-safe)
-  const masterJobMap = new Map(); // canonicalName.toLowerCase() -> JobDoc
+  // 2. Ensure each canonical master job exists and is up-to-date (fast bulk operations)
+  const masterJobMap = new Map();
   let createdCount = 0;
   let updatedCount = 0;
 
+  // Build bulkWrite operations for MASTER_JOBS
+  const bulkOps = [];
   for (let i = 0; i < MASTER_JOBS.length; i++) {
     const m = MASTER_JOBS[i];
     const targetCatId = catMap[m.category];
     if (!targetCatId) continue;
 
-    try {
-      // Use findOneAndUpdate with upsert to avoid duplicate key errors
-      const jobDoc = await Job.findOneAndUpdate(
-        { name: m.name, categoryId: targetCatId },
-        {
+    bulkOps.push({
+      updateOne: {
+        filter: { name: m.name, categoryId: targetCatId },
+        update: {
           $set: {
             name: m.name,
             nameAr: m.nameAr,
@@ -150,46 +151,26 @@ async function syncJobCatalog() {
             sortOrder: i + 1
           }
         },
-        { upsert: true, new: true, setDefaultsOnInsert: true }
-      );
-
-      // Clean up any stale duplicate with same name but wrong category
-      const stale = await Job.findOne({ name: m.name, categoryId: { $ne: targetCatId } });
-      if (stale) {
-        await mongoose.model('Candidate').updateMany(
-          { desiredJobId: stale._id },
-          { $set: { desiredJobId: jobDoc._id, jobTitle: jobDoc.nameAr } }
-        ).catch(() => {});
-        await Job.deleteOne({ _id: stale._id });
-        updatedCount++;
+        upsert: true
       }
-
-      // Also clean up any stale duplicate matched by Arabic name with wrong category
-      const staleAr = await Job.findOne({ nameAr: m.nameAr, _id: { $ne: jobDoc._id } });
-      if (staleAr) {
-        await mongoose.model('Candidate').updateMany(
-          { desiredJobId: staleAr._id },
-          { $set: { desiredJobId: jobDoc._id, jobTitle: jobDoc.nameAr } }
-        ).catch(() => {});
-        await Job.deleteOne({ _id: staleAr._id });
-        updatedCount++;
-      }
-
-      if (jobDoc) {
-        masterJobMap.set(m.name.toLowerCase().trim(), jobDoc);
-        masterJobMap.set(m.nameAr.trim(), jobDoc);
-        if (jobDoc.isNew !== false) createdCount++;
-      }
-    } catch (jobErr) {
-      console.warn(`[JobCatalog] Warning syncing job "${m.name}": ${jobErr.message}`);
-      // Try to find existing and add to map
-      const existing = await Job.findOne({ name: m.name }).catch(() => null);
-      if (existing) {
-        masterJobMap.set(m.name.toLowerCase().trim(), existing);
-        masterJobMap.set(m.nameAr.trim(), existing);
-      }
-    }
+    });
   }
+
+  // Execute bulkWrite in chunks of 250
+  for (let i = 0; i < bulkOps.length; i += 250) {
+    const chunk = bulkOps.slice(i, i + 250);
+    const res = await Job.bulkWrite(chunk, { ordered: false });
+    createdCount += res.upsertedCount || 0;
+    updatedCount += res.modifiedCount || 0;
+  }
+
+  // Populate masterJobMap from current DB jobs
+  const allMasterJobs = await Job.find({ isActive: true }).lean();
+  for (const j of allMasterJobs) {
+    masterJobMap.set(j.name.toLowerCase().trim(), j);
+    masterJobMap.set(j.nameAr.trim(), j);
+  }
+
 
   // 3. Move misplaced jobs and merge/delete duplicates in MongoDB
   const allDbJobs = await Job.find({}).lean();
