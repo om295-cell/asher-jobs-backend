@@ -8,56 +8,8 @@
   {
     "category": "Accounting & Finance",
     "categoryAr": "محاسبة ومالية",
-    "name": "Accounts Receivable",
-    "nameAr": "محاسب حسابات مدينة (عملاء)"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "Banker",
-    "nameAr": "مصرفي / موظف بنك"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "Cost Accountant",
-    "nameAr": "محاسب تكاليف"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "Cost control",
-    "nameAr": "مراقب تكاليف"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "Customer Accounts Accountant",
-    "nameAr": "محاسب حسابات عملاء"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "Finance Manager",
-    "nameAr": "مدير مالي"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
     "name": "Financial Accountant",
     "nameAr": "محاسب مالي"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "Financial Controller",
-    "nameAr": "مراقب مالي"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "Financial Manager",
-    "nameAr": "مدير شؤون مالية"
   },
   {
     "category": "Accounting & Finance",
@@ -68,14 +20,74 @@
   {
     "category": "Accounting & Finance",
     "categoryAr": "محاسبة ومالية",
-    "name": "Internal Auditor",
-    "nameAr": "مراجع داخلي"
+    "name": "Cost Accountant",
+    "nameAr": "محاسب تكاليف"
   },
   {
     "category": "Accounting & Finance",
     "categoryAr": "محاسبة ومالية",
-    "name": "Teller",
-    "nameAr": "صراف / تيلر بنكي"
+    "name": "Cost Controller",
+    "nameAr": "مراقب تكاليف"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Accounts Receivable",
+    "nameAr": "محاسب عملاء ومديونيات"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Accounts Payable",
+    "nameAr": "محاسب موردين"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Clients & Vendors Accountant",
+    "nameAr": "محاسب عملاء وموردين"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Site Accountant",
+    "nameAr": "محاسب موقع"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Regional Accountant",
+    "nameAr": "محاسب إقليمي"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Certified Public Accountant (CPA)",
+    "nameAr": "محاسب قانوني"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Chief Accountant",
+    "nameAr": "رئيس حسابات"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Accounting Manager",
+    "nameAr": "مدير حسابات"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Finance Manager",
+    "nameAr": "مدير مالي"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Financial Controller",
+    "nameAr": "مراقب مالي"
   },
   {
     "category": "Accounting & Finance",
@@ -86,128 +98,68 @@
   {
     "category": "Accounting & Finance",
     "categoryAr": "محاسبة ومالية",
-    "name": "رئيس حسابات",
-    "nameAr": "رئيس حسابات"
+    "name": "Internal Auditor",
+    "nameAr": "مراجع داخلي"
   },
   {
     "category": "Accounting & Finance",
     "categoryAr": "محاسبة ومالية",
-    "name": "كاشير",
+    "name": "Auditor",
+    "nameAr": "مراجع حسابات وفواتير"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Banker",
+    "nameAr": "مصرفي / موظف بنك"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Bank Teller",
+    "nameAr": "صراف / تيلر بنكي"
+  },
+  {
+    "category": "Accounting & Finance",
+    "categoryAr": "محاسبة ومالية",
+    "name": "Cashier",
     "nameAr": "كاشير"
   },
   {
     "category": "Accounting & Finance",
     "categoryAr": "محاسبة ومالية",
-    "name": "محاسب موردين",
-    "nameAr": "محاسب موردين"
+    "name": "Payments Manager",
+    "nameAr": "مدير مدفوعات"
   },
   {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "محاسب إقليمى",
-    "nameAr": "محاسب إقليمى"
+    "category": "Warehousing & Logistics",
+    "categoryAr": "مخازن ولوجستيات",
+    "name": "Warehouse & Accounts Manager",
+    "nameAr": "مدير حسابات ومخازن"
   },
   {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "محاسب عملاء",
-    "nameAr": "محاسب عملاء"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "محاسب عملاء وموردين",
-    "nameAr": "محاسب عملاء وموردين"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "محاسب قانوني",
-    "nameAr": "محاسب قانوني"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "محاسب موقع",
-    "nameAr": "محاسب موقع"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "محاسب موقع ومشتريات",
+    "category": "Warehousing & Logistics",
+    "categoryAr": "مخازن ولوجستيات",
+    "name": "Site & Purchasing Accountant",
     "nameAr": "محاسب موقع ومشتريات"
   },
   {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "محاسبة",
-    "nameAr": "محاسبة"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "مدير حسابات",
-    "nameAr": "مدير حسابات"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "مدير حسابات و مخازن",
-    "nameAr": "مدير حسابات و مخازن"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "مدير مالى",
-    "nameAr": "مدير مالى"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "مراجع حسابات",
-    "nameAr": "مراجع حسابات"
-  },
-  {
-    "category": "Accounting & Finance",
-    "categoryAr": "محاسبة ومالية",
-    "name": "مراجع فواتير و شيكات",
-    "nameAr": "مراجع فواتير و شيكات"
+    "category": "Warehousing & Logistics",
+    "categoryAr": "مخازن ولوجستيات",
+    "name": "Storekeeper",
+    "nameAr": "أمين مخزن"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "Demand Planning",
-    "nameAr": "أخصائي تخطيط الطلب"
+    "name": "Assistant Storekeeper",
+    "nameAr": "مساعد أمين مخزن"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "Inventory Controller",
-    "nameAr": "مراقب مخزون"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "Purchase Officer",
-    "nameAr": "مسؤول مشتريات"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "Senior logistics",
-    "nameAr": "أخصائي أول لوجستيات"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "Stock Controller",
-    "nameAr": "مراقب حركة المخزون"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "Store Manager",
-    "nameAr": "مدير مخازن / متجر"
+    "name": "Warehouse Supervisor",
+    "nameAr": "مشرف مخازن"
   },
   {
     "category": "Warehousing & Logistics",
@@ -224,26 +176,62 @@
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "اخصائي مشتريات",
-    "nameAr": "اخصائي مشتريات"
+    "name": "Warehouse Worker",
+    "nameAr": "عامل مخازن"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "مخلص جمارك",
-    "nameAr": "مخلص جمارك"
+    "name": "Stock Controller",
+    "nameAr": "مراقب حركة المخزون"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "مسؤول قطع الجملة",
+    "name": "Inventory Controller",
+    "nameAr": "مراقب مخزون"
+  },
+  {
+    "category": "Warehousing & Logistics",
+    "categoryAr": "مخازن ولوجستيات",
+    "name": "Demand Planner",
+    "nameAr": "أخصائي تخطيط الطلب"
+  },
+  {
+    "category": "Warehousing & Logistics",
+    "categoryAr": "مخازن ولوجستيات",
+    "name": "Purchasing Manager",
+    "nameAr": "مدير مشتريات"
+  },
+  {
+    "category": "Warehousing & Logistics",
+    "categoryAr": "مخازن ولوجستيات",
+    "name": "Purchasing Officer",
+    "nameAr": "مسؤول مشتريات وتوريدات"
+  },
+  {
+    "category": "Warehousing & Logistics",
+    "categoryAr": "مخازن ولوجستيات",
+    "name": "Procurement Specialist",
+    "nameAr": "أخصائي مشتريات"
+  },
+  {
+    "category": "Warehousing & Logistics",
+    "categoryAr": "مخازن ولوجستيات",
+    "name": "Purchasing Agent",
+    "nameAr": "وكيل ومندوب مشتريات"
+  },
+  {
+    "category": "Warehousing & Logistics",
+    "categoryAr": "مخازن ولوجستيات",
+    "name": "Wholesale Spare Parts Officer",
     "nameAr": "مسؤول قطع الجملة"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "مندوب مشتريات",
-    "nameAr": "مندوب مشتريات"
+    "name": "Import Specialist",
+    "nameAr": "أخصائي استيراد"
   },
   {
     "category": "Warehousing & Logistics",
@@ -254,8 +242,8 @@
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "Logistics Specialist",
-    "nameAr": "أخصائي لوجستيات"
+    "name": "Export Manager",
+    "nameAr": "مدير تصدير"
   },
   {
     "category": "Warehousing & Logistics",
@@ -266,91 +254,229 @@
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "warehouse Supervisor",
-    "nameAr": "مشرف مخازن"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "أخصائي استيراد",
-    "nameAr": "أخصائي استيراد"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "Store keeper",
-    "nameAr": "أمين مخزن"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "عامل مخازن",
-    "nameAr": "عامل مخازن"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "مخلص جمركي",
+    "name": "Customs Clearance Agent",
     "nameAr": "مخلص جمركي"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "مدير تصدير",
-    "nameAr": "مدير تصدير"
+    "name": "Shipping Officer",
+    "nameAr": "موظف شحن وتوريدات"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "مدير مشتريات",
-    "nameAr": "مدير مشتريات"
+    "name": "Logistics Specialist",
+    "nameAr": "أخصائي لوجستيات"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "مسؤول مشتريات وتوريدات",
-    "nameAr": "مسؤول مشتريات وتوريدات"
+    "name": "Senior Logistics Specialist",
+    "nameAr": "أخصائي أول لوجستيات"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "مساعد أمين مخزن",
-    "nameAr": "مساعد أمين مخزن"
+    "name": "Fleet Supervisor",
+    "nameAr": "مشرف حركة وسيارات"
   },
   {
     "category": "Warehousing & Logistics",
     "categoryAr": "مخازن ولوجستيات",
-    "name": "مساعده امين مخزن",
-    "nameAr": "مساعده امين مخزن"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "مشرف حركة سيارات",
-    "nameAr": "مشرف حركة سيارات"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "مشرف حركه",
-    "nameAr": "مشرف حركه"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "موظف توريدات",
-    "nameAr": "موظف توريدات"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "categoryAr": "مخازن ولوجستيات",
-    "name": "موظف شحن",
-    "nameAr": "موظف شحن"
+    "name": "Store Manager",
+    "nameAr": "مدير متجر"
   },
   {
     "category": "HR & Administration",
     "categoryAr": "موارد بشرية وإدارة",
-    "name": "CEO - GM - Director",
+    "name": "HR Director",
+    "nameAr": "مدير قطاع الموارد البشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Manager",
+    "nameAr": "مدير إدارة موارد بشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Assistant HR Manager",
+    "nameAr": "مساعد مدير موارد بشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Section Head",
+    "nameAr": "رئيس قسم الموارد البشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Business Partner",
+    "nameAr": "شريك أعمال موارد بشرية (HRBP)"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Operations Manager",
+    "nameAr": "مدير عمليات الموارد البشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Supervisor",
+    "nameAr": "مشرف موارد بشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Senior HR Specialist",
+    "nameAr": "أخصائي أول موارد بشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Specialist",
+    "nameAr": "أخصائي موارد بشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Generalist",
+    "nameAr": "أخصائي عام موارد بشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Coordinator",
+    "nameAr": "منسق موارد بشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Assistant",
+    "nameAr": "مساعد موارد بشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR Admin Assistant",
+    "nameAr": "مساعد إداري موارد بشرية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Talent Acquisition Supervisor",
+    "nameAr": "مشرف استقطاب مواهب"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Talent Acquisition Specialist",
+    "nameAr": "مسؤول استقطاب وتوظيف"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "HR OD and Recruitment",
+    "nameAr": "أخصائي تطوير تنظيمي وتوظيف"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Payroll & HR Specialist",
+    "nameAr": "أخصائي مرتبات وأجور"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Personnel Manager",
+    "nameAr": "مدير شؤون العاملين"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Personnel Section Head",
+    "nameAr": "رئيس شؤون العاملين"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Personnel Specialist",
+    "nameAr": "أخصائي شؤون عاملين"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Personnel Officer",
+    "nameAr": "موظف شؤون عاملين"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Labor Relations Specialist",
+    "nameAr": "أخصائي علاقات عمالية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Training Specialist",
+    "nameAr": "أخصائي تدريب وتطوير"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Timekeeper",
+    "nameAr": "مراقب وقت وحضور"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Administrative Manager",
+    "nameAr": "مدير إداري"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Administrative Officer",
+    "nameAr": "موظف إداري"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Administrative Affairs Specialist",
+    "nameAr": "أخصائي شؤون إدارية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Office Manager",
+    "nameAr": "مدير مكتب"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Secretary",
+    "nameAr": "سكرتارية"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Receptionist",
+    "nameAr": "موظف استقبال"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "Data Entry Operator",
+    "nameAr": "مدخل بيانات"
+  },
+  {
+    "category": "HR & Administration",
+    "categoryAr": "موارد بشرية وإدارة",
+    "name": "CEO / General Manager",
     "nameAr": "رئيس تنفيذي / مدير عام"
   },
   {
@@ -362,386 +488,8 @@
   {
     "category": "HR & Administration",
     "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR",
-    "nameAr": "موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Personnel",
-    "nameAr": "شؤون عاملين (HR)"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Admin Assistant",
-    "nameAr": "مساعد إداري موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Assistant",
-    "nameAr": "مساعد موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Director",
-    "nameAr": "مدير قطاع الموارد البشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Generalist",
-    "nameAr": "أخصائي عام موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Manager",
-    "nameAr": "مدير إدارة موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Operation Manager",
-    "nameAr": "مدير عمليات الموارد البشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Recruiter",
-    "nameAr": "مسؤول توظيف (Recruiter)"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Section Head",
-    "nameAr": "رئيس قسم الموارد البشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Specialest",
-    "nameAr": "أخصائي موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR coordinator",
-    "nameAr": "منسق موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR personal",
-    "nameAr": "موظف شؤون أفراد"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR- محاسب",
-    "nameAr": "محاسب شؤون عاملين وموارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Human Rescources",
-    "nameAr": "إدارة الموارد البشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "OP Team leader",
-    "nameAr": "قائد فريق العمليات"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Payroll HR Specialist",
-    "nameAr": "أخصائي مرتبات وأجور"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Personnel Affairs Specialist",
-    "nameAr": "أخصائي شؤون عاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Personnel Specialist",
-    "nameAr": "أخصائي شؤون أفراد"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Senior HR",
-    "nameAr": "أخصائي أول موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Talent Acquisition Supervisor",
-    "nameAr": "مشرف استقطاب مواهب"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Team Leader",
-    "nameAr": "قائد فريق"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Time keeper",
-    "nameAr": "مراقب وقت وحضور"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "project coordinator",
-    "nameAr": "منسق مشروعات"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "أخصائي علاقات عمالية",
-    "nameAr": "أخصائي علاقات عمالية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "أخصائي مرتبات",
-    "nameAr": "أخصائي مرتبات"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "رئيس شئون العاملين",
-    "nameAr": "رئيس شئون العاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "رئيس قسم موارد بشرية",
-    "nameAr": "رئيس قسم موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Administrative manager",
-    "nameAr": "مدير إداري"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير تنفيذي",
-    "nameAr": "مدير تنفيذي"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير شؤن عاملين",
-    "nameAr": "مدير شؤن عاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير شؤون عاملين",
-    "nameAr": "مدير شؤون عاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير شئون العاملين",
-    "nameAr": "مدير شئون العاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير شئون عاملين",
-    "nameAr": "مدير شئون عاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير موارد البشرية",
-    "nameAr": "مدير موارد البشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير موارد بشرية",
-    "nameAr": "مدير موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مديرة مكتب",
-    "nameAr": "مديرة مكتب"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مراقب وقت",
-    "nameAr": "مراقب وقت"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مشرف عام",
-    "nameAr": "مشرف عام"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "موطفة استقبال",
-    "nameAr": "موطفة استقبال"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "موظف شئون العاملين",
-    "nameAr": "موظف شئون العاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "موظف شئون عاملين",
-    "nameAr": "موظف شئون عاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "موظف موارد بشريه",
-    "nameAr": "موظف موارد بشريه"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR",
-    "nameAr": "وظائف ادارية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Administrative Affairs Specialist",
-    "nameAr": "أخصائي شؤون إدارية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Asst HR Manager",
-    "nameAr": "مساعد مدير موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Customer Service Team Leader",
-    "nameAr": "قائد فريق خدمة العملاء"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Data entry",
-    "nameAr": "مدخل بيانات"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Business Partner",
-    "nameAr": "شريك أعمال موارد بشرية (HRBP)"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR OD and Recruitment",
-    "nameAr": "أخصائي تطوير تنظيمي وتوظيف"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Payroll",
-    "nameAr": "أخصائي رواتب (HR Payroll)"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Personnel Manager",
-    "nameAr": "مدير شؤون العاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Recruitment",
-    "nameAr": "مسؤول استقطاب وتوظيف"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR Specialist",
-    "nameAr": "HR Specialist"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR supervisor",
-    "nameAr": "مشرف موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "OD and Recruitment",
-    "nameAr": "تطوير تنظيمي وتوظيف"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "HR & Payroll Specialist",
-    "nameAr": "أخصائي موارد بشرية ومرتبات"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Payroll coordinator",
-    "nameAr": "منسق رواتب"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Recruiter",
-    "nameAr": "مسؤول توظيف"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Recruitment",
-    "nameAr": "استقطاب وتوظيف"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Talent Acquisition",
-    "nameAr": "مسؤول استقطاب مواهب"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "أخصائي تدريب",
-    "nameAr": "أخصائي تدريب"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "سكرتارية",
-    "nameAr": "سكرتارية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير محطة مياة",
-    "nameAr": "مدير محطة مياة"
+    "name": "Assistant Manager",
+    "nameAr": "مساعد مدير"
   },
   {
     "category": "HR & Administration",
@@ -752,80 +500,38 @@
   {
     "category": "HR & Administration",
     "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير مصنع",
-    "nameAr": "مدير مصنع"
+    "name": "Project Coordinator",
+    "nameAr": "منسق مشروعات"
   },
   {
     "category": "HR & Administration",
     "categoryAr": "موارد بشرية وإدارة",
-    "name": "مدير مصنع كرتون",
-    "nameAr": "مدير مصنع كرتون"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Timekeeper",
-    "nameAr": "مراقب وقت"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مسؤول موارد بشرية",
-    "nameAr": "مسؤول موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مسئول شئون عاملين",
-    "nameAr": "مسئول شئون عاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مسئول موارد بشرية",
-    "nameAr": "مسئول موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "Assistant Manager",
-    "nameAr": "مساعد مدير"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "مساعد مدير شئون عاملين",
-    "nameAr": "مساعد مدير شئون عاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "categoryAr": "موارد بشرية وإدارة",
-    "name": "منسق عمليات",
+    "name": "Operations Coordinator",
     "nameAr": "منسق عمليات"
   },
   {
     "category": "HR & Administration",
     "categoryAr": "موارد بشرية وإدارة",
-    "name": "موارد بشريه",
-    "nameAr": "موارد بشريه"
+    "name": "Operations Team Leader",
+    "nameAr": "قائد فريق العمليات"
   },
   {
     "category": "HR & Administration",
     "categoryAr": "موارد بشرية وإدارة",
-    "name": "موظف إداري",
-    "nameAr": "موظف إداري"
+    "name": "General Supervisor",
+    "nameAr": "مشرف عام"
   },
   {
     "category": "HR & Administration",
     "categoryAr": "موارد بشرية وإدارة",
-    "name": "Receptionist",
-    "nameAr": "موظف استقبال"
+    "name": "Water Plant Manager",
+    "nameAr": "مدير محطة مياه"
   },
   {
     "category": "HR & Administration",
     "categoryAr": "موارد بشرية وإدارة",
-    "name": "موظف شؤون عاملين",
-    "nameAr": "موظف شؤون عاملين"
+    "name": "Factory Manager",
+    "nameAr": "مدير مصنع"
   },
   {
     "category": "Engineering",
@@ -836,25 +542,151 @@
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "Construction Manager",
-    "nameAr": "مدير إنشاءات ومشاريع"
+    "name": "Civil Site Engineer",
+    "nameAr": "مهندس موقع مدني"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "Data Engineer",
-    "nameAr": "مهندس بيانات"
+    "name": "Civil Design Engineer",
+    "nameAr": "مهندس مدني تصميم"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "Electrical BIM",
-    "nameAr": "مهندس نمذجة مباني كهربائية (BIM)"
+    "name": "Civil Technical Office Engineer",
+    "nameAr": "مهندس مدني مكتب فني"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "Electrical Lead",
+    "name": "Civil Construction Manager",
+    "nameAr": "مدير إنشاءات مدنية"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Architectural Engineer",
+    "nameAr": "مهندس معماري"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Architectural Consultant Engineer",
+    "nameAr": "مهندس معماري استشاري"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Architectural Site Engineer",
+    "nameAr": "مهندس معماري موقع"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "BIM Architect",
+    "nameAr": "مهندس معماري BIM"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Senior Architect",
+    "nameAr": "مهندس معماري أول"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Interior Designer",
+    "nameAr": "مصمم معماري داخلي وديكور"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Landscape Engineer",
+    "nameAr": "مهندس لاندسكيب"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Mechanical Engineer",
+    "nameAr": "مهندس ميكانيكا"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Mechanical Power Engineer",
+    "nameAr": "مهندس قوى ميكانيكية"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Mechanical Maintenance Engineer",
+    "nameAr": "مهندس صيانة ميكانيكية"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Mechanical Technical Office Engineer",
+    "nameAr": "مهندس ميكانيكا مكتب فني"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "MEP Engineer",
+    "nameAr": "مهندس كهروميكانيك (MEP)"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "HVAC Designer & Technical Office",
+    "nameAr": "مهندس تكييف وتبريد مكتب فني (HVAC)"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Maintenance & Operations Engineer (Ammonia)",
+    "nameAr": "مهندس صيانة وتشغيل (أمونيا وتبريد)"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Mechatronics Engineer",
+    "nameAr": "مهندس ميكاترونكس"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Electrical Engineer",
+    "nameAr": "مهندس كهرباء"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Electrical Power Engineer",
+    "nameAr": "مهندس كهرباء باور وقوى"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Electrical Site Engineer",
+    "nameAr": "مهندس كهرباء موقع"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Electrical Technical Office Engineer",
+    "nameAr": "مهندس كهرباء مكتب فني"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Electrical BIM Engineer",
+    "nameAr": "مهندس نمذجة كهربائية (BIM)"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Electrical Lead Engineer",
     "nameAr": "رئيس فريق كهرباء"
   },
   {
@@ -866,20 +698,248 @@
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
+    "name": "Electrical Construction Team Leader",
+    "nameAr": "قائد فريق إنشاءات كهربائية"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Production Engineer",
+    "nameAr": "مهندس إنتاج"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Sheet Metal Production Engineer",
+    "nameAr": "مهندس إنتاج صاج (Sheet Metal)"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Planning Engineer",
+    "nameAr": "مهندس تخطيط ومتابعة"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Technical Office Engineer",
+    "nameAr": "مهندس مكتب فني"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Junior Technical Office Engineer",
+    "nameAr": "مهندس مكتب فني مبتدئ"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Quantity Surveying Engineer (QS)",
+    "nameAr": "مهندس حصر كميات (QS)"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Shop Drawings Engineer",
+    "nameAr": "مهندس شوب دروينج"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Execution Engineer",
+    "nameAr": "مهندس تنفيذ"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Site Engineer",
+    "nameAr": "مهندس موقع"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Site Manager",
+    "nameAr": "مدير موقع"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Project Engineer",
+    "nameAr": "مهندس مشروع"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Senior Project Engineer",
+    "nameAr": "مهندس مشاريع أول"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Procurement Engineer",
+    "nameAr": "مهندس مشتريات وتوريدات هندسية"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Sales Engineer",
+    "nameAr": "مهندس مبيعات"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "After-Sales Service Engineer",
+    "nameAr": "مهندس خدمة ما بعد البيع"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "R&D Engineer",
+    "nameAr": "مهندس بحث وتطوير"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Infrastructure Engineer",
+    "nameAr": "مهندس بنية تحتية"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Irrigation & Drainage Engineer",
+    "nameAr": "مهندس ري وصرف صحي"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Piping Construction Engineer",
+    "nameAr": "مهندس إنشاءات وتمديدات مواسير"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Agricultural Engineer",
+    "nameAr": "مهندس زراعي"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Geological Engineer",
+    "nameAr": "مهندس جيولوجي"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Sound Engineer",
+    "nameAr": "مهندس صوت"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Executive Engineer",
+    "nameAr": "مهندس تنفيذي"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Surveying Manager",
+    "nameAr": "مدير إدارة مساحة"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Land Surveyor",
+    "nameAr": "مهندس / أخصائي مساحة"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Assistant Surveyor",
+    "nameAr": "مساعد مساح"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Draftsman",
+    "nameAr": "رسام هندسي"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Site Supervisor (Civil/Architectural)",
+    "nameAr": "مشرف تنفيذ مدني ومعماري"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Construction Supervisor",
+    "nameAr": "مشرف تنفيذ إنشاءات وخرسانة"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Roads & Architecture Supervisor",
+    "nameAr": "مشرف معماري وطرق"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Software Developer",
+    "nameAr": "مطور برمجيات"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Full Stack Developer",
+    "nameAr": "مطور برمجيات شامل (Full Stack)"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
     "name": "Frontend Developer",
     "nameAr": "مطور واجهات أمامية (Frontend)"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "Full Stack Developer",
-    "nameAr": "مطور شامل (Full Stack)"
+    "name": "Backend Developer",
+    "nameAr": "مطور برمجيات خلفية (Backend)"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "IT",
-    "nameAr": "تكنولوجيا المعلومات (IT)"
+    "name": "Mobile App Developer (Flutter)",
+    "nameAr": "مطور تطبيقات موبايل (Flutter)"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Web Developer",
+    "nameAr": "مطور مواقع ويب"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Data Engineer",
+    "nameAr": "مهندس بيانات"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Data Analyst",
+    "nameAr": "محلل بيانات"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Machine Learning / AI Engineer",
+    "nameAr": "مهندس ذكاء اصطناعي وتعلم الآلة"
+  },
+  {
+    "category": "Engineering",
+    "categoryAr": "هندسة",
+    "name": "Embedded Systems Engineer",
+    "nameAr": "مهندس برمجيات ونظم مدمجة (Embedded)"
   },
   {
     "category": "Engineering",
@@ -897,703 +957,37 @@
     "category": "Engineering",
     "categoryAr": "هندسة",
     "name": "IT Specialist",
-    "nameAr": "أخصائي نظم معلومات"
+    "nameAr": "أخصائي تكنولوجيا المعلومات"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "Landscape Engineer",
-    "nameAr": "مهندس لاندسكيب ومساحات خضراء"
+    "name": "IT Support Specialist",
+    "nameAr": "أخصائي دعم فني (IT Support)"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "Mechanical Engineer",
-    "nameAr": "مهندس ميكانيكا"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Mechanical Power Engineer",
-    "nameAr": "مهندس قوى ميكانيكية"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Mechatronics Engineer",
-    "nameAr": "مهندس ميكاترونكس"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Network Admin",
-    "nameAr": "مدير شبكات"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Network engineer",
+    "name": "Network Engineer",
     "nameAr": "مهندس شبكات"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "Planning engineer",
-    "nameAr": "مهندس تخطيط"
+    "name": "Network Administrator",
+    "nameAr": "مدير ومسؤول شبكات"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "Project Engineer",
-    "nameAr": "مهندس مشروع"
+    "name": "Network Security Engineer",
+    "nameAr": "مهندس أمن شبكات"
   },
   {
     "category": "Engineering",
     "categoryAr": "هندسة",
-    "name": "SOC Analyst T1",
-    "nameAr": "محلل مركز العمليات الأمنية (SOC T1)"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Senior Engineer",
-    "nameAr": "مهندس أول"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Shop Drawings Engineer",
-    "nameAr": "مهندس شوب دروينج"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Site Civil Engineer",
-    "nameAr": "مهندس مدني موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Software Developer",
-    "nameAr": "مطور برمجيات"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Surveying Manager",
-    "nameAr": "مدير إدارة مساحة"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Tec Office Engineer",
-    "nameAr": "مهندس مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Technical Office",
-    "nameAr": "مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Web Developer",
-    "nameAr": "مطور مواقع ويب"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مساح",
-    "nameAr": "مساح"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مساعد مساح",
-    "nameAr": "مساعد مساح"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مساعد مهندس استشاري",
-    "nameAr": "مساعد مهندس استشاري"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مساعد مهندس مساحة",
-    "nameAr": "مساعد مهندس مساحة"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مشرف تنفيذ",
-    "nameAr": "مشرف تنفيذ"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مشرف تنفيذ إنشاءات",
-    "nameAr": "مشرف تنفيذ إنشاءات"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مشرف تنفيذ خرسانه",
-    "nameAr": "مشرف تنفيذ خرسانه"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مشرف تنفيذ معماري",
-    "nameAr": "مشرف تنفيذ معماري"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مشرف مدني ومعماري",
-    "nameAr": "مشرف مدني ومعماري"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مشرف معماري",
-    "nameAr": "مشرف معماري"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مشرف معماري و طرق",
-    "nameAr": "مشرف معماري و طرق"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مصمم معماري داخلي",
-    "nameAr": "مصمم معماري داخلي"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تنفيذ",
-    "nameAr": "مهندس تنفيذ"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تنفيذ و تصميم",
-    "nameAr": "مهندس تنفيذ و تصميم"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس جيولوجي",
-    "nameAr": "مهندس جيولوجي"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس ري و صرف صحي",
-    "nameAr": "مهندس ري و صرف صحي"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس سلامه وصحة مهنية",
-    "nameAr": "مهندس سلامه وصحة مهنية"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Mechanical Maintenance Engineer",
-    "nameAr": "مهندس صيانة ميكانيكية"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس كهرباء باور",
-    "nameAr": "مهندس كهرباء باور"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس كهرباء قوي",
-    "nameAr": "مهندس كهرباء قوي"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مدنى موقع",
-    "nameAr": "مهندس مدنى موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مدني تشطيبات",
-    "nameAr": "مهندس مدني تشطيبات"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مدني مكتب فني",
-    "nameAr": "مهندس مدني مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مساحه",
-    "nameAr": "مهندس مساحه"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس معماري",
-    "nameAr": "مهندس معماري"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس معماري إستشاري",
-    "nameAr": "مهندس معماري إستشاري"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس معماري موقع",
-    "nameAr": "مهندس معماري موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مكتب فنى موقع",
-    "nameAr": "مهندس مكتب فنى موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "QS",
-    "nameAr": "مهندس مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Site Engineer",
-    "nameAr": "مهندس موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "MEP",
-    "nameAr": "مهندس ميكانيكا"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس ميكانيكا مكتب فني",
-    "nameAr": "مهندس ميكانيكا مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندسة مدني مكتب فني",
-    "nameAr": "مهندسة مدني مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "After-Sales Service Engineer",
-    "nameAr": "مهندس خدمة ما بعد البيع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Architectural Quality Control Engineer",
-    "nameAr": "مهندس رقابة جودة معمارية"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Bim Architect",
-    "nameAr": "مهندس معماري BIM"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Civil Site Engineer",
-    "nameAr": "مهندس موقع مدني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Electrical Construction Team Leader",
-    "nameAr": "قائد فريق إنشاءات كهربائية"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Electrical Engineer",
-    "nameAr": "مهندس كهرباء"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "HVAC Designer",
-    "nameAr": "مصمم أنظمة تكييف وتهوية (HVAC)"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Interior Designer",
-    "nameAr": "مصمم داخلي / ديكور"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Junior Technical Office Engineer",
-    "nameAr": "مهندس مكتب فني مبتدئ"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "MEP Engineer",
-    "nameAr": "مهندس كهروميكانيك (MEP)"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Machine Learning Engineer",
-    "nameAr": "مهندس تعلم الآلة والذكاء الاصطناعي"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Maintenance & Operations Engineer – Ammonia & Refrigeration",
-    "nameAr": "مهندس صيانة وتشغيل (أمونيا وتبريد)"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Maintenance Engineer",
-    "nameAr": "مهندس صيانة"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Piping Construction Engineer",
-    "nameAr": "مهندس إنشاءات وتمديدات مواسير"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Procurement Engineer",
-    "nameAr": "مهندس مشتريات وتوريدات هندسية"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Production Engineer",
-    "nameAr": "مهندس إنتاج"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "QS engineer",
-    "nameAr": "مهندس حصر كميات (QS)"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Sales Engineer",
-    "nameAr": "مهندس مبيعات"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Senior Architect",
-    "nameAr": "مهندس معماري أول"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Technical Office Engineer",
-    "nameAr": "مهندس مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "أخصائي دعم فني",
-    "nameAr": "أخصائي دعم فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Security Guard",
-    "nameAr": "فرد أمن"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مبرمج",
-    "nameAr": "مبرمج"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مدير إنشاءات مدنى",
-    "nameAr": "مدير إنشاءات مدنى"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مدير موقع",
-    "nameAr": "مدير موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "CNC",
-    "nameAr": "مشغل ومبرمج فرايز"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Flutter",
-    "nameAr": "مطور تطبيقات"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مطور ويب",
-    "nameAr": "مطور ويب"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس HVAC مكتب فني",
-    "nameAr": "مهندس HVAC مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "QS",
-    "nameAr": "مهندس"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "sheet metal",
-    "nameAr": "مهندس انتاج"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس بحث وتطوير",
-    "nameAr": "مهندس بحث وتطوير"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس بنيه تحتيه",
-    "nameAr": "مهندس بنيه تحتيه"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تراخيص",
-    "nameAr": "مهندس تراخيص"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تصميم",
-    "nameAr": "مهندس تصميم"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تصميم إنشائي",
-    "nameAr": "مهندس تصميم إنشائي"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تصميم كهربى",
-    "nameAr": "مهندس تصميم كهربى"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تصميم مكتب فنى",
-    "nameAr": "مهندس تصميم مكتب فنى"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تفتيش هندسي",
-    "nameAr": "مهندس تفتيش هندسي"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تنفيذ مدني",
-    "nameAr": "مهندس تنفيذ مدني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس تنفيذ و تخطيط",
-    "nameAr": "مهندس تنفيذ و تخطيط"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Executive Engineer",
-    "nameAr": "مهندس تنفيذي"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "Quality Engineer",
-    "nameAr": "مهندس جودة"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس زراعي",
-    "nameAr": "مهندس زراعي"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس صوت",
-    "nameAr": "مهندس صوت"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس صيانة ميكانيكا",
-    "nameAr": "مهندس صيانة ميكانيكا"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس ضبط جودة",
-    "nameAr": "مهندس ضبط جودة"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس كهرباء مكتب فني",
-    "nameAr": "مهندس كهرباء مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس كهرباء مكتب و موقع",
-    "nameAr": "مهندس كهرباء مكتب و موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس كهرباء موقع",
-    "nameAr": "مهندس كهرباء موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس كهرباء موقع ومكتب فني",
-    "nameAr": "مهندس كهرباء موقع ومكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مدنى مشروعات",
-    "nameAr": "مهندس مدنى مشروعات"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مدني تصميم",
-    "nameAr": "مهندس مدني تصميم"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مدني تنفيذ",
-    "nameAr": "مهندس مدني تنفيذ"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس معمار",
-    "nameAr": "مهندس معمار"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مكتب فني تنفيذ",
-    "nameAr": "مهندس مكتب فني تنفيذ"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس مكتب فني و موقع",
-    "nameAr": "مهندس مكتب فني و موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس موقع تنفيذ",
-    "nameAr": "مهندس موقع تنفيذ"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس موقع معمارى",
-    "nameAr": "مهندس موقع معمارى"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس موقع و مكتب",
-    "nameAr": "مهندس موقع و مكتب"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس موقع و مكتب فني",
-    "nameAr": "مهندس موقع و مكتب فني"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس موقع وتنفيذ",
-    "nameAr": "مهندس موقع وتنفيذ"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندس ميكانيكا موقع",
-    "nameAr": "مهندس ميكانيكا موقع"
-  },
-  {
-    "category": "Engineering",
-    "categoryAr": "هندسة",
-    "name": "مهندسين انتاج",
-    "nameAr": "مهندسين انتاج"
-  },
-  {
-    "category": "Quality & Inspection",
-    "categoryAr": "جودة وفحص",
-    "name": "PA/QA",
-    "nameAr": "مساعد / تأكيد جودة (PA/QA)"
-  },
-  {
-    "category": "Quality & Inspection",
-    "categoryAr": "جودة وفحص",
-    "name": "QC Engineer",
-    "nameAr": "مهندس مراقبة جودة (QC)"
+    "name": "SOC Analyst",
+    "nameAr": "محلل مركز العمليات الأمنية (SOC)"
   },
   {
     "category": "Quality & Inspection",
@@ -1604,50 +998,14 @@
   {
     "category": "Quality & Inspection",
     "categoryAr": "جودة وفحص",
-    "name": "رئيس قسم المعامل",
-    "nameAr": "رئيس قسم المعامل"
-  },
-  {
-    "category": "Quality & Inspection",
-    "categoryAr": "جودة وفحص",
-    "name": "فني جودة خرسانة",
-    "nameAr": "فني جودة خرسانة"
-  },
-  {
-    "category": "Quality & Inspection",
-    "categoryAr": "جودة وفحص",
-    "name": "كيميائي معالجة مياة",
-    "nameAr": "كيميائي معالجة مياة"
-  },
-  {
-    "category": "Quality & Inspection",
-    "categoryAr": "جودة وفحص",
-    "name": "مسئول معمل",
-    "nameAr": "مسئول معمل"
-  },
-  {
-    "category": "Quality & Inspection",
-    "categoryAr": "جودة وفحص",
-    "name": "مهندس جودة / انتاج",
-    "nameAr": "مهندس جودة / انتاج"
-  },
-  {
-    "category": "Quality & Inspection",
-    "categoryAr": "جودة وفحص",
-    "name": "مهندس جودة خرسانة",
-    "nameAr": "مهندس جودة خرسانة"
-  },
-  {
-    "category": "Quality & Inspection",
-    "categoryAr": "جودة وفحص",
-    "name": "مهندس معمل و جودة",
-    "nameAr": "مهندس معمل و جودة"
+    "name": "Quality Section Head",
+    "nameAr": "رئيس قسم الجودة"
   },
   {
     "category": "Quality & Inspection",
     "categoryAr": "جودة وفحص",
     "name": "QA/QC Engineer",
-    "nameAr": "QA/QC Engineer"
+    "nameAr": "مهندس توكيد وضبط جودة (QA/QC)"
   },
   {
     "category": "Quality & Inspection",
@@ -1658,20 +1016,32 @@
   {
     "category": "Quality & Inspection",
     "categoryAr": "جودة وفحص",
-    "name": "Quality Section Head",
-    "nameAr": "رئيس قسم الجودة"
+    "name": "Architectural QC Engineer",
+    "nameAr": "مهندس رقابة جودة معمارية"
   },
   {
     "category": "Quality & Inspection",
     "categoryAr": "جودة وفحص",
-    "name": "عامل فحص قماش",
-    "nameAr": "عامل فحص قماش"
+    "name": "Concrete Quality Engineer",
+    "nameAr": "مهندس جودة خرسانة"
   },
   {
     "category": "Quality & Inspection",
     "categoryAr": "جودة وفحص",
-    "name": "فني معمل",
-    "nameAr": "فني معمل"
+    "name": "Laboratory & Quality Engineer",
+    "nameAr": "مهندس معمل وجودة"
+  },
+  {
+    "category": "Quality & Inspection",
+    "categoryAr": "جودة وفحص",
+    "name": "Head of Laboratories",
+    "nameAr": "رئيس قسم المعامل"
+  },
+  {
+    "category": "Quality & Inspection",
+    "categoryAr": "جودة وفحص",
+    "name": "Lab Officer / Chemist",
+    "nameAr": "مسؤول معمل وكيميائي"
   },
   {
     "category": "Quality & Inspection",
@@ -1682,20 +1052,56 @@
   {
     "category": "Quality & Inspection",
     "categoryAr": "جودة وفحص",
-    "name": "مراقب جودة",
+    "name": "Water Treatment Chemist",
+    "nameAr": "كيميائي معالجة مياه"
+  },
+  {
+    "category": "Quality & Inspection",
+    "categoryAr": "جودة وفحص",
+    "name": "Microbiologist",
+    "nameAr": "أخصائي ميكروبيولوجي"
+  },
+  {
+    "category": "Quality & Inspection",
+    "categoryAr": "جودة وفحص",
+    "name": "Quality Supervisor",
+    "nameAr": "مشرف جودة"
+  },
+  {
+    "category": "Quality & Inspection",
+    "categoryAr": "جودة وفحص",
+    "name": "Quality Controller",
     "nameAr": "مراقب جودة"
   },
   {
     "category": "Quality & Inspection",
     "categoryAr": "جودة وفحص",
-    "name": "مسئول جودة",
-    "nameAr": "مسئول جودة"
+    "name": "Quality Assurance Specialist",
+    "nameAr": "أخصائي تأكيد جودة"
   },
   {
     "category": "Quality & Inspection",
     "categoryAr": "جودة وفحص",
-    "name": "مشرف جودة",
-    "nameAr": "مشرف جودة"
+    "name": "Lab Technician",
+    "nameAr": "فني معمل"
+  },
+  {
+    "category": "Quality & Inspection",
+    "categoryAr": "جودة وفحص",
+    "name": "Concrete Quality Technician",
+    "nameAr": "فني جودة خرسانة"
+  },
+  {
+    "category": "Quality & Inspection",
+    "categoryAr": "جودة وفحص",
+    "name": "Fabric Inspection Worker",
+    "nameAr": "عامل فحص قماش"
+  },
+  {
+    "category": "Quality & Inspection",
+    "categoryAr": "جودة وفحص",
+    "name": "ISO 9001 Lead Auditor",
+    "nameAr": "مدقق أيزو 9001"
   },
   {
     "category": "Maintenance & Technical",
@@ -1712,344 +1118,236 @@
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "فني خرسانه مسلح",
-    "nameAr": "فني خرسانه مسلح"
+    "name": "Electrical Maintenance Supervisor",
+    "nameAr": "مشرف كهرباء وصيانة"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "مشرف اول كهرباء",
-    "nameAr": "مشرف اول كهرباء"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "مشرف تشطيبات",
-    "nameAr": "مشرف تشطيبات"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "مشرف تشطيبات وديكور",
+    "name": "Finishing & Decor Supervisor",
     "nameAr": "مشرف تشطيبات وديكور"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "مشرف كهرباء",
-    "nameAr": "مشرف كهرباء"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "مشرف ميكانيكا",
-    "nameAr": "مشرف ميكانيكا"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "مشغل محطة خرسانة",
-    "nameAr": "مشغل محطة خرسانة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "مشغل محطة خلط خرسانة",
-    "nameAr": "مشغل محطة خلط خرسانة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "مشغل مضخة خرسانة",
-    "nameAr": "مشغل مضخة خرسانة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "QHSE Technician",
-    "nameAr": "فني سلامة وصحة مهنية وجودة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "أخصائي سلامة وصحة مهنية",
-    "nameAr": "أخصائي سلامة وصحة مهنية"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "خياط سنجر",
-    "nameAr": "خياط سنجر"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "خياط كورديلا (كوع / كوز)",
-    "nameAr": "خياط كورديلا (كوع / كوز)"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "سباك صحي",
-    "nameAr": "سباك صحي"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "صنايعي كاوتش",
-    "nameAr": "صنايعي كاوتش"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فنى كهرباء وتكيف",
-    "nameAr": "فنى كهرباء وتكيف"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني (صنايعي إصلاح كاوتش)",
-    "nameAr": "فني (صنايعي إصلاح كاوتش)"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني ألوميتال",
-    "nameAr": "فني ألوميتال"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني إلكترونيات",
-    "nameAr": "فني إلكترونيات"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني تبريد وتكييف",
-    "nameAr": "فني تبريد وتكييف"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني تركيبات",
-    "nameAr": "فني تركيبات"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني تشطيب ملابس",
-    "nameAr": "فني تشطيب ملابس"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني تشغيل ماكينات",
-    "nameAr": "فني تشغيل ماكينات"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني تطريز",
-    "nameAr": "فني تطريز"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني جودة متخصص في بنطلونات الجينز",
-    "nameAr": "فني جودة متخصص في بنطلونات الجينز"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني حدادة",
-    "nameAr": "فني حدادة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني خياطة",
-    "nameAr": "فني خياطة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني سباكة",
-    "nameAr": "فني سباكة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني سحب بلاستك",
-    "nameAr": "فني سحب بلاستك"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني سلامة وصحة مهنية",
-    "nameAr": "فني سلامة وصحة مهنية"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني صباغة",
-    "nameAr": "فني صباغة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني صيانة",
-    "nameAr": "فني صيانة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني صيانة عامة",
-    "nameAr": "فني صيانة عامة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني صيانة ميكانيكية",
+    "name": "Mechanical Maintenance Technician",
     "nameAr": "فني صيانة ميكانيكية"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "فني ضواغط هواء",
-    "nameAr": "فني ضواغط هواء"
+    "name": "General Maintenance Technician",
+    "nameAr": "فني صيانة عامة"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "فني طباعة",
-    "nameAr": "فني طباعة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني غلايات",
-    "nameAr": "فني غلايات"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني قص",
-    "nameAr": "فني قص"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني كهربا",
-    "nameAr": "فني كهربا"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني كهرباء",
+    "name": "Electrical Technician",
     "nameAr": "فني كهرباء"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "فني كهرباء باور",
-    "nameAr": "فني كهرباء باور"
+    "name": "Electrical Power Technician",
+    "nameAr": "فني كهرباء قوى وباور"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "فني لحام",
+    "name": "HVAC Technician",
+    "nameAr": "فني تبريد وتكييف"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Plumbing Technician",
+    "nameAr": "فني سباكة صحية"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Welding Technician",
     "nameAr": "فني لحام"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "فني مصاعد",
-    "nameAr": "فني مصاعد"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني ميكانيكا",
-    "nameAr": "فني ميكانيكا"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني نجار",
-    "nameAr": "فني نجار"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني نجارة",
-    "nameAr": "فني نجارة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني نسيج",
-    "nameAr": "فني نسيج"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "categoryAr": "صيانة وفني",
-    "name": "فني هيدروليك",
+    "name": "Hydraulics Technician",
     "nameAr": "فني هيدروليك"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "كهربائي سيارات",
+    "name": "Electronics Technician",
+    "nameAr": "فني إلكترونيات"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Elevator Technician",
+    "nameAr": "فني مصاعد"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Boiler Technician",
+    "nameAr": "فني غلايات"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Air Compressor Technician",
+    "nameAr": "فني ضواغط هواء"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Machinery Operator Technician",
+    "nameAr": "فني تشغيل ماكينات"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "CNC Milling Operator & Programmer",
+    "nameAr": "مشغل ومبرمج فرايز وماكينات CNC"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "CNC Laser Machine Operator",
+    "nameAr": "مشغل ماكينة ليزر CNC"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "CNC Router Operator",
+    "nameAr": "مشغل ماكينة روتر CNC"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Plastic Injection Mold Fitter",
+    "nameAr": "براد اسطمبات حقن بلاستيك"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Plastic Injection Technician",
+    "nameAr": "فني تشغيل ماكينات حقن بلاستيك"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Plastic Extrusion Technician",
+    "nameAr": "فني سحب بلاستيك"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Carpentry Technician",
+    "nameAr": "فني نجارة"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Blacksmith Technician",
+    "nameAr": "فني حدادة"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Alumetal Technician",
+    "nameAr": "فني ألوميتال"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Painter Technician",
+    "nameAr": "نقاش / فني دهانات"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Sewing Technician",
+    "nameAr": "فني خياطة سنجر وكورديلا"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Cutting Technician",
+    "nameAr": "فني قص"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Garment Finishing Technician",
+    "nameAr": "فني تشطيب ملابس"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Embroidery Technician",
+    "nameAr": "فني تطريز"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Textile Technician",
+    "nameAr": "فني نسيج"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Dyeing Technician",
+    "nameAr": "فني صباغة"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Printing Technician",
+    "nameAr": "فني طباعة"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Installation Technician",
+    "nameAr": "فني تركيبات"
+  },
+  {
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "Automotive Electrician",
     "nameAr": "كهربائي سيارات"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "لحام",
-    "nameAr": "لحام"
+    "name": "Tire Repair Specialist",
+    "nameAr": "فني إصلاح كاوتش"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "CNC",
-    "nameAr": "مشغل مكينة روتر"
+    "name": "Concrete Plant Operator",
+    "nameAr": "مشغل محطة ومضخة خرسانة"
   },
   {
     "category": "Maintenance & Technical",
     "categoryAr": "صيانة وفني",
-    "name": "نقاش",
-    "nameAr": "نقاش"
+    "name": "Reinforced Concrete Technician",
+    "nameAr": "فني خرسانة مسلحة"
   },
   {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "Automotive production",
-    "nameAr": "إنتاج سيارات وتجميع"
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "OHS Technician",
+    "nameAr": "فني سلامة وصحة مهنية"
   },
   {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "Textile manger",
-    "nameAr": "مدير مصنع غزل ونسيج"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "عامل بوفيه ونظافة",
-    "nameAr": "عامل بوفيه ونظافة"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "مدير خرسانة",
-    "nameAr": "مدير خرسانة"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "Graphic Designer",
-    "nameAr": "مصمم جرافيك"
+    "category": "Maintenance & Technical",
+    "categoryAr": "صيانة وفني",
+    "name": "OHS Specialist",
+    "nameAr": "أخصائي سلامة وصحة مهنية"
   },
   {
     "category": "Production & Manufacturing",
@@ -2060,242 +1358,110 @@
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "رئيس قسم تخطيط انتاج",
-    "nameAr": "رئيس قسم تخطيط انتاج"
+    "name": "Assistant Production Manager",
+    "nameAr": "مساعد مدير إنتاج"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "عامل إنتاج",
-    "nameAr": "عامل إنتاج"
+    "name": "Head of Production Planning",
+    "nameAr": "رئيس قسم تخطيط إنتاج"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "عامل بوفيه",
-    "nameAr": "عامل بوفيه"
+    "name": "Production Supervisor",
+    "nameAr": "مشرف إنتاج"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "عامل تعبئة وتغليف",
-    "nameAr": "عامل تعبئة وتغليف"
+    "name": "Garment Production Supervisor",
+    "nameAr": "مشرف إنتاج ملابس"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "عامل خدمات",
-    "nameAr": "عامل خدمات"
+    "name": "Automotive Production Supervisor",
+    "nameAr": "مشرف إنتاج سيارات"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "عامل نظافة",
-    "nameAr": "عامل نظافة"
+    "name": "Textile Factory Manager",
+    "nameAr": "مدير مصنع غزل ونسيج"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "عمال خدمات",
-    "nameAr": "عمال خدمات"
+    "name": "Carton Factory Manager",
+    "nameAr": "مدير مصنع كرتون"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "فرد أمن",
-    "nameAr": "فرد أمن"
+    "name": "Ready-Mix Concrete Manager",
+    "nameAr": "مدير محطة خرسانة جاهزة"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "Content Writer",
-    "nameAr": "كاتب محتوى"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "مدير قسم انتاج",
-    "nameAr": "مدير قسم انتاج"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "مساعد مدير انتاج",
-    "nameAr": "مساعد مدير انتاج"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "مشرف أمن",
-    "nameAr": "مشرف أمن"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "مشرف إنتاج ملابس جينز",
-    "nameAr": "مشرف إنتاج ملابس جينز"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "categoryAr": "إنتاج وتصنيع",
-    "name": "مشرف عمال",
+    "name": "Workers Supervisor",
     "nameAr": "مشرف عمال"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "مشغل إنتاج",
-    "nameAr": "مشغل إنتاج"
+    "name": "Production Line Operator",
+    "nameAr": "مشغل خط إنتاج"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "موظف أمن",
-    "nameAr": "موظف أمن"
+    "name": "Production Worker",
+    "nameAr": "عامل إنتاج"
   },
   {
     "category": "Production & Manufacturing",
     "categoryAr": "إنتاج وتصنيع",
-    "name": "موظف بوفيه",
-    "nameAr": "موظف بوفيه"
+    "name": "Packing & Packaging Worker",
+    "nameAr": "عامل تعبئة وتغليف"
+  },
+  {
+    "category": "Production & Manufacturing",
+    "categoryAr": "إنتاج وتصنيع",
+    "name": "Services & Cleaning Worker",
+    "nameAr": "عامل خدمات ونظافة"
+  },
+  {
+    "category": "Production & Manufacturing",
+    "categoryAr": "إنتاج وتصنيع",
+    "name": "Buffet Staff",
+    "nameAr": "موظف بوفيه وضيافة"
+  },
+  {
+    "category": "Production & Manufacturing",
+    "categoryAr": "إنتاج وتصنيع",
+    "name": "Security Supervisor",
+    "nameAr": "مشرف أمن وحراسة"
+  },
+  {
+    "category": "Production & Manufacturing",
+    "categoryAr": "إنتاج وتصنيع",
+    "name": "Security Guard",
+    "nameAr": "فرد أمن وحراسة"
+  },
+  {
+    "category": "Production & Manufacturing",
+    "categoryAr": "إنتاج وتصنيع",
+    "name": "CCTV Surveillance Operator",
+    "nameAr": "مراقب كاميرات وأمن إداري"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "Area sales manager",
-    "nameAr": "مدير مبيعات المنطقة"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Chief Revenue Officer - CRO",
+    "name": "Chief Revenue Officer (CRO)",
     "nameAr": "رئيس قطاع الإيرادات (CRO)"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Customer Service Supervisor",
-    "nameAr": "مشرف خدمة عملاء"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Customer Support",
-    "nameAr": "أخصائي دعم عملاء"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Digital Marketer",
-    "nameAr": "أخصائي تسويق رقمي"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Marketing Agent",
-    "nameAr": "وكيل تسويق"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Sales Agent",
-    "nameAr": "وكيل مبيعات"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Sales Supervisor",
-    "nameAr": "مشرف مبيعات"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Sales Support",
-    "nameAr": "دعم مبيعات"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Telesales Representative",
-    "nameAr": "مندوب مبيعات هاتفية"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "خدمه عملاء",
-    "nameAr": "خدمه عملاء"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "خدمه عملاء عقارات",
-    "nameAr": "خدمه عملاء عقارات"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "مشرف مبيعات ادوية",
-    "nameAr": "مشرف مبيعات ادوية"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "مشرف مبيعات غذائية",
-    "nameAr": "مشرف مبيعات غذائية"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Business Developer",
-    "nameAr": "مطور أعمال"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "ممثل خدمة العملاء",
-    "nameAr": "ممثل خدمة العملاء"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "ممثل خدمه عملاء",
-    "nameAr": "ممثل خدمه عملاء"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "ممثل علاقات عامة",
-    "nameAr": "ممثل علاقات عامة"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "HORECA & Key Distributors Sales Manager",
-    "nameAr": "مدير مبيعات قطاع الهوريكا وكبار الموزعين"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "HORECA & Key Distributors Sales Representative",
-    "nameAr": "مندوب مبيعات قطاع الهوريكا وكبار الموزعين"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Key Accounts & Wholesale Sales Manager",
-    "nameAr": "مدير مبيعات قطاع السلاسل الكبرى والجملة"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Key Accounts & Wholesale Sales Representative",
-    "nameAr": "مندوب مبيعات قطاع السلاسل الكبرى والجملة"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "Regional Sales Manager",
-    "nameAr": "مدير مبيعات إقليمي"
   },
   {
     "category": "Sales & Marketing",
@@ -2306,164 +1472,260 @@
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "Sales Representative",
-    "nameAr": "مندوب مبيعات"
+    "name": "Regional Sales Manager",
+    "nameAr": "مدير مبيعات إقليمي"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "أخصائي تسويق",
-    "nameAr": "أخصائي تسويق"
+    "name": "Area Sales Manager",
+    "nameAr": "مدير مبيعات منطقة"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "بائع ملابس",
-    "nameAr": "بائع ملابس"
+    "name": "HORECA & Key Distributors Sales Manager",
+    "nameAr": "مدير مبيعات هوريكا وكبار الموزعين"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "مدير خدمة عملاء",
-    "nameAr": "مدير خدمة عملاء"
+    "name": "Key Accounts & Wholesale Sales Manager",
+    "nameAr": "مدير مبيعات السلاسل الكبرى والجملة"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "مدير فرع",
+    "name": "Branch Manager",
     "nameAr": "مدير فرع"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "مسؤول علاقات عامة",
-    "nameAr": "مسؤول علاقات عامة"
+    "name": "Sales Supervisor",
+    "nameAr": "مشرف مبيعات"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "مسئول تسويق",
-    "nameAr": "مسئول تسويق"
+    "name": "Pharma Sales Supervisor",
+    "nameAr": "مشرف مبيعات أدوية"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "مستشار مبيعات تجزئة",
+    "name": "FMCG Sales Supervisor",
+    "nameAr": "مشرف مبيعات مواد غذائية"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Sales Representative",
+    "nameAr": "مندوب مبيعات خارجي"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "B2B Sales Representative",
+    "nameAr": "مندوب مبيعات شركات (B2B)"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "HORECA Sales Representative",
+    "nameAr": "مندوب مبيعات هوريكا"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Wholesale Sales Representative",
+    "nameAr": "مندوب مبيعات جملة وسلاسل كبرى"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Indoor Sales Officer",
+    "nameAr": "موظف مبيعات داخلية"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Retail Sales Consultant",
     "nameAr": "مستشار مبيعات تجزئة"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "Medical Rep",
-    "nameAr": "مندوب دعاية طبية"
+    "name": "Clothing Salesperson",
+    "nameAr": "بائع ملابس"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "مندوب مبيعات (قطاع السلاسل الكبرى والجملة)",
-    "nameAr": "مندوب مبيعات (قطاع السلاسل الكبرى والجملة)"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "مندوب مبيعات (قطاع الهوريكا وكبار الموزعين)",
-    "nameAr": "مندوب مبيعات (قطاع الهوريكا وكبار الموزعين)"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "مندوب مبيعات B2B",
-    "nameAr": "مندوب مبيعات B2B"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "مندوب مبيعات خارجيه",
-    "nameAr": "مندوب مبيعات خارجيه"
-  },
-  {
-    "category": "Sales & Marketing",
-    "categoryAr": "مبيعات وتسويق",
-    "name": "منسق ممرات",
+    "name": "Aisle Coordinator",
     "nameAr": "منسق ممرات"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "منسقة مبيعات داخلية",
-    "nameAr": "منسقة مبيعات داخلية"
+    "name": "Medical Representative",
+    "nameAr": "مندوب دعاية طبية"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "موظف خدمة عملاء",
-    "nameAr": "موظف خدمة عملاء"
+    "name": "Telesales Representative",
+    "nameAr": "مندوب مبيعات هاتفية (Telesales)"
   },
   {
     "category": "Sales & Marketing",
     "categoryAr": "مبيعات وتسويق",
-    "name": "موظف مبيعات داخلية",
-    "nameAr": "موظف مبيعات داخلية"
+    "name": "Sales Support Specialist",
+    "nameAr": "أخصائي دعم مبيعات"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Business Development Manager",
+    "nameAr": "مدير تطوير أعمال"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Marketing Manager",
+    "nameAr": "مدير تسويق"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Marketing Specialist",
+    "nameAr": "أخصائي تسويق"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Digital Marketer",
+    "nameAr": "أخصائي تسويق رقمي"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Social Media Specialist",
+    "nameAr": "أخصائي وسائل التواصل الاجتماعي"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "SEO Specialist",
+    "nameAr": "أخصائي تحسين محركات البحث (SEO)"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Graphic Designer",
+    "nameAr": "مصمم جرافيك"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Content Writer & Copywriter",
+    "nameAr": "كاتب ومحرر محتوى إعلاني"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Customer Service Manager",
+    "nameAr": "مدير خدمة العملاء"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Customer Service Supervisor",
+    "nameAr": "مشرف خدمة عملاء"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Customer Support Representative",
+    "nameAr": "ممثل خدمة عملاء وكول سنتر"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Real Estate Customer Service",
+    "nameAr": "خدمة عملاء عقارات"
+  },
+  {
+    "category": "Sales & Marketing",
+    "categoryAr": "مبيعات وتسويق",
+    "name": "Public Relations Officer",
+    "nameAr": "مسؤول علاقات عامة"
   },
   {
     "category": "Drivers & Logistics",
     "categoryAr": "سائقين وخدمات لوجستية",
-    "name": "سائق",
-    "nameAr": "سائق"
-  },
-  {
-    "category": "Drivers & Logistics",
-    "categoryAr": "سائقين وخدمات لوجستية",
-    "name": "سائق رخصة أولى",
+    "name": "First Class Driver",
     "nameAr": "سائق رخصة أولى"
   },
   {
     "category": "Drivers & Logistics",
     "categoryAr": "سائقين وخدمات لوجستية",
-    "name": "سائق رخصة ثالثة",
-    "nameAr": "سائق رخصة ثالثة"
-  },
-  {
-    "category": "Drivers & Logistics",
-    "categoryAr": "سائقين وخدمات لوجستية",
-    "name": "سائق رخصة ثانية",
+    "name": "Second Class Driver",
     "nameAr": "سائق رخصة ثانية"
   },
   {
     "category": "Drivers & Logistics",
     "categoryAr": "سائقين وخدمات لوجستية",
-    "name": "سائق ريتش تراك",
+    "name": "Third Class Driver",
+    "nameAr": "سائق رخصة ثالثة"
+  },
+  {
+    "category": "Drivers & Logistics",
+    "categoryAr": "سائقين وخدمات لوجستية",
+    "name": "Reach Truck Driver",
     "nameAr": "سائق ريتش تراك"
   },
   {
     "category": "Drivers & Logistics",
     "categoryAr": "سائقين وخدمات لوجستية",
-    "name": "سائق كلارك",
-    "nameAr": "سائق كلارك"
+    "name": "Forklift Driver",
+    "nameAr": "سائق كلارك فوركلفت"
   },
   {
     "category": "Drivers & Logistics",
     "categoryAr": "سائقين وخدمات لوجستية",
-    "name": "مراقب الحركة",
-    "nameAr": "مراقب الحركة"
+    "name": "Professional Driver",
+    "nameAr": "سائق مهني"
+  },
+  {
+    "category": "Drivers & Logistics",
+    "categoryAr": "سائقين وخدمات لوجستية",
+    "name": "Fleet Traffic Controller",
+    "nameAr": "مراقب حركة وتشغيل"
   },
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "Chef Bakery",
-    "nameAr": "شيف مخبوزات وحلويات"
+    "name": "Veterinarian",
+    "nameAr": "طبيب بيطري"
   },
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "Computer teacher",
-    "nameAr": "معلم حاسب آلي"
+    "name": "Pharmacist",
+    "nameAr": "صيدلي"
   },
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "Data Analyst",
-    "nameAr": "محلل بيانات"
+    "name": "Pharmacy Assistant",
+    "nameAr": "مساعد صيدلي"
+  },
+  {
+    "category": "Specialized & Other",
+    "categoryAr": "تخصصات أخرى",
+    "name": "Nurse",
+    "nameAr": "أخصائي تمريض وممرض"
   },
   {
     "category": "Specialized & Other",
@@ -2474,122 +1736,92 @@
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "Lawyer",
-    "nameAr": "محامي"
+    "name": "Medical Claims Agent",
+    "nameAr": "مراجع مطالبات تأمين طبي"
   },
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "Program Officer",
-    "nameAr": "مسؤول برامج"
+    "name": "Lawyer / Legal Specialist",
+    "nameAr": "محامي ومستشار قانوني"
   },
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "أخصائي تمريض",
-    "nameAr": "أخصائي تمريض"
+    "name": "Legal Affairs Officer",
+    "nameAr": "موظف شؤون قانونية"
   },
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "مدير تشغيل مطاعم",
+    "name": "Translator / Simultaneous Interpreter",
+    "nameAr": "مترجم ومترجم فوري"
+  },
+  {
+    "category": "Specialized & Other",
+    "categoryAr": "تخصصات أخرى",
+    "name": "Subtitling & Media Specialist",
+    "nameAr": "أخصائي ترجمة ودبلجة"
+  },
+  {
+    "category": "Specialized & Other",
+    "categoryAr": "تخصصات أخرى",
+    "name": "Video Editor & Motion Designer",
+    "nameAr": "مونتير ومحرر فيديو"
+  },
+  {
+    "category": "Specialized & Other",
+    "categoryAr": "تخصصات أخرى",
+    "name": "Teacher / Instructor",
+    "nameAr": "مدرس ومعلم"
+  },
+  {
+    "category": "Specialized & Other",
+    "categoryAr": "تخصصات أخرى",
+    "name": "Kindergarten Teacher",
+    "nameAr": "معلمة رياض أطفال"
+  },
+  {
+    "category": "Specialized & Other",
+    "categoryAr": "تخصصات أخرى",
+    "name": "Computer Teacher",
+    "nameAr": "معلم حاسب آلي"
+  },
+  {
+    "category": "Specialized & Other",
+    "categoryAr": "تخصصات أخرى",
+    "name": "Professional Trainer",
+    "nameAr": "مدرب محترف"
+  },
+  {
+    "category": "Specialized & Other",
+    "categoryAr": "تخصصات أخرى",
+    "name": "Bakery Chef",
+    "nameAr": "شيف مخبوزات وحلويات"
+  },
+  {
+    "category": "Specialized & Other",
+    "categoryAr": "تخصصات أخرى",
+    "name": "Restaurant Operations Manager",
     "nameAr": "مدير تشغيل مطاعم"
   },
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "مدير سلامة و صحة مهنية",
-    "nameAr": "مدير سلامة و صحة مهنية"
+    "name": "HSE Manager",
+    "nameAr": "مدير صحة وسلامة مهنية"
   },
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "مستشار قانوني",
-    "nameAr": "مستشار قانوني"
+    "name": "HSE Specialist",
+    "nameAr": "أخصائي صحة وسلامة مهنية"
   },
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "معلمة رياض اطفال",
-    "nameAr": "معلمة رياض اطفال"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "AI engineer",
-    "nameAr": "مهندس ذكاء اصطناعي (AI)"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Account Manager",
-    "nameAr": "مدير حسابات عملاء"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Area manager",
-    "nameAr": "مدير منطقة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Assistant Manager",
-    "nameAr": "مساعد مدير"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Backend Developer",
-    "nameAr": "مطور برمجيات خلفية (Backend)"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Cashier",
-    "nameAr": "كاشير / صراف"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Chemical Engineer",
-    "nameAr": "مهندس كيميائي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Chemist",
-    "nameAr": "كيميائي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Content Writer",
-    "nameAr": "كاتب محتوى"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Copywriter",
-    "nameAr": "محرر ومؤلف إعلاني (Copywriter)"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Customer Service / Call Center Agent",
-    "nameAr": "ممثل خدمة عملاء / كول سنتر"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Customer Service manager",
-    "nameAr": "مدير خدمة العملاء"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Data Analytics",
-    "nameAr": "أخصائي تحليلات بيانات"
+    "name": "Program Officer",
+    "nameAr": "مسؤول برامج ومشاريع مجتمعية"
   },
   {
     "category": "Specialized & Other",
@@ -2600,427 +1832,7 @@
   {
     "category": "Specialized & Other",
     "categoryAr": "تخصصات أخرى",
-    "name": "Draftsman",
-    "nameAr": "رسام هندسي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Embedded software",
-    "nameAr": "مهندس برمجيات مدمجة (Embedded)"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Embedded systems",
-    "nameAr": "مهندس نظم مدمجة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Executive Engineer",
-    "nameAr": "مهندس تنفيذي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Geologist",
-    "nameAr": "جيولوجي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "HSE Specialist",
-    "nameAr": "أخصائي سلامة وصحة مهنية وبيئة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "IT consultant",
-    "nameAr": "استشاري نظم ومعلومات"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "IT help desk",
-    "nameAr": "أخصائي مكتب دعم فني IT"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Internal Audit",
-    "nameAr": "مراجع داخلي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Key Account Manager",
-    "nameAr": "مدير كبار العملاء"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Marketing Manager",
-    "nameAr": "مدير تسويق"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Medical Claims Agent",
-    "nameAr": "مسؤول مطالبات تأمين طبي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Medical Rep",
-    "nameAr": "مندوب دعاية طبية"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Microbiologist",
-    "nameAr": "أخصائي ميكروبيولوجي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Moderator",
+    "name": "Online Community Moderator",
     "nameAr": "مشرف محتوى ومنصات (Moderator)"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Network Security Engineer",
-    "nameAr": "مهندس أمن شبكات"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Office Manager",
-    "nameAr": "مدير مكتب"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Office Manger",
-    "nameAr": "مدير مكتب"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Operations Manager",
-    "nameAr": "مدير عمليات تشغيلية"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Project Manager",
-    "nameAr": "مدير مشروع"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Purchasing Agent",
-    "nameAr": "وكيل مشتريات"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Receptionist",
-    "nameAr": "موظف استقبال"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "SEO Specialist",
-    "nameAr": "أخصائي تحسين محركات البحث (SEO)"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Sales Area Manager",
-    "nameAr": "مدير منطقة مبيعات"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Section Head",
-    "nameAr": "رئيس قسم"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Social Media Specialist",
-    "nameAr": "أخصائي وسائل التواصل الاجتماعي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Store keeper",
-    "nameAr": "أمين مخزن"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Subtitling Specialist",
-    "nameAr": "أخصائي ترجمة ودبلجة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Video Editor",
-    "nameAr": "مونتير ومحرر فيديو"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "pharmacist",
-    "nameAr": "صيدلي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "أخصائي شئون قانونية",
-    "nameAr": "أخصائي شئون قانونية"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "أخصائي علاقات عامة",
-    "nameAr": "أخصائي علاقات عامة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "أخصائي قانوني",
-    "nameAr": "أخصائي قانوني"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "Logistics Specialist",
-    "nameAr": "أخصائي لوجستيات"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "أمن إداري",
-    "nameAr": "أمن إداري"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "أوفيس جيرل",
-    "nameAr": "أوفيس جيرل"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "اخصائي تخطيط ومتابعه",
-    "nameAr": "اخصائي تخطيط ومتابعه"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "امن اداري ومراقب كاميرات",
-    "nameAr": "امن اداري ومراقب كاميرات"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "براد اسطمبات حقن بلاستيك",
-    "nameAr": "براد اسطمبات حقن بلاستيك"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "تيلى سيلز",
-    "nameAr": "تيلى سيلز"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "دكتور صيدلى",
-    "nameAr": "دكتور صيدلى"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "صنايعي تشغيل ماكينات حقن بلاستيك",
-    "nameAr": "صنايعي تشغيل ماكينات حقن بلاستيك"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "طبيب بيطري",
-    "nameAr": "طبيب بيطري"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مترجم",
-    "nameAr": "مترجم"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مترجم فوري",
-    "nameAr": "مترجم فوري"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مترجم لغة إنجليزية",
-    "nameAr": "مترجم لغة إنجليزية"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مدرب",
-    "nameAr": "مدرب"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مدرس",
-    "nameAr": "مدرس"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مدقق أيزو 9001",
-    "nameAr": "مدقق أيزو 9001"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مدير تنفيذ",
-    "nameAr": "مدير تنفيذ"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مدير جودة خرسانة",
-    "nameAr": "مدير جودة خرسانة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "HR Personnel Manager",
-    "nameAr": "مدير شؤون العاملين"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مدير صحة وسلامة مهنية",
-    "nameAr": "مدير صحة وسلامة مهنية"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مدير علاقات العامة",
-    "nameAr": "مدير علاقات العامة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مدير مدفوعات",
-    "nameAr": "مدير مدفوعات"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مدير مساحة",
-    "nameAr": "مدير مساحة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مراجع مطلبات تأمين",
-    "nameAr": "مراجع مطلبات تأمين"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مراقب حركة",
-    "nameAr": "مراقب حركة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مراقب كاميرات",
-    "nameAr": "مراقب كاميرات"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مساح عام",
-    "nameAr": "مساح عام"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مساعد صيدلي",
-    "nameAr": "مساعد صيدلي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مشرف تنفيذي معماري",
-    "nameAr": "مشرف تنفيذي معماري"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "warehouse Supervisor",
-    "nameAr": "مشرف مخازن"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "CNC",
-    "nameAr": "مشغل ماكينة ليزر"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "ممرض",
-    "nameAr": "ممرض"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "مهندس مختبر جودة",
-    "nameAr": "مهندس مختبر جودة"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "موظف تخليص جمركي",
-    "nameAr": "موظف تخليص جمركي"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "موظف شؤون قانونية",
-    "nameAr": "موظف شؤون قانونية"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "موظف شئون قانونيه",
-    "nameAr": "موظف شئون قانونيه"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "The user's current state is as follows:",
-    "nameAr": "The user's current state is as follows:"
-  },
-  {
-    "category": "Specialized & Other",
-    "categoryAr": "تخصصات أخرى",
-    "name": "</ADDITIONAL_METADATA>",
-    "nameAr": "</ADDITIONAL_METADATA>"
   }
 ]
