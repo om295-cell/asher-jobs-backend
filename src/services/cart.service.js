@@ -108,17 +108,30 @@ async function clearCart(companyId) {
 }
 
 /**
+ * OWASP A03 / CWE-1236: Prevent CSV/Formula Injection in cart exports
+ */
+function sanitizeExcelCell(val) {
+  if (val === null || val === undefined) return '';
+  if (typeof val !== 'string') return val;
+  const trimmed = val.trim();
+  if (/^[=+\-@\t\r]/.test(trimmed)) {
+    return `'${val}`;
+  }
+  return val;
+}
+
+/**
  * Format candidate fields for export
  */
 function formatCandidateRow(c, jobTitleName) {
   return {
-    'Requested Job Title': jobTitleName || 'N/A',
-    'Candidate Name': c.fullName,
-    'Phone Number': c.phone,
-    'Primary Job': c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A',
-    'Career Level': c.careerLevel || 'N/A',
-    'Secondary Job': c.secondJobId ? (c.secondJobId.nameAr || c.secondJobId.name) : 'None',
-    'Tertiary Job': c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'None'
+    'Requested Job Title': sanitizeExcelCell(jobTitleName || 'N/A'),
+    'Candidate Name': sanitizeExcelCell(c.fullName),
+    'Phone Number': sanitizeExcelCell(c.phone),
+    'Primary Job': sanitizeExcelCell(c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A'),
+    'Career Level': sanitizeExcelCell(c.careerLevel || 'N/A'),
+    'Secondary Job': sanitizeExcelCell(c.secondJobId ? (c.secondJobId.nameAr || c.secondJobId.name) : 'None'),
+    'Tertiary Job': sanitizeExcelCell(c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'None')
   };
 }
 

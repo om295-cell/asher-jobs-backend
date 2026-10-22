@@ -152,8 +152,12 @@ async function getCompanyRecruitmentRequests(companyId, queryParams) {
 }
 
 async function getRecruitmentRequestById(requestId, companyId, isAdmin = false) {
+  if (!isAdmin && !companyId) {
+    throw { statusCode: 403, message: 'Access denied.', code: 'FORBIDDEN' };
+  }
+
   const query = { _id: requestId };
-  if (!isAdmin && companyId) {
+  if (!isAdmin) {
     query.companyId = companyId;
   }
 

@@ -23,6 +23,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
+  requireApprovedCompany,
   recruitmentRequestController.getRequestById
 );
 

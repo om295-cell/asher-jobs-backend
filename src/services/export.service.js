@@ -67,16 +67,30 @@ async function getExportRecords(queryParams, company = null) {
       .lean();
   }
 
+/**
+ * OWASP A03 / CWE-1236: Prevent CSV/Formula Injection
+ * Escapes characters that Excel/Calc interpret as formulas (=, +, -, @, \t, \r)
+ */
+function sanitizeExcelCell(val) {
+  if (val === null || val === undefined) return '';
+  if (typeof val !== 'string') return val;
+  const trimmed = val.trim();
+  if (/^[=+\-@\t\r]/.test(trimmed)) {
+    return `'${val}`;
+  }
+  return val;
+}
+
   return candidates.map((c) => ({
-    'Candidate Name': c.fullName,
-    'Phone': c.phone,
-    'Job #1 (Primary)': c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A',
-    'Career Level #1': c.careerLevel || 'N/A',
-    'Job #2': c.secondJobId ? (c.secondJobId.nameAr || c.secondJobId.name) : 'None',
-    'Career Level #2': c.secondCareerLevel || '',
-    'Job #3': c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'None',
-    'Career Level #3': c.thirdCareerLevel || '',
-    'Category': c.categoryId ? (c.categoryId.nameAr || c.categoryId.name) : 'N/A'
+    'Candidate Name': sanitizeExcelCell(c.fullName),
+    'Phone': sanitizeExcelCell(c.phone),
+    'Job #1 (Primary)': sanitizeExcelCell(c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A'),
+    'Career Level #1': sanitizeExcelCell(c.careerLevel || 'N/A'),
+    'Job #2': sanitizeExcelCell(c.secondJobId ? (c.secondJobId.nameAr || c.secondJobId.name) : 'None'),
+    'Career Level #2': sanitizeExcelCell(c.secondCareerLevel || ''),
+    'Job #3': sanitizeExcelCell(c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'None'),
+    'Career Level #3': sanitizeExcelCell(c.thirdCareerLevel || ''),
+    'Category': sanitizeExcelCell(c.categoryId ? (c.categoryId.nameAr || c.categoryId.name) : 'N/A')
   }));
 }
 

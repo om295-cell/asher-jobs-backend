@@ -185,13 +185,22 @@ async function handleWebhook(req, res) {
     const hmac = req.query.hmac;
     const data = req.body.obj || req.body;
 
-    // Verify HMAC signature
-    if (process.env.PAYMOB_HMAC_KEY && hmac) {
-      const valid = paymobService.verifyHmac(data, hmac);
-      if (!valid) {
-        console.warn('[Payment/webhook] Invalid HMAC signature');
-        return res.status(200).json({ received: true }); // always 200 to Paymob
-      }
+    // OWASP A08: Strictly enforce Paymob HMAC webhook signature
+    const hmacKey = process.env.PAYMOB_HMAC_KEY;
+    if (!hmacKey) {
+      console.error('[Payment/webhook] SECURITY ERROR: PAYMOB_HMAC_KEY is not configured on server.');
+      return res.status(500).json({ error: 'Webhook signature verification key not configured' });
+    }
+
+    if (!hmac) {
+      console.warn('[Payment/webhook] SECURITY ALERT: Webhook called without HMAC signature.');
+      return res.status(401).json({ error: 'HMAC signature required' });
+    }
+
+    const valid = paymobService.verifyHmac(data, hmac);
+    if (!valid) {
+      console.warn('[Payment/webhook] SECURITY ALERT: Invalid HMAC signature detected.');
+      return res.status(401).json({ error: 'Invalid HMAC signature' });
     }
 
     const paymobOrderId = String(data.order?.id || data.order);
@@ -211,6 +220,17 @@ async function handleWebhook(req, res) {
     order.paymobTransactionId = transactionId;
 
     if (success) {
+      // Validate payment amount (in cents/piastres) against order amount to prevent price tampering
+      const transactionAmountCents = Number(data.amount_cents);
+      const expectedAmountCents = Math.round(order.amountEgp * 100);
+      if (transactionAmountCents && Math.abs(transactionAmountCents - expectedAmountCents) > 100) {
+        console.warn(`[Payment/webhook] Amount mismatch detected: received ${transactionAmountCents}, expected ${expectedAmountCents}`);
+        order.status = 'failed';
+        order.failureReason = 'Amount mismatch detected';
+        await order.save();
+        return res.status(200).json({ received: true });
+      }
+
       order.status = 'paid';
       order.paidAt = new Date();
 
@@ -236,53 +256,33 @@ async function handleWebhook(req, res) {
     return res.status(200).json({ received: true });
   } catch (err) {
     console.error('[Payment/webhook] Error:', err.message);
-    return res.status(200).json({ received: true }); // always 200
+    return res.status(500).json({ error: 'Webhook processing error' });
   }
 }
 
 // ─────────────────────────────────────────────────────────────
 // GET /payments/callback  (browser redirect from Paymob iframe)
-// Paymob redirects here with ?success=true&order=...&id=...
-// We verify then redirect to frontend with result
+// Purely redirects the user — never activates subscriptions directly
 // ─────────────────────────────────────────────────────────────
 async function handleCallback(req, res) {
   try {
-    const { success, order: paymobOrderId, id: transactionId, hmac } = req.query;
-
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const { success, order: paymobOrderId } = req.query;
+    const FRONTEND_URL = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://asher-jobs-frontend.vercel.app';
     const isSuccess = success === 'true';
 
-    if (isSuccess) {
-      // Update order if not already done by webhook
-      if (paymobOrderId) {
-        const order = await PaymentOrder.findOne({ paymobOrderId: String(paymobOrderId) });
-        if (order && order.status === 'pending') {
-          order.status = 'paid';
-          order.paidAt = new Date();
-          order.paymobTransactionId = String(transactionId || '');
-          await order.save();
-
-          const months = order.billingMonths;
-          const startDate = new Date();
-          const endDate = new Date(startDate);
-          endDate.setMonth(endDate.getMonth() + months);
-
-          await Company.findByIdAndUpdate(order.companyId, {
-            subscriptionPlan: order.planName,
-            subscriptionStatus: 'active',
-            subscriptionStartDate: startDate,
-            subscriptionEndDate: endDate,
-            subscriptionPriceEgp: order.amountEgp
-          });
-        }
+    if (isSuccess && paymobOrderId) {
+      const order = await PaymentOrder.findOne({ paymobOrderId: String(paymobOrderId) });
+      if (order && order.status === 'paid') {
+        return res.redirect(`${FRONTEND_URL}/company/subscription?payment=success&order=${order._id}`);
       }
-      return res.redirect(`${FRONTEND_URL}/company/subscription?payment=success&plan=${paymobOrderId}`);
+      // If webhook hasn't processed it yet, redirect to processing status
+      return res.redirect(`${FRONTEND_URL}/company/subscription?payment=processing&order=${paymobOrderId}`);
     } else {
       return res.redirect(`${FRONTEND_URL}/company/subscription?payment=failed`);
     }
   } catch (err) {
     console.error('[Payment/callback] Error:', err.message);
-    const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const FRONTEND_URL = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://asher-jobs-frontend.vercel.app';
     return res.redirect(`${FRONTEND_URL}/company/subscription?payment=error`);
   }
 }
