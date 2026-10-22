@@ -60,6 +60,18 @@ function areNamesSubstantiallyDifferent(name1, name2) {
 }
 
 /**
+ * Safely masks a person's full name to prevent PII harvesting/enumeration (e.g. "أحمد محمد" -> "أ*** م***")
+ */
+function maskFullName(name) {
+  if (!name || typeof name !== 'string') return '***';
+  return name
+    .trim()
+    .split(/\s+/)
+    .map((part) => (part.length > 0 ? part.charAt(0) + '***' : '***'))
+    .join(' ');
+}
+
+/**
  * Validates a single Egyptian phone number
  */
 function validatePhoneNumber(phone) {
@@ -151,11 +163,12 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
       validCand?.fullName;
 
     if (existingName && currentName && areNamesSubstantiallyDifferent(existingName, currentName)) {
+      const masked = maskFullName(existingName);
       return {
         isAvailable: true,
         isConflict: true,
-        existingName,
-        message: `الرقم مسجل سابقاً باسم (${existingName}). نظراً لاختلاف الاسم، سيتم قبول الطلب وإحالته للمراجعة الإدارية للتحقق (متابعة بعد 24 ساعة).`,
+        maskedName: masked,
+        message: `الرقم مسجل سابقاً باسم (${masked}). نظراً لاختلاف الاسم، سيتم قبول الطلب وإحالته للمراجعة الإدارية للتحقق (متابعة بعد 24 ساعة).`,
         phone: phoneValidation.phone,
         normalized
       };
@@ -905,7 +918,6 @@ async function trackRequestStatus(requestNumber, primaryPhone = '') {
     submitterName: submitter.fullName,
     createdAt: request.createdAt,
     reviewedAt: request.reviewedAt,
-    adminNotes: request.adminNotes || '',
     isChainLinked: request.isChainLinked || false,
     chainParentRequestNumber: request.chainParentRequestNumber || null,
     people: maskedPeople

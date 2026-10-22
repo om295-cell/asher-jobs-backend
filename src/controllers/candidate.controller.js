@@ -81,7 +81,13 @@ async function downloadCv(req, res, next) {
     }
 
     const resolvedPath = path.resolve(candidate.cvUrl);
-    if (!fs.existsSync(resolvedPath)) {
+    const os = require('os');
+    const allowedBaseDirs = [
+      path.resolve(process.cwd(), 'uploads'),
+      path.resolve(os.tmpdir())
+    ];
+    const isInsideAllowedDir = allowedBaseDirs.some((dir) => resolvedPath.startsWith(dir));
+    if (!isInsideAllowedDir || !fs.existsSync(resolvedPath)) {
       return errorResponse(res, 'CV file not found on storage.', 404, 'CV_NOT_FOUND');
     }
 
