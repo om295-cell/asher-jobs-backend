@@ -8,6 +8,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/seed/index.js",
+    "seed:catalog": "node src/seed/seed-full-catalog.js",
     "test": "node test.js"
   },
   "dependencies": {

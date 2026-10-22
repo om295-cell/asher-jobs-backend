@@ -222,6 +222,22 @@ async function autoSeedIfEmpty() {
       );
     }
 
+    // Ensure all 10 standard categories and comprehensive job catalog are synchronized
+    try {
+      const { syncJobCatalog } = require('./seed-full-catalog');
+      const categoryCount = await JobCategory.countDocuments({
+        name: { $ne: 'Uncategorized' },
+        nameAr: { $ne: 'غير مصنف' }
+      });
+      const jobCount = await Job.countDocuments();
+      if (categoryCount < 10 || jobCount < 100) {
+        console.log(`[Seed] Incomplete catalog detected (categories: ${categoryCount}, jobs: ${jobCount}). Running syncJobCatalog...`);
+        await syncJobCatalog();
+      }
+    } catch (syncErr) {
+      console.warn('[Seed] syncJobCatalog warning:', syncErr.message);
+    }
+
     // If admin doesn't exist yet, do the full seed
     const adminExists = await User.exists({ role: 'admin' });
     if (adminExists) {

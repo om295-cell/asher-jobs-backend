@@ -1,4 +1,4 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 const Job = require("../models/Job");
 const JobCategory = require("../models/JobCategory");
 const { connectDB, closeDB } = require("../config/db");
@@ -129,33 +129,16 @@ const JOBS = [
   { cat: "Specialized & Other",        name: "Trainer",                           nameAr: "مدرب" },
 ];
 
+const { syncJobCatalog } = require('./seed-full-catalog');
+
 async function run() {
   await connectDB();
-
-  console.log("Wiping existing categories and jobs...");
-  await Job.deleteMany({});
-  await JobCategory.deleteMany({});
-
-  console.log("Inserting 10 categories...");
-  const catDocs = await JobCategory.insertMany(CATEGORIES);
-  const catMap = {};
-  catDocs.forEach(doc => { catMap[doc.name] = doc._id; });
-
-  console.log("Inserting job titles...");
-  const jobDocs = JOBS.map((j, i) => ({
-    name: j.name,
-    nameAr: j.nameAr,
-    categoryId: catMap[j.cat],
-    isActive: true,
-    sortOrder: i + 1,
-  }));
-  const inserted = await Job.insertMany(jobDocs);
-
-  console.log("Categories: " + catDocs.length);
-  console.log("Jobs: " + inserted.length);
-  console.log("Done.");
+  console.log("Running comprehensive job & category catalog synchronization...");
+  const res = await syncJobCatalog();
+  console.log("Completed. Result:", res);
   await closeDB();
   process.exit(0);
 }
 
 run().catch(err => { console.error(err); process.exit(1); });
+
