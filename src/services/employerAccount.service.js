@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const User = require('../models/User');
@@ -8,6 +9,7 @@ const DailyQuotaUsage = require('../models/DailyQuotaUsage');
 const CandidateInteraction = require('../models/CandidateInteraction');
 const { logActivity } = require('./activity.service');
 const { getPlanLimits, getCairoDateString } = require('./entitlement.service');
+const { escapeRegex } = require('../middleware/sanitize.middleware');
 
 /**
  * Super Admin creates a Verified Employer Account (Types A, B, C1, C2)
@@ -19,7 +21,7 @@ async function createEmployerAccount(data, adminUser, req = null) {
     companyName,
     contactPerson,
     email,
-    tempPassword = 'Temp@1234',
+    tempPassword,
     verifiedByCompanyId = null,
     subscriptionPlan = 'Basic',
     subscriptionPriceEgp,
@@ -99,8 +101,11 @@ async function createEmployerAccount(data, adminUser, req = null) {
     planPrice = planObj?.priceEgp ?? (subscriptionPlan === 'Platinum' ? 2000 : subscriptionPlan === 'Gold' ? 1000 : 500);
   }
 
+  const generatedTemp = crypto.randomBytes(4).toString('hex') + 'Aa1!';
+  const actualTempPassword = (tempPassword && tempPassword.trim()) ? tempPassword.trim() : generatedTemp;
+
   const salt = await bcrypt.genSalt(10);
-  const passwordHash = await bcrypt.hash(tempPassword, salt);
+  const passwordHash = await bcrypt.hash(actualTempPassword, salt);
 
   // Create User document
   const user = await User.create({
@@ -171,7 +176,8 @@ async function createEmployerAccount(data, adminUser, req = null) {
       accountType: user.accountType,
       mustChangePassword: user.mustChangePassword
     },
-    company
+    company,
+    tempPassword: actualTempPassword
   };
 }
 
@@ -192,7 +198,7 @@ async function getEligibleVerifyingCompanies() {
 }
 
 /**
- * Super Admin resets an account password to Temp@1234
+ * Super Admin resets an account password to a generated temporary password
  */
 async function resetPasswordByAdmin(companyId, adminUser, req = null) {
   const company = await Company.findById(companyId);
@@ -205,8 +211,9 @@ async function resetPasswordByAdmin(companyId, adminUser, req = null) {
     throw { statusCode: 404, message: 'User record not found.', code: 'USER_NOT_FOUND' };
   }
 
+  const generatedPassword = crypto.randomBytes(4).toString('hex') + 'Aa1!';
   const salt = await bcrypt.genSalt(10);
-  const passwordHash = await bcrypt.hash('Temp@1234', salt);
+  const passwordHash = await bcrypt.hash(generatedPassword, salt);
 
   user.passwordHash = passwordHash;
   user.mustChangePassword = true;
@@ -222,13 +229,14 @@ async function resetPasswordByAdmin(companyId, adminUser, req = null) {
     action: 'ADMIN_RESET_PASSWORD',
     entityType: 'User',
     entityId: user._id,
-    metadata: { companyId: company._id, resetTo: 'Temp@1234' },
+    metadata: { companyId: company._id, resetTo: '[RANDOM_TEMP_PASSWORD]' },
     req
   }).catch(() => {});
 
   return {
     success: true,
-    message: 'تم إعادة تعيين كلمة المرور إلى (Temp@1234) بنجاح وإلزام المستخدم بتغييرها فور الدخول.'
+    tempPassword: generatedPassword,
+    message: `تم إعادة تعيين كلمة المرور إلى (${generatedPassword}) بنجاح وإلزام المستخدم بتغييرها فور الدخول.`
   };
 }
 
@@ -390,7 +398,7 @@ async function listEmployerAccounts(queryParams = {}) {
 
   if (keyword && keyword.trim()) {
     const kw = keyword.trim();
-    const regex = new RegExp(kw, 'i');
+    const regex = new RegExp(escapeRegex(kw), 'i');
     filter.$or = [
       { companyName: regex },
       { contactPerson: regex },

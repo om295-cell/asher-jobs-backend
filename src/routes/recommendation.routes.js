@@ -20,7 +20,7 @@ const submitLimiter = rateLimit({
 
 const checkPhoneLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 45,
+  max: 15, // Allows checking up to 11 recommendation entries while throttling enumeration
   standardHeaders: true,
   legacyHeaders: false,
   message: {

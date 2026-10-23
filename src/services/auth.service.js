@@ -13,9 +13,7 @@ function generateToken(user) {
   return jwt.sign(
     {
       id: user._id,
-      role: user.role,
-      email: user.email,
-      phone: user.phoneNormalized
+      role: user.role
     },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
@@ -50,6 +48,18 @@ async function registerCandidate(data, req) {
 
   if (!fullName || !fullName.trim()) {
     throw { statusCode: 400, message: 'Full name is required.', code: 'NAME_REQUIRED' };
+  }
+  if (fullName.length > 200) {
+    throw { statusCode: 400, message: 'Full name exceeds 200 characters limit.', code: 'INPUT_TOO_LONG' };
+  }
+  if (email && email.length > 255) {
+    throw { statusCode: 400, message: 'Email exceeds 255 characters limit.', code: 'INPUT_TOO_LONG' };
+  }
+  if (phone && phone.length > 50) {
+    throw { statusCode: 400, message: 'Phone exceeds 50 characters limit.', code: 'INPUT_TOO_LONG' };
+  }
+  if (password && password.length > 255) {
+    throw { statusCode: 400, message: 'Password exceeds 255 characters limit.', code: 'INPUT_TOO_LONG' };
   }
 
   if (!phone) {
@@ -316,6 +326,21 @@ async function registerCompany(data, req) {
   if (!companyName || !companyName.trim()) {
     throw { statusCode: 400, message: 'Company name is required.', code: 'COMPANY_NAME_REQUIRED' };
   }
+  if (companyName.length > 200) {
+    throw { statusCode: 400, message: 'Company name exceeds 200 characters limit.', code: 'INPUT_TOO_LONG' };
+  }
+  if (contactPerson && contactPerson.length > 200) {
+    throw { statusCode: 400, message: 'Contact person exceeds 200 characters limit.', code: 'INPUT_TOO_LONG' };
+  }
+  if (email && email.length > 255) {
+    throw { statusCode: 400, message: 'Email exceeds 255 characters limit.', code: 'INPUT_TOO_LONG' };
+  }
+  if (phone && phone.length > 50) {
+    throw { statusCode: 400, message: 'Phone exceeds 50 characters limit.', code: 'INPUT_TOO_LONG' };
+  }
+  if (password && password.length > 255) {
+    throw { statusCode: 400, message: 'Password exceeds 255 characters limit.', code: 'INPUT_TOO_LONG' };
+  }
 
   if (!email || !email.trim()) {
     throw { statusCode: 400, message: 'Company email is required.', code: 'EMAIL_REQUIRED' };
@@ -403,6 +428,9 @@ async function login(credential, password, req) {
   if (typeof credential !== 'string' || typeof password !== 'string' || !credential.trim() || !password) {
     throw { statusCode: 400, message: 'Email or phone and password are required.', code: 'CREDENTIALS_REQUIRED' };
   }
+  if (credential.length > 255 || password.length > 255) {
+    throw { statusCode: 400, message: 'Credentials exceed maximum length limit.', code: 'INPUT_TOO_LONG' };
+  }
 
   const trimmed = credential.trim();
   let user = null;
@@ -429,12 +457,30 @@ async function login(credential, password, req) {
     };
   }
 
+  // Account lockout check
+  if (user.loginLockedUntil && user.loginLockedUntil > new Date()) {
+    const minutesLeft = Math.ceil((user.loginLockedUntil.getTime() - Date.now()) / (60 * 1000));
+    throw {
+      statusCode: 429,
+      message: `Account is temporarily locked due to multiple failed login attempts. Please try again in ${minutesLeft} minute(s).`,
+      code: 'ACCOUNT_LOCKED'
+    };
+  }
+
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) {
+    user.loginFailedCount = (user.loginFailedCount || 0) + 1;
+    if (user.loginFailedCount >= 5) {
+      user.loginLockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min lockout
+      user.loginFailedCount = 0;
+    }
+    await user.save();
     throw { statusCode: 401, message: 'Invalid credentials. Please verify and try again.', code: 'INVALID_CREDENTIALS' };
   }
 
-  // Update last login
+  // Update last login and reset lockout counters on successful login
+  user.loginFailedCount = 0;
+  user.loginLockedUntil = null;
   user.lastLoginAt = new Date();
   await user.save();
 

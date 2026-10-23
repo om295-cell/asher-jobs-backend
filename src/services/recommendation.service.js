@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Job = require('../models/Job');
 const AdminNotification = require('../models/AdminNotification');
 const { normalizeEgyptianPhone } = require('../utils/phoneNormalizer');
+const { escapeRegex } = require('../middleware/sanitize.middleware');
 
 // Name regex: Letters and spaces only, at least one space (two words minimum)
 const NAME_REGEX = /^[a-zA-Z\u0600-\u06FF]+(?:\s+[a-zA-Z\u0600-\u06FF]+)+$/;
@@ -933,7 +934,7 @@ async function adminListRequests({ page = 1, limit = 15, status = '', search = '
     filter.status = status;
   }
   if (search) {
-    const trimmed = search.trim();
+    const trimmed = escapeRegex(search.trim());
     filter.$or = [
       { requestNumber: { $regex: trimmed, $options: 'i' } },
       { 'people.fullName': { $regex: trimmed, $options: 'i' } },

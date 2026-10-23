@@ -4,6 +4,7 @@ const Job = require('../models/Job');
 const CandidateInteraction = require('../models/CandidateInteraction');
 const { getPagination, formatPagination } = require('../utils/pagination');
 const { logActivity } = require('./activity.service');
+const { escapeRegex } = require('../middleware/sanitize.middleware');
 
 function generateRequestNumber() {
   const timestamp = Date.now().toString().slice(-6);
@@ -46,15 +47,15 @@ async function createRecruitmentRequest(company, requestData, req) {
   };
 
   if (governorate && governorate !== 'ALL') {
-    query.governorate = new RegExp(governorate.trim(), 'i');
+    query.governorate = new RegExp(escapeRegex(governorate.trim()), 'i');
   }
 
   if (area && area !== 'ALL') {
-    query.area = new RegExp(area.trim(), 'i');
+    query.area = new RegExp(escapeRegex(area.trim()), 'i');
   }
 
   if (qualification && qualification !== 'ALL') {
-    query.qualification = new RegExp(qualification.trim(), 'i');
+    query.qualification = new RegExp(escapeRegex(qualification.trim()), 'i');
   }
 
   if (minExperience !== undefined && minExperience !== '' || maxExperience !== undefined && maxExperience !== '') {

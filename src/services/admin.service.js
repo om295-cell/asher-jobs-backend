@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const User = require('../models/User');
 const Candidate = require('../models/Candidate');
 const Company = require('../models/Company');
@@ -9,6 +10,7 @@ const Subscription = require('../models/Subscription');
 const SystemSetting = require('../models/SystemSetting');
 const { getPagination, formatPagination } = require('../utils/pagination');
 const { logActivity } = require('./activity.service');
+const { escapeRegex } = require('../middleware/sanitize.middleware');
 
 async function getDashboardMetrics() {
   const startOfToday = new Date();
@@ -100,16 +102,28 @@ async function listCandidatesForAdmin(queryParams) {
     keyword
   } = queryParams;
 
-  if (jobId && jobId !== 'ALL') filter.desiredJobId = jobId;
-  if (categoryId && categoryId !== 'ALL') filter.categoryId = categoryId;
+  if (jobId && jobId !== 'ALL') {
+    if (mongoose.Types.ObjectId.isValid(jobId)) {
+      filter.desiredJobId = new mongoose.Types.ObjectId(jobId);
+    } else {
+      filter.desiredJobId = jobId;
+    }
+  }
+  if (categoryId && categoryId !== 'ALL') {
+    if (mongoose.Types.ObjectId.isValid(categoryId)) {
+      filter.categoryId = new mongoose.Types.ObjectId(categoryId);
+    } else {
+      filter.categoryId = categoryId;
+    }
+  }
   if (availability && availability !== 'ALL') filter.availabilityStatus = availability;
   if (accountStatus && accountStatus !== 'ALL') filter.accountStatus = accountStatus;
-  if (governorate && governorate !== 'ALL') filter.governorate = new RegExp(governorate.trim(), 'i');
-  if (area && area !== 'ALL') filter.area = new RegExp(area.trim(), 'i');
+  if (governorate && governorate !== 'ALL') filter.governorate = new RegExp(escapeRegex(governorate.trim()), 'i');
+  if (area && area !== 'ALL') filter.area = new RegExp(escapeRegex(area.trim()), 'i');
 
   if (keyword && keyword.trim()) {
     const kw = keyword.trim();
-    const regex = new RegExp(kw, 'i');
+    const regex = new RegExp(escapeRegex(kw), 'i');
     filter.$or = [
       { fullName: regex },
       { phone: regex },
@@ -283,7 +297,7 @@ async function listCompaniesForAdmin(queryParams) {
   }
 
   if (keyword && keyword.trim()) {
-    const regex = new RegExp(keyword.trim(), 'i');
+    const regex = new RegExp(escapeRegex(keyword.trim()), 'i');
     filter.$or = [
       { companyName: regex },
       { email: regex },

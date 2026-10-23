@@ -6,9 +6,29 @@ const jobTitleReviewController = require('../controllers/jobTitleReview.controll
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
 
+const path = require('path');
+
 const uploadFileDoc = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 25 * 1024 * 1024 }
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const allowedMimes = [
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/vnd.ms-excel',
+      'text/csv',
+      'text/plain',
+      'application/csv',
+      'application/x-csv'
+    ];
+    const allowedExtensions = ['.xlsx', '.xls', '.csv', '.txt'];
+    const ext = path.extname(file.originalname || '').toLowerCase();
+
+    if (allowedMimes.includes(file.mimetype) || allowedExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.'));
+    }
+  }
 });
 
 // All admin routes require authentication and role === 'admin'

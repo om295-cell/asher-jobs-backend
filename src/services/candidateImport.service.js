@@ -9,6 +9,7 @@ const { normalizeForComparison } = require('./titleExtraction.service');
 const { logActivity } = require('./activity.service');
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const { escapeRegex } = require('../middleware/sanitize.middleware');
 
 // Standard Egyptian mobile regex (11 digits starting with 010, 011, 012, 015)
 const EGYPTIAN_PHONE_REGEX = /^01[0125][0-9]{8}$/;
@@ -336,7 +337,7 @@ async function extractCandidatesFromExcel({ buffer, originalname, mimetype, defa
 async function searchCandidatesForMain({ search = '', limit = 10 }) {
   const query = { isDeleted: false };
   if (search && search.trim()) {
-    const s = search.trim();
+    const s = escapeRegex(search.trim());
     query.$or = [
       { fullName: { $regex: s, $options: 'i' } },
       { phone: { $regex: s, $options: 'i' } },

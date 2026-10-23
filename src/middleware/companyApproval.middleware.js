@@ -73,7 +73,8 @@ async function requireApprovedCompany(req, res, next) {
     req.company = company;
     next();
   } catch (err) {
-    return errorResponse(res, 'Error verifying company status: ' + err.message, 500, 'SERVER_ERROR');
+    console.error('[companyApproval] Verification error:', err);
+    return errorResponse(res, 'An error occurred while verifying company status.', 500, 'SERVER_ERROR');
   }
 }
 

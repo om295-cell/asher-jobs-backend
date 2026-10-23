@@ -544,7 +544,7 @@ async function getEligibleVerifyingCompanies(req, res, next) {
 async function resetEmployerPassword(req, res, next) {
   try {
     const result = await employerAccountService.resetPasswordByAdmin(req.params.id, req.user, req);
-    return successResponse(res, result, 'تم إعادة تعيين كلمة المرور إلى Temp@1234 بنجاح.');
+    return successResponse(res, result, result.message || 'تم إعادة تعيين كلمة المرور بنجاح.');
   } catch (err) {
     next(err);
   }

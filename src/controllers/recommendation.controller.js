@@ -26,6 +26,10 @@ async function checkPhone(req, res, next) {
 async function submitRecommendation(req, res, next) {
   try {
     const { people, legalAccepted } = req.body;
+
+    if (!Array.isArray(people) || people.length < 2 || people.length > 11) {
+      return errorResponse(res, 'يجب أن يحتوي طلب الترشيح على شخصين على الأقل وبحد أقصى 11 شخصاً.', 400, 'INVALID_PEOPLE_COUNT');
+    }
     const ip =
       (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
       req.socket?.remoteAddress ||

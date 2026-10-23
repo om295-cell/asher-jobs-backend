@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const Candidate = require('../models/Candidate');
 const { getPagination, formatPagination } = require('../utils/pagination');
 const { logActivity } = require('./activity.service');
+const { escapeRegex } = require('../middleware/sanitize.middleware');
 
 function buildCandidateFilters(queryParams) {
   const filter = {
@@ -48,8 +49,13 @@ function buildCandidateFilters(queryParams) {
     }
   }
 
-  if (categoryId && categoryId.trim()) {
-    filter.categoryId = categoryId.trim();
+  if (categoryId && categoryId.trim() && categoryId.trim() !== 'ALL') {
+    const cid = categoryId.trim();
+    if (mongoose.Types.ObjectId.isValid(cid)) {
+      filter.categoryId = new mongoose.Types.ObjectId(cid);
+    } else {
+      filter.categoryId = cid;
+    }
   }
 
   if (availability && availability.trim() && availability !== 'ALL') {
@@ -60,15 +66,15 @@ function buildCandidateFilters(queryParams) {
   }
 
   if (governorate && governorate.trim() && governorate !== 'ALL') {
-    filter.governorate = new RegExp(governorate.trim(), 'i');
+    filter.governorate = new RegExp(escapeRegex(governorate.trim()), 'i');
   }
 
   if (area && area.trim() && area !== 'ALL') {
-    filter.area = new RegExp(area.trim(), 'i');
+    filter.area = new RegExp(escapeRegex(area.trim()), 'i');
   }
 
   if (qualification && qualification.trim() && qualification !== 'ALL') {
-    filter.qualification = new RegExp(qualification.trim(), 'i');
+    filter.qualification = new RegExp(escapeRegex(qualification.trim()), 'i');
   }
 
   // Experience range
@@ -85,7 +91,7 @@ function buildCandidateFilters(queryParams) {
   // Keyword search (Full name, skills, area) combined with job matching
   if (keyword && keyword.trim()) {
     const kw = keyword.trim();
-    const regex = new RegExp(kw, 'i');
+    const regex = new RegExp(escapeRegex(kw), 'i');
     const keywordOr = [
       { fullName: regex },
       { skills: { $in: [regex] } },

@@ -35,8 +35,8 @@ async function authenticate(req, res, next) {
         'http://127.0.0.1:5173'
       ].filter(Boolean);
 
-      if (origin && !validOrigins.includes(origin) && process.env.NODE_ENV === 'production') {
-        return errorResponse(res, 'Cross-site request blocked (CSRF protection).', 403, 'CSRF_BLOCKED');
+      if ((!origin || !validOrigins.includes(origin)) && process.env.NODE_ENV === 'production') {
+        return errorResponse(res, 'Cross-site request blocked (CSRF protection: valid origin required).', 403, 'CSRF_BLOCKED');
       }
     }
 
