@@ -457,6 +457,18 @@ async function login(credential, password, req) {
     };
   }
 
+  if (user.accountStatus === 'deactivated') {
+    throw { statusCode: 403, message: 'This account has been deactivated.', code: 'ACCOUNT_DEACTIVATED' };
+  }
+
+  if (user.accountStatus === 'suspended') {
+    throw { statusCode: 403, message: 'This account has been suspended by administration.', code: 'ACCOUNT_SUSPENDED' };
+  }
+
+  if (user.accountStatus === 'on_hold') {
+    throw { statusCode: 403, message: 'This account is currently on hold.', code: 'ACCOUNT_ON_HOLD' };
+  }
+
   // Account lockout check
   if (user.loginLockedUntil && user.loginLockedUntil > new Date()) {
     const minutesLeft = Math.ceil((user.loginLockedUntil.getTime() - Date.now()) / (60 * 1000));

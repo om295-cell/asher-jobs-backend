@@ -71,6 +71,14 @@ async function authenticate(req, res, next) {
       return errorResponse(res, 'This account has been deactivated.', 403, 'ACCOUNT_DEACTIVATED');
     }
 
+    if (user.accountStatus === 'suspended') {
+      return errorResponse(res, 'This account has been suspended by administration.', 403, 'ACCOUNT_SUSPENDED');
+    }
+
+    if (user.accountStatus === 'on_hold') {
+      return errorResponse(res, 'This account is currently on hold.', 403, 'ACCOUNT_ON_HOLD');
+    }
+
     req.user = user;
     next();
   } catch (err) {

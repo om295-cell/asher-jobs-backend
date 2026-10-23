@@ -31,6 +31,33 @@ async function requireApprovedCompany(req, res, next) {
       );
     }
 
+    if (company.accountStatus === 'suspended') {
+      return errorResponse(
+        res,
+        'Company account is currently suspended by administrators.',
+        403,
+        'COMPANY_SUSPENDED'
+      );
+    }
+
+    if (company.accountStatus === 'on_hold') {
+      return errorResponse(
+        res,
+        'Company account is currently on hold.',
+        403,
+        'COMPANY_ON_HOLD'
+      );
+    }
+
+    if (company.accountStatus && company.accountStatus !== 'active') {
+      return errorResponse(
+        res,
+        `Company account status is ${company.accountStatus}. Access is restricted.`,
+        403,
+        'COMPANY_NOT_ACTIVE'
+      );
+    }
+
     if (company.verificationStatus === 'Pending') {
       return errorResponse(
         res,

@@ -16,16 +16,10 @@ console.log('====================================================\n');
 
 let passedTests = 0;
 let totalTests = 0;
+const tests = [];
 
 function check(testName, fn) {
-  totalTests++;
-  try {
-    fn();
-    console.log(`[PASS] ${testName}`);
-    passedTests++;
-  } catch (err) {
-    console.error(`[FAIL] ${testName}: ${err.message}`);
-  }
+  tests.push({ testName, fn });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -420,14 +414,79 @@ check('SEC-20: Upload validation accepts valid document magic bytes and rejects 
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SUMMARY REPORT
+// 13. SEC-21: Suspended & On-Hold Company Access Gate
 // ─────────────────────────────────────────────────────────────────────────────
-console.log('\n====================================================');
-console.log(`Verification Complete: ${passedTests}/${totalTests} security controls passed.`);
-console.log('====================================================');
+check('SEC-21: Suspended and on-hold company accounts are blocked from accessing candidate data', async () => {
+  const { requireApprovedCompany } = require('./src/middleware/companyApproval.middleware');
+  const Company = require('./src/models/Company');
 
-if (passedTests === totalTests) {
-  process.exit(0);
-} else {
-  process.exit(1);
-}
+  const originalFindOne = Company.findOne;
+
+  // Stub company model to simulate an approved, active-subscription but SUSPENDED company
+  Company.findOne = () => Promise.resolve({
+    _id: 'comp_123',
+    userId: 'user_123',
+    companyName: 'Suspended Corp',
+    verificationStatus: 'Approved',
+    subscriptionStatus: 'active',
+    subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    isBlocked: false,
+    accountStatus: 'suspended'
+  });
+
+  let statusCaptured = 0;
+  let jsonCaptured = null;
+
+  const fakeReq = {
+    user: {
+      _id: 'user_123',
+      role: 'company',
+      accountStatus: 'suspended',
+      isBlocked: false
+    }
+  };
+
+  const fakeRes = {
+    status: (code) => {
+      statusCaptured = code;
+      return {
+        json: (data) => { jsonCaptured = data; }
+      };
+    }
+  };
+
+  await requireApprovedCompany(fakeReq, fakeRes, () => {
+    throw new Error('Should not have called next() for suspended company');
+  });
+
+  Company.findOne = originalFindOne;
+
+  assert.strictEqual(statusCaptured, 403, 'Must return 403 Forbidden for suspended company');
+  assert.strictEqual(jsonCaptured.code, 'COMPANY_SUSPENDED', 'Must indicate suspended company status');
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SUMMARY REPORT & RUNNER
+// ─────────────────────────────────────────────────────────────────────────────
+(async () => {
+  for (const { testName, fn } of tests) {
+    totalTests++;
+    try {
+      await fn();
+      console.log(`[PASS] ${testName}`);
+      passedTests++;
+    } catch (err) {
+      console.error(`[FAIL] ${testName}: ${err.message}`);
+    }
+  }
+
+  console.log('\n====================================================');
+  console.log(`Verification Complete: ${passedTests}/${totalTests} security controls passed.`);
+  console.log('====================================================');
+
+  if (passedTests === totalTests) {
+    process.exit(0);
+  } else {
+    process.exit(1);
+  }
+})();

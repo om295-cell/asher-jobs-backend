@@ -116,6 +116,18 @@ async function downloadCv(req, res, next) {
       if (!company || company.verificationStatus !== 'Approved') {
         return errorResponse(res, 'Only approved companies can download candidate CVs.', 403, 'COMPANY_NOT_APPROVED');
       }
+      if (company.isBlocked) {
+        return errorResponse(res, 'Company account is blocked.', 403, 'COMPANY_BLOCKED');
+      }
+      if (company.accountStatus === 'suspended') {
+        return errorResponse(res, 'Company account is suspended. Candidate CV access is denied.', 403, 'COMPANY_SUSPENDED');
+      }
+      if (company.accountStatus === 'on_hold') {
+        return errorResponse(res, 'Company account is on hold. Candidate CV access is denied.', 403, 'COMPANY_ON_HOLD');
+      }
+      if (company.accountStatus && company.accountStatus !== 'active') {
+        return errorResponse(res, 'Company account is not active. Candidate CV access is denied.', 403, 'COMPANY_NOT_ACTIVE');
+      }
       const isExpired =
         company.subscriptionStatus !== 'active' ||
         (company.subscriptionEndDate && new Date(company.subscriptionEndDate) < new Date());
