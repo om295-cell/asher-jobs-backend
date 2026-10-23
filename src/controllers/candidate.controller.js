@@ -35,11 +35,48 @@ async function updateAvailability(req, res, next) {
   }
 }
 
+/**
+ * Validates document magic bytes (file signature) to prevent MIME-type spoofing
+ */
+function validateFileSignature(filePath) {
+  try {
+    const buffer = Buffer.alloc(8);
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buffer, 0, 8, 0);
+    fs.closeSync(fd);
+
+    // PDF signature: %PDF (0x25 0x50 0x44 0x46)
+    const isPdf = buffer[0] === 0x25 && buffer[1] === 0x50 && buffer[2] === 0x44 && buffer[3] === 0x46;
+    // DOCX (ZIP format) signature: PK\x03\x04 (0x50 0x4B 0x03 0x04)
+    const isDocx = buffer[0] === 0x50 && buffer[1] === 0x4B && buffer[2] === 0x03 && buffer[3] === 0x04;
+    // DOC (OLE compound document) signature: D0 CF 11 E0 A1 B1 1A E1
+    const isDoc = buffer[0] === 0xd0 && buffer[1] === 0xcf && buffer[2] === 0x11 && buffer[3] === 0xe0;
+
+    return isPdf || isDocx || isDoc;
+  } catch (err) {
+    return false;
+  }
+}
+
 async function uploadCv(req, res, next) {
   try {
     if (!req.file) {
       return errorResponse(res, 'Please select a valid CV document (PDF, DOC, DOCX).', 400, 'NO_FILE');
     }
+
+    // OWASP A08: Verify real file header signatures (magic bytes) to prevent extension/MIME spoofing
+    if (!validateFileSignature(req.file.path)) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch {}
+      return errorResponse(
+        res,
+        'Invalid document file signature. The file header does not match a legitimate PDF, DOC, or DOCX document.',
+        400,
+        'INVALID_FILE_SIGNATURE'
+      );
+    }
+
     const result = await candidateService.attachCv(req.user._id, req.file);
     return successResponse(res, result, 'CV uploaded successfully');
   } catch (err) {
@@ -66,10 +103,29 @@ async function downloadCv(req, res, next) {
     } else if (req.user.role === 'admin') {
       candidate = await Candidate.findById(id);
     } else if (req.user.role === 'company') {
+      if (req.user.mustChangePassword) {
+        return errorResponse(
+          res,
+          'You must change your temporary password before accessing candidate CVs.',
+          403,
+          'PASSWORD_CHANGE_REQUIRED'
+        );
+      }
       const Company = require('../models/Company');
       const company = req.company || await Company.findOne({ userId: req.user._id, isDeleted: false });
       if (!company || company.verificationStatus !== 'Approved') {
         return errorResponse(res, 'Only approved companies can download candidate CVs.', 403, 'COMPANY_NOT_APPROVED');
+      }
+      const isExpired =
+        company.subscriptionStatus !== 'active' ||
+        (company.subscriptionEndDate && new Date(company.subscriptionEndDate) < new Date());
+      if (isExpired) {
+        return errorResponse(
+          res,
+          'An active subscription plan is required to download candidate CVs. Please renew your subscription.',
+          403,
+          'SUBSCRIPTION_EXPIRED'
+        );
       }
       candidate = await Candidate.findById(id);
     } else {

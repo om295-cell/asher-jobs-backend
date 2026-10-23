@@ -26,17 +26,28 @@ async function authenticate(req, res, next) {
 
     // OWASP A01: CSRF Defense for cookie-based authentication on mutating requests
     if (isCookieAuth && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
-      const origin = req.headers.origin || (req.headers.referer ? new URL(req.headers.referer).origin : null);
+      let origin = req.headers.origin;
+      if (!origin && req.headers.referer) {
+        try {
+          origin = new URL(req.headers.referer).origin;
+        } catch {
+          origin = null;
+        }
+      }
       const { CLIENT_URL } = require('../config/env');
       const validOrigins = [
         CLIENT_URL,
         'https://asher-jobs-frontend.vercel.app',
         'http://localhost:5173',
-        'http://127.0.0.1:5173'
+        'http://127.0.0.1:5173',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
       ].filter(Boolean);
 
-      if ((!origin || !validOrigins.includes(origin)) && process.env.NODE_ENV === 'production') {
-        return errorResponse(res, 'Cross-site request blocked (CSRF protection: valid origin required).', 403, 'CSRF_BLOCKED');
+      if (process.env.NODE_ENV === 'production') {
+        if (!origin || origin === 'null' || !validOrigins.includes(origin)) {
+          return errorResponse(res, 'Cross-site request blocked (CSRF protection: valid origin required).', 403, 'CSRF_BLOCKED');
+        }
       }
     }
 

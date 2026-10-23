@@ -2,8 +2,10 @@ require('dotenv').config();
 
 const isProduction = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
 
-if (isProduction && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'asher_jobs_super_secret_jwt_key_2026_secure')) {
-  console.warn('[SECURITY NOTICE] JWT_SECRET should be set to a unique, random string in production environment variables.');
+const FALLBACK_JWT_SECRET = 'asher_jobs_super_secret_jwt_key_2026_secure';
+
+if (isProduction && (!process.env.JWT_SECRET || process.env.JWT_SECRET === FALLBACK_JWT_SECRET)) {
+  throw new Error('FATAL SECURITY CONFIGURATION: JWT_SECRET must be set to a strong, unique secret in production environment variables. Default fallback is strictly prohibited.');
 }
 
 module.exports = {
