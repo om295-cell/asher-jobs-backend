@@ -42,7 +42,7 @@ async function updateMyCandidateProfile(userId, updateData) {
   } = updateData;
 
   if (fullName && fullName.trim()) {
-    candidate.fullName = fullName.trim();
+    candidate.fullName = fullName.trim().replace(/<[^>]+>/g, '').replace(/on\w+\s*=/gi, '');
   }
 
   if (email !== undefined) {

@@ -25,10 +25,12 @@ function sanitizeObject(target) {
     if (value && typeof value === 'object') {
       clean[key] = sanitizeObject(value);
     } else if (typeof value === 'string') {
-      // Basic XSS defense: strip dangerous executable script tags and javascript: URIs
+      // OWASP A03 / XSS defense: strip script tags, dangerous HTML tags, inline event handlers, and javascript: URIs
       clean[key] = value
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        .replace(/javascript:/gi, '');
+        .replace(/<[^>]+>/g, '')
+        .replace(/javascript:/gi, '')
+        .replace(/on\w+\s*=/gi, '');
     } else {
       clean[key] = value;
     }
