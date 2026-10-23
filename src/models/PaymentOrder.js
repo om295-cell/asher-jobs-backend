@@ -32,6 +32,7 @@ const paymentOrderSchema = new mongoose.Schema(
     paymobOrderId: { type: String, default: null, index: true },
     paymobPaymentKey: { type: String, default: null },
     paymobTransactionId: { type: String, default: null, index: true },
+    paymobRefundTransactionId: { type: String, default: null },
     // Status: pending → paid | failed | expired | refunded
     status: {
       type: String,

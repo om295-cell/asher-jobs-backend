@@ -98,9 +98,6 @@ async function exportCandidatesCSV(queryParams, company, req) {
   const rows = await getExportRecords(queryParams, company);
 
   if (company) {
-    company.exportsUsed = (company.exportsUsed || 0) + 1;
-    await company.save();
-
     await logActivity({
       actorId: company.userId,
       actorRole: 'company',
@@ -120,9 +117,6 @@ async function exportCandidatesXLSX(queryParams, company, req) {
   const rows = await getExportRecords(queryParams, company);
 
   if (company) {
-    company.exportsUsed = (company.exportsUsed || 0) + 1;
-    await company.save();
-
     await logActivity({
       actorId: company.userId,
       actorRole: 'company',

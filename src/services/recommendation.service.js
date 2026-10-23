@@ -164,12 +164,10 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
       validCand?.fullName;
 
     if (existingName && currentName && areNamesSubstantiallyDifferent(existingName, currentName)) {
-      const masked = maskFullName(existingName);
       return {
         isAvailable: true,
         isConflict: true,
-        maskedName: masked,
-        message: `الرقم مسجل سابقاً باسم (${masked}). نظراً لاختلاف الاسم، سيتم قبول الطلب وإحالته للمراجعة الإدارية للتحقق (متابعة بعد 24 ساعة).`,
+        message: 'الرقم مسجل سابقاً في النظام. نظراً لاختلاف الاسم، سيتم قبول الطلب وإحالته للمراجعة الإدارية للتحقق (متابعة بعد 24 ساعة).',
         phone: phoneValidation.phone,
         normalized
       };
@@ -193,7 +191,6 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
     if (isCandidateValid) {
       return {
         isAvailable: false,
-        existsIn: 'candidate',
         message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
         phone: phoneValidation.phone
       };
@@ -226,7 +223,6 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
     if (isUserBlocked) {
       return {
         isAvailable: false,
-        existsIn: 'user',
         message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
         phone: phoneValidation.phone
       };
@@ -245,7 +241,6 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
     if (!isRejectedSubmitter) {
       return {
         isAvailable: false,
-        existsIn: 'recommendation',
         message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
         phone: phoneValidation.phone
       };
@@ -260,18 +255,20 @@ async function checkPhoneAvailability(rawPhone, isPrimary = false, currentName =
 }
 
 /**
- * Generates an unguessable unique request number (e.g., REC-849102)
+ * Generates an unguessable unique high-entropy request number (e.g., REC-8F3A2B1C9D0E7465910234BC)
+ * Uses 12 cryptographically secure random bytes (24 hex characters, ~96 bits of entropy)
+ * to prevent distributed enumeration attacks.
  */
 async function generateRequestNumber() {
   let attempts = 0;
   while (attempts < 10) {
-    const randomDigits = Math.floor(100000 + Math.random() * 900000);
-    const reqNum = `REC-${randomDigits}`;
+    const entropy = crypto.randomBytes(12).toString('hex').toUpperCase();
+    const reqNum = `REC-${entropy}`;
     const exists = await RecommendationRequest.exists({ requestNumber: reqNum });
     if (!exists) return reqNum;
     attempts++;
   }
-  return `REC-${Date.now().toString().slice(-6)}`;
+  return `REC-${Date.now().toString(36).toUpperCase()}-${crypto.randomBytes(8).toString('hex').toUpperCase()}`;
 }
 
 /**
@@ -354,7 +351,8 @@ async function createCandidatesFromRecommendationRequest(request, { includeSubmi
           phoneNormalized: person.phoneNormalized,
           passwordHash,
           role: 'candidate',
-          accountStatus: 'active'
+          accountStatus: 'pending',
+          mustChangePassword: true
         });
       }
 
@@ -772,9 +770,13 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
   // Otherwise -> 'pending'
   const initialStatus = hasPhoneConflict ? 'phone_duplicate_pending' : 'pending';
 
+  // Generate high-entropy tracking secret for unguessable direct lookups
+  const trackingSecret = crypto.randomBytes(16).toString('hex');
+
   // Create request document
   const request = await RecommendationRequest.create({
     requestNumber,
+    trackingSecret,
     status: initialStatus,
     legalAccepted: true,
     submitterIp: ip,
@@ -848,6 +850,7 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
   return {
     success: true,
     requestNumber: request.requestNumber,
+    trackingSecret: request.trackingSecret,
     status: request.status,
     isPendingConflict: hasPhoneConflict,
     isChainLinked,
@@ -861,15 +864,42 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
 }
 
 /**
- * Tracks status of a request by request number
+ * Tracks status of a request by request number or tracking secret
+ * Strictly requires a valid Egyptian phone matching the primary submitter.
  */
-async function trackRequestStatus(requestNumber, primaryPhone = '') {
-  if (!requestNumber || typeof requestNumber !== 'string') {
-    throw { statusCode: 400, message: 'رقم الطلب مطلوب', code: 'REQUEST_NUMBER_REQUIRED' };
+async function trackRequestStatus(requestNumber, primaryPhone) {
+  if (!requestNumber || typeof requestNumber !== 'string' || !requestNumber.trim()) {
+    throw { statusCode: 400, message: 'رقم الطلب أو رمز التتبع مطلوب.', code: 'REQUEST_NUMBER_REQUIRED' };
+  }
+
+  // SEC-25: Require a valid primary submitter phone for every lookup to prevent enumeration
+  if (!primaryPhone || typeof primaryPhone !== 'string' || !primaryPhone.trim()) {
+    throw {
+      statusCode: 400,
+      message: 'رقم هاتف مقدم الطلب مطلوب للتحقق من الهوية.',
+      code: 'PHONE_REQUIRED'
+    };
+  }
+
+  const phoneNorm = normalizeEgyptianPhone(primaryPhone.trim());
+  if (!phoneNorm.isValid) {
+    throw {
+      statusCode: 400,
+      message: 'صيغة رقم الهاتف غير صالحة. يرجى إدخال رقم هاتف مصري صحيح (11 رقماً).',
+      code: 'INVALID_PHONE'
+    };
   }
 
   const cleanReqNum = requestNumber.trim().toUpperCase();
-  const query = { requestNumber: cleanReqNum };
+  const rawIdentifier = requestNumber.trim();
+  const query = {
+    $or: [
+      { requestNumber: cleanReqNum },
+      { trackingSecret: rawIdentifier },
+      { trackingSecret: rawIdentifier.toLowerCase() },
+      { trackingSecret: cleanReqNum }
+    ]
+  };
   const request = await RecommendationRequest.findOne(query).lean();
 
   if (!request) {
@@ -882,16 +912,13 @@ async function trackRequestStatus(requestNumber, primaryPhone = '') {
 
   const submitter = request.people[0] || {};
 
-  // If primary phone is provided, verify it matches
-  if (primaryPhone) {
-    const norm = normalizeEgyptianPhone(primaryPhone.trim());
-    if (norm.isValid && norm.normalized !== submitter.phoneNormalized) {
-      throw {
-        statusCode: 403,
-        message: 'رقم الهاتف الأساسي غير متطابق مع بيانات الطلب.',
-        code: 'PHONE_MISMATCH'
-      };
-    }
+  // Verify phone matches submitter normalized phone
+  if (phoneNorm.normalized !== submitter.phoneNormalized) {
+    throw {
+      statusCode: 403,
+      message: 'رقم الهاتف غير متطابق مع بيانات الطلب.',
+      code: 'PHONE_MISMATCH'
+    };
   }
 
   // Mask phone numbers for public tracking response (e.g. 010****5678)

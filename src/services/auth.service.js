@@ -13,7 +13,8 @@ function generateToken(user) {
   return jwt.sign(
     {
       id: user._id,
-      role: user.role
+      role: user.role,
+      tv: user.tokenVersion ?? 0  // SEC-22/23: token version for session revocation
     },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
@@ -35,6 +36,12 @@ async function registerCandidate(data, req) {
     phone,
     email,
     desiredJobId,
+    careerLevel,
+    secondJobId,
+    secondCareerLevel,
+    thirdJobId,
+    thirdCareerLevel,
+    desiredJobs,
     password,
     passwordConfirm,
     governorate,
@@ -43,7 +50,8 @@ async function registerCandidate(data, req) {
     qualification,
     skills,
     consentGiven,
-    refCode
+    refCode,
+    phoneVerificationToken
   } = data;
 
   if (!fullName || !fullName.trim()) {
@@ -117,28 +125,31 @@ async function registerCandidate(data, req) {
     skillsArray = skills.split(',').map((s) => s.trim()).filter(Boolean);
   }
 
-  // If candidate was created via recommendation, upgrade to full main account!
+  // If candidate was created via recommendation, upgrade to full main account ONLY IF phone ownership is verified!
   if (existingCandidate && existingCandidate.isRecommendation) {
-    let user = await User.findOne({ phoneNormalized: phoneCheck.normalized });
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-    if (user) {
-      user.passwordHash = passwordHash;
-      user.accountStatus = 'active';
-      if (email && email.trim()) user.email = email.trim().toLowerCase();
-      await user.save();
-    } else {
-      user = await User.create({
-        email: email && email.trim() ? email.trim().toLowerCase() : undefined,
-        phone: phoneCheck.local,
-        phoneNormalized: phoneCheck.normalized,
-        passwordHash,
-        role: 'candidate',
-        accountStatus: 'active'
-      });
-      existingCandidate.userId = user._id;
+    // SEC-26: Strictly require phone ownership verification before allowing password change or issuing a token
+    let isOwnershipVerified = false;
+    if (phoneVerificationToken) {
+      try {
+        const decoded = jwt.verify(phoneVerificationToken, JWT_SECRET);
+        if (
+          decoded.phoneNormalized === phoneCheck.normalized &&
+          decoded.purpose === 'phone_verification'
+        ) {
+          isOwnershipVerified = true;
+        }
+      } catch (_) {}
     }
 
+    if (!isOwnershipVerified) {
+      throw {
+        statusCode: 403,
+        message: 'A candidate profile with this mobile number already exists from a nomination. Phone ownership verification is required to claim this account.',
+        code: 'PHONE_VERIFICATION_REQUIRED'
+      };
+    }
+
+    // 1. Validate and update Candidate record FIRST (prevent partial writes if candidate validation fails)
     existingCandidate.fullName = fullName.trim();
     existingCandidate.desiredJobId = job._id;
     existingCandidate.categoryId = job.categoryId;
@@ -156,6 +167,36 @@ async function registerCandidate(data, req) {
     existingCandidate.consentGiven = true;
     existingCandidate.isRecommendation = false; // Upgraded to main!
     await existingCandidate.save();
+
+    // 2. Hash new password and update User account AFTER candidate validation succeeds
+    let user = await User.findOne({ phoneNormalized: phoneCheck.normalized }).select('+tokenVersion');
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    if (user) {
+      user.passwordHash = passwordHash;
+      // Do not automatically activate account without administrative verification
+      if (user.accountStatus !== 'active') {
+        user.accountStatus = 'pending';
+      }
+      user.mustChangePassword = false;
+      user.tokenVersion = (user.tokenVersion || 0) + 1; // Invalidate any previous sessions
+      if (email && email.trim()) user.email = email.trim().toLowerCase();
+      await user.save();
+    } else {
+      user = await User.create({
+        email: email && email.trim() ? email.trim().toLowerCase() : undefined,
+        phone: phoneCheck.local,
+        phoneNormalized: phoneCheck.normalized,
+        passwordHash,
+        role: 'candidate',
+        accountStatus: 'pending',
+        mustChangePassword: false,
+        tokenVersion: 1
+      });
+      existingCandidate.userId = user._id;
+      await existingCandidate.save();
+    }
 
     // Notify Super Admin
     const AdminNotification = require('../models/AdminNotification');
@@ -178,7 +219,8 @@ async function registerCandidate(data, req) {
         id: user._id,
         role: user.role,
         phone: user.phoneNormalized,
-        email: user.email
+        email: user.email,
+        accountStatus: user.accountStatus
       },
       candidate: existingCandidate
     };
@@ -469,24 +511,44 @@ async function login(credential, password, req) {
     throw { statusCode: 403, message: 'This account is currently on hold.', code: 'ACCOUNT_ON_HOLD' };
   }
 
-  // Account lockout check
-  if (user.loginLockedUntil && user.loginLockedUntil > new Date()) {
-    const minutesLeft = Math.ceil((user.loginLockedUntil.getTime() - Date.now()) / (60 * 1000));
-    throw {
-      statusCode: 429,
-      message: `Account is temporarily locked due to multiple failed login attempts. Please try again in ${minutesLeft} minute(s).`,
-      code: 'ACCOUNT_LOCKED'
-    };
-  }
-
+  // Compare credentials before enforcing lockout so an attacker cannot lock
+  // the legitimate account owner out by submitting bad passwords.
+  const accountLocked = user.loginLockedUntil && user.loginLockedUntil > new Date();
   const isMatch = await bcrypt.compare(password, user.passwordHash);
   if (!isMatch) {
-    user.loginFailedCount = (user.loginFailedCount || 0) + 1;
-    if (user.loginFailedCount >= 5) {
-      user.loginLockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 min lockout
+    if (accountLocked) {
+      const minutesLeft = Math.ceil((user.loginLockedUntil.getTime() - Date.now()) / (60 * 1000));
+      throw {
+        statusCode: 429,
+        message: `Account is temporarily locked due to multiple failed login attempts. Please try again in ${minutesLeft} minute(s).`,
+        code: 'ACCOUNT_LOCKED'
+      };
+    }
+
+    // SEC-48 / SEC-52: Atomic increment on failed login counter prevents race conditions
+    // where concurrent failed attempts overwrite each other's count.
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: user._id },
+      { $inc: { loginFailedCount: 1 } },
+      { new: true }
+    );
+    const failedCount = (updatedUser && typeof updatedUser.loginFailedCount === 'number')
+      ? updatedUser.loginFailedCount
+      : (user.loginFailedCount || 0) + 1;
+    user.loginFailedCount = failedCount;
+
+    if (failedCount >= 10) {
+      const lockUntil = new Date(Date.now() + 10 * 60 * 1000); // 10 min lockout
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { loginLockedUntil: lockUntil, loginFailedCount: 0 } }
+      );
+      user.loginLockedUntil = lockUntil;
       user.loginFailedCount = 0;
     }
-    await user.save();
+    if (typeof user.save === 'function') {
+      await user.save().catch(() => {});
+    }
     throw { statusCode: 401, message: 'Invalid credentials. Please verify and try again.', code: 'INVALID_CREDENTIALS' };
   }
 
@@ -578,7 +640,7 @@ async function updatePassword(userId, currentPassword, newPassword) {
     throw { statusCode: 400, message: 'New password must be at least 8 characters.', code: 'INVALID_PASSWORD' };
   }
 
-  const user = await User.findById(userId).select('+passwordHash');
+  const user = await User.findById(userId).select('+passwordHash +tokenVersion');
   if (!user) {
     throw { statusCode: 404, message: 'User not found.', code: 'USER_NOT_FOUND' };
   }
@@ -590,6 +652,7 @@ async function updatePassword(userId, currentPassword, newPassword) {
 
   const salt = await bcrypt.genSalt(10);
   user.passwordHash = await bcrypt.hash(newPassword, salt);
+  user.tokenVersion = (user.tokenVersion || 0) + 1;  // SEC-22: invalidate all pre-change tokens
   await user.save();
 
   return { success: true };

@@ -28,7 +28,8 @@ async function getRequestById(req, res, next) {
   try {
     const isAdmin = req.user.role === 'admin';
     const companyId = req.company ? req.company._id : null;
-    const reqDoc = await recruitmentRequestService.getRecruitmentRequestById(req.params.id, companyId, isAdmin);
+    // SEC-33: pass company so service can check subscription expiry
+    const reqDoc = await recruitmentRequestService.getRecruitmentRequestById(req.params.id, companyId, isAdmin, req.company);
     return successResponse(res, reqDoc, 'Recruitment request retrieved');
   } catch (err) {
     next(err);

@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { JWT_SECRET } = require('../config/env');
+const { JWT_SECRET, NODE_ENV, CLIENT_URL } = require('../config/env');
 const User = require('../models/User');
 const { errorResponse } = require('../utils/response');
 
@@ -34,7 +34,6 @@ async function authenticate(req, res, next) {
           origin = null;
         }
       }
-      const { CLIENT_URL } = require('../config/env');
       const validOrigins = [
         CLIENT_URL,
         'https://asher-jobs-frontend.vercel.app',
@@ -44,7 +43,7 @@ async function authenticate(req, res, next) {
         'http://127.0.0.1:3000'
       ].filter(Boolean);
 
-      if (process.env.NODE_ENV === 'production') {
+      if (NODE_ENV === 'production') {
         if (!origin || origin === 'null' || !validOrigins.includes(origin)) {
           return errorResponse(res, 'Cross-site request blocked (CSRF protection: valid origin required).', 403, 'CSRF_BLOCKED');
         }
@@ -52,7 +51,7 @@ async function authenticate(req, res, next) {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.id).select('+passwordHash');
+    const user = await User.findById(decoded.id).select('+passwordHash +tokenVersion');
 
     if (!user) {
       return errorResponse(res, 'User account no longer exists.', 401, 'USER_NOT_FOUND');
@@ -77,6 +76,18 @@ async function authenticate(req, res, next) {
 
     if (user.accountStatus === 'on_hold') {
       return errorResponse(res, 'This account is currently on hold.', 403, 'ACCOUNT_ON_HOLD');
+    }
+
+    // SEC-22/23: Reject tokens whose version doesn't match (password change or logout)
+    const liveVersion = user.tokenVersion ?? 0;
+    const tokenTv = decoded.tv ?? 0;
+    if (tokenTv !== liveVersion) {
+      return errorResponse(
+        res,
+        'Session is no longer valid. Please log in again.',
+        401,
+        'TOKEN_INVALIDATED'
+      );
     }
 
     req.user = user;

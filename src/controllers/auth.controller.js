@@ -1,6 +1,8 @@
+const jwt = require('jsonwebtoken');
 const authService = require('../services/auth.service');
+const User = require('../models/User');
 const { successResponse, errorResponse } = require('../utils/response');
-const { NODE_ENV } = require('../config/env');
+const { NODE_ENV, JWT_SECRET } = require('../config/env');
 
 const isProd = process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL);
 
@@ -59,6 +61,45 @@ async function login(req, res, next) {
 
 async function logout(req, res, next) {
   try {
+    // SEC-23 & SEC-24: Invalidate active token by bumping tokenVersion conditionally
+    let token = null;
+    const authHeader = req.headers && req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+    } else if (req.cookies && req.cookies.token) {
+      token = req.cookies.token;
+    }
+
+    let userId = null;
+    let presentedTv = null;
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        userId = decoded.id;
+        presentedTv = decoded.tv ?? 0;
+      } catch (_) {}
+    } else if (req.user && req.user._id) {
+      userId = req.user._id;
+      presentedTv = req.user.tokenVersion ?? 0;
+    }
+
+    // SEC-24: Only bump tokenVersion if the presented token matches the database version.
+    // Stale/revoked tokens cannot be replayed to DoS other valid sessions.
+    if (userId && typeof presentedTv === 'number') {
+      if (presentedTv === 0) {
+        await User.updateOne(
+          { _id: userId, $or: [{ tokenVersion: 0 }, { tokenVersion: { $exists: false } }] },
+          { $inc: { tokenVersion: 1 } }
+        );
+      } else {
+        await User.updateOne(
+          { _id: userId, tokenVersion: presentedTv },
+          { $inc: { tokenVersion: 1 } }
+        );
+      }
+    }
+
     res.clearCookie('token', cookieOptions);
     res.clearCookie('asher_logged_in', clientCookieOptions);
     return successResponse(res, null, 'Logged out successfully');

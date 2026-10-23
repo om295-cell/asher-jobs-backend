@@ -208,8 +208,10 @@ async function getCandidateReferralStats(userId) {
   }
 
   const referrals = await Referral.find({ referrerCandidateId: candidate._id })
-    .populate('referredCandidateId', 'fullName phone availabilityStatus createdAt')
-    .sort({ createdAt: -1 });
+    .select('status createdAt')
+    .sort({ createdAt: -1 })
+    .limit(100)
+    .lean();
 
   return {
     referralCode: candidate.referralCode,

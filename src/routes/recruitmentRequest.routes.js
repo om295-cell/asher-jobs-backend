@@ -4,10 +4,12 @@ const recruitmentRequestController = require('../controllers/recruitmentRequest.
 const { authenticate } = require('../middleware/auth.middleware');
 const { requireApprovedCompany } = require('../middleware/companyApproval.middleware');
 const { requireActiveSubscription } = require('../middleware/subscription.middleware');
+const { requirePasswordChanged } = require('../middleware/mustChangePassword.middleware');
 
 router.post(
   '/',
   authenticate,
+  requirePasswordChanged,    // SEC-33: block temp-password accounts
   requireApprovedCompany,
   requireActiveSubscription(),
   recruitmentRequestController.createRequest
@@ -16,6 +18,7 @@ router.post(
 router.get(
   '/',
   authenticate,
+  requirePasswordChanged,    // SEC-33
   requireApprovedCompany,
   recruitmentRequestController.getMyRequests
 );
@@ -23,6 +26,7 @@ router.get(
 router.get(
   '/:id',
   authenticate,
+  requirePasswordChanged,    // SEC-33
   requireApprovedCompany,
   recruitmentRequestController.getRequestById
 );

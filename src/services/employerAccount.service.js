@@ -206,7 +206,7 @@ async function resetPasswordByAdmin(companyId, adminUser, req = null) {
     throw { statusCode: 404, message: 'Account not found.', code: 'COMPANY_NOT_FOUND' };
   }
 
-  const user = await User.findById(company.userId);
+  const user = await User.findById(company.userId).select('+tokenVersion');
   if (!user) {
     throw { statusCode: 404, message: 'User record not found.', code: 'USER_NOT_FOUND' };
   }
@@ -217,6 +217,7 @@ async function resetPasswordByAdmin(companyId, adminUser, req = null) {
 
   user.passwordHash = passwordHash;
   user.mustChangePassword = true;
+  user.tokenVersion = (user.tokenVersion || 0) + 1;  // SEC-22: invalidate pre-change tokens
   await user.save();
 
   company.mustChangePassword = true;
@@ -244,15 +245,15 @@ async function resetPasswordByAdmin(companyId, adminUser, req = null) {
  * User changes their temporary password on first login (no current password required)
  */
 async function changeInitialPassword(userId, newPassword, req = null) {
-  if (!newPassword || newPassword.length < 6) {
+  if (typeof newPassword !== 'string' || newPassword.length < 8) {
     throw {
       statusCode: 400,
-      message: 'كلمة المرور الجديدة يجب أن تتكون من 6 أحرف على الأقل.',
+      message: 'New password must be at least 8 characters long.',
       code: 'INVALID_NEW_PASSWORD'
     };
   }
 
-  const user = await User.findById(userId).select('+passwordHash');
+  const user = await User.findById(userId).select('+passwordHash +tokenVersion');
   if (!user) {
     throw { statusCode: 404, message: 'User not found.', code: 'USER_NOT_FOUND' };
   }
@@ -264,6 +265,7 @@ async function changeInitialPassword(userId, newPassword, req = null) {
   const salt = await bcrypt.genSalt(10);
   user.passwordHash = await bcrypt.hash(newPassword, salt);
   user.mustChangePassword = false;
+  user.tokenVersion = (user.tokenVersion || 0) + 1;  // SEC-22: invalidate pre-change tokens
   await user.save();
 
   await Company.updateOne({ userId: user._id }, { $set: { mustChangePassword: false } });

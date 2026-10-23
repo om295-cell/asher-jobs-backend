@@ -4,11 +4,13 @@ const rateLimit = require('express-rate-limit');
 const recommendationController = require('../controllers/recommendation.controller');
 const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
+const { MongoRateLimitStore } = require('../middleware/mongoRateLimitStore');
 
 // Anti-abuse rate limiters
 const submitLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
+  store: new MongoRateLimitStore('recommendation-submit'),
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -21,6 +23,7 @@ const submitLimiter = rateLimit({
 const checkPhoneLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 15, // Allows checking up to 11 recommendation entries while throttling enumeration
+  store: new MongoRateLimitStore('recommendation-check-phone'),
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -33,6 +36,7 @@ const checkPhoneLimiter = rateLimit({
 const trackLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 25,
+  store: new MongoRateLimitStore('recommendation-track'),
   standardHeaders: true,
   legacyHeaders: false,
   message: {

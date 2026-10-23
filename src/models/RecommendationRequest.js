@@ -99,6 +99,13 @@ const recommendationRequestSchema = new mongoose.Schema(
       uppercase: true,
       index: true
     },
+    trackingSecret: {
+      type: String,
+      unique: true,
+      sparse: true,
+      trim: true,
+      index: true
+    },
     status: {
       type: String,
       enum: ['pending', 'phone_duplicate_pending', 'approved', 'partially_approved', 'rejected'],

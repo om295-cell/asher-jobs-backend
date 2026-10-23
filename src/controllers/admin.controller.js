@@ -166,6 +166,7 @@ async function updateCompanyOrderStatus(req, res, next) {
         company.subscriptionStatus = 'active';
         company.subscriptionStartDate = startDate;
         company.subscriptionEndDate = endDate;
+        company.subscriptionPaymentOrderId = order._id;
         await company.save();
       }
     }

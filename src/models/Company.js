@@ -137,6 +137,12 @@ const companySchema = new mongoose.Schema(
       type: Date,
       default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
     },
+    subscriptionPaymentOrderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'PaymentOrder',
+      default: null,
+      index: true
+    },
     subscriptionPriceEgp: {
       type: Number,
       default: 0

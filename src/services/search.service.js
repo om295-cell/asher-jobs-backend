@@ -187,11 +187,9 @@ async function searchCandidates(queryParams, company, req) {
     total = count;
   }
 
-  // If performed by a company, increment searchesUsed and log activity
+  // Quota middleware owns company search accounting. Keep the activity log here,
+  // but do not increment the monthly counter a second time.
   if (company) {
-    company.searchesUsed = (company.searchesUsed || 0) + 1;
-    await company.save();
-
     await logActivity({
       actorId: company.userId,
       actorRole: 'company',

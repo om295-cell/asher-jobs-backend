@@ -5,6 +5,7 @@ const { authenticate } = require('../middleware/auth.middleware');
 const { authorize } = require('../middleware/role.middleware');
 const { requireApprovedCompany } = require('../middleware/companyApproval.middleware');
 const { requirePasswordChanged } = require('../middleware/mustChangePassword.middleware');
+const { paymentInitiateLimiter } = require('../middleware/rateLimit.middleware');
 
 // ── Public: plan listing (companies see plans before logging in) ──
 router.get('/plans', paymentController.listPlans);
@@ -18,7 +19,7 @@ router.get('/callback', paymentController.handleCallback);
 // ── Authenticated company routes ──
 router.use(authenticate, authorize('company'), requirePasswordChanged, requireApprovedCompany);
 
-router.post('/initiate', paymentController.initiatePayment);
+router.post('/initiate', paymentInitiateLimiter, paymentController.initiatePayment);
 router.get('/my-orders', paymentController.getMyOrders);
 
 module.exports = router;

@@ -7,13 +7,17 @@ const { successResponse, errorResponse } = require('../utils/response');
  */
 async function checkPhone(req, res, next) {
   try {
-    const { phone, isPrimary, fullName } = req.body;
-    if (!phone) {
+    const { phone } = req.body;
+    if (typeof phone !== 'string' || !phone.trim()) {
       return errorResponse(res, 'رقم الهاتف مطلوب للتحقق منه', 400, 'PHONE_REQUIRED');
     }
 
-    const result = await recommendationService.checkPhoneAvailability(phone, Boolean(isPrimary), fullName || '');
-    return successResponse(res, result);
+    // Keep the public response independent of whether a number is registered.
+    // The actual submission path performs the authoritative duplicate check.
+    return successResponse(res, {
+      isAvailable: true,
+      message: 'Phone format accepted. Eligibility is checked when the form is submitted.'
+    });
   } catch (err) {
     next(err);
   }

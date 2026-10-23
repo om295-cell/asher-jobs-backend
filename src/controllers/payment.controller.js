@@ -4,6 +4,53 @@ const PaymentOrder = require('../models/PaymentOrder');
 const paymobService = require('../services/paymob.service');
 const { successResponse, errorResponse } = require('../utils/response');
 
+async function activateSubscriptionForOrder(order) {
+  const startDate = order.paidAt ? new Date(order.paidAt) : new Date();
+  const endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + order.billingMonths);
+
+  await Company.findOneAndUpdate(
+    {
+      _id: order.companyId,
+      $or: [
+        { subscriptionPaymentOrderId: null },
+        { subscriptionPaymentOrderId: order._id },
+        { subscriptionStartDate: { $lte: startDate } }
+      ]
+    },
+    { $set: {
+      subscriptionPlan: order.planName,
+      subscriptionStatus: 'active',
+      subscriptionStartDate: startDate,
+      subscriptionEndDate: endDate,
+      subscriptionPriceEgp: order.amountEgp,
+      subscriptionPaymentOrderId: order._id
+    } },
+    { new: true }
+  );
+}
+
+async function deactivateSubscriptionForRefund(order) {
+  const subscriptionMatch = [{ subscriptionPaymentOrderId: order._id }];
+  // Support older orders created before the source-order reference was stored,
+  // but only when their activation timestamp matches this payment.
+  if (order.paidAt) {
+    const paidAt = new Date(order.paidAt);
+    subscriptionMatch.push({
+      subscriptionPaymentOrderId: null,
+      subscriptionPlan: order.planName,
+      subscriptionStartDate: {
+        $gte: new Date(paidAt.getTime() - 5 * 60 * 1000),
+        $lte: new Date(paidAt.getTime() + 5 * 60 * 1000)
+      }
+    });
+  }
+  await Company.updateOne(
+    { _id: order.companyId, subscriptionStatus: 'active', $or: subscriptionMatch },
+    { $set: { subscriptionStatus: 'inactive' } }
+  );
+}
+
 // ─────────────────────────────────────────────────────────────
 // GET /payments/plans  → public: list active plans for company-side display
 // Dynamically marks the plan with the most completed orders/subscribers as isMostChosen
@@ -203,6 +250,11 @@ async function handleWebhook(req, res) {
       return res.status(401).json({ error: 'Invalid HMAC signature' });
     }
 
+    if (!paymobService.isExpectedIntegration(data)) {
+      console.warn('[Payment/webhook] SECURITY ALERT: Transaction integration does not match configured Paymob integration.');
+      return res.status(401).json({ error: 'Invalid payment integration' });
+    }
+
     const paymobOrderId = String(data.order?.id || data.order);
     const transactionId = String(data.id);
     const success = data.success === true || data.success === 'true';
@@ -213,46 +265,105 @@ async function handleWebhook(req, res) {
       return res.status(200).json({ received: true });
     }
 
-    if (order.status === 'paid') {
-      return res.status(200).json({ received: true }); // idempotent
+    // Refund notifications are valid even after the original success event has
+    // marked the order paid. Process them before the success replay guard.
+    const isRefunded = data.is_refunded === true || data.is_refunded === 'true';
+    if (isRefunded) {
+      if (order.status !== 'refunded') {
+        await PaymentOrder.findOneAndUpdate(
+          { _id: order._id, status: { $ne: 'refunded' } },
+          { $set: {
+            paymobRefundTransactionId: transactionId,
+            status: 'refunded',
+            refundedAt: new Date(),
+            refundReason: 'Refund confirmed by Paymob'
+          } },
+          { new: true }
+        );
+      }
+      // Retry revocation even if the order was already marked refunded but a
+      // prior attempt failed before updating the company record.
+      await deactivateSubscriptionForRefund(order);
+      return res.status(200).json({ received: true });
     }
 
-    order.paymobTransactionId = transactionId;
+    // A replay after a partial failure repairs activation from the durable paid
+    // order. The linked-order filter prevents an older retry replacing a newer plan.
+    if (order.status === 'paid') {
+      if (success) {
+        await activateSubscriptionForOrder(order);
+        const latestOrder = await PaymentOrder.findById(order._id).select('status').lean();
+        if (latestOrder?.status === 'refunded') {
+          await deactivateSubscriptionForRefund(order);
+        }
+      }
+      return res.status(200).json({ received: true });
+    }
+
+    // SEC-34: a replayed success event must not reactivate a refunded order.
+    if (order.status === 'refunded') {
+      return res.status(200).json({ received: true });
+    }
 
     if (success) {
       // Validate payment amount (in cents/piastres) against order amount to prevent price tampering
       const transactionAmountCents = Number(data.amount_cents);
       const expectedAmountCents = Math.round(order.amountEgp * 100);
-      if (transactionAmountCents && Math.abs(transactionAmountCents - expectedAmountCents) > 100) {
-        console.warn(`[Payment/webhook] Amount mismatch detected: received ${transactionAmountCents}, expected ${expectedAmountCents}`);
-        order.status = 'failed';
-        order.failureReason = 'Amount mismatch detected';
-        await order.save();
+      const currency = String(data.currency || '').toUpperCase();
+      if (
+        data.amount_cents === undefined ||
+        data.amount_cents === null ||
+        data.amount_cents === '' ||
+        !Number.isSafeInteger(transactionAmountCents) ||
+        transactionAmountCents !== expectedAmountCents ||
+        currency !== 'EGP'
+      ) {
+        console.warn(`[Payment/webhook] Amount/currency mismatch detected: received ${data.amount_cents} ${currency || '(missing)'}, expected ${expectedAmountCents} EGP`);
+        await PaymentOrder.findOneAndUpdate(
+          { _id: order._id, status: { $nin: ['paid', 'refunded'] } },
+          { $set: {
+            paymobTransactionId: transactionId,
+            status: 'failed',
+            failureReason: 'Amount or currency mismatch detected'
+          } }
+        );
         return res.status(200).json({ received: true });
       }
 
-      order.status = 'paid';
-      order.paidAt = new Date();
+      const paidAt = new Date();
+      const paidOrder = await PaymentOrder.findOneAndUpdate(
+        { _id: order._id, status: { $nin: ['paid', 'refunded'] } },
+        { $set: {
+          paymobTransactionId: transactionId,
+          status: 'paid',
+          paidAt,
+          failureReason: ''
+        } },
+        { new: true }
+      );
+      if (!paidOrder) return res.status(200).json({ received: true });
 
       // Activate subscription on company
-      const months = order.billingMonths;
-      const startDate = new Date();
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + months);
+      await activateSubscriptionForOrder(paidOrder);
 
-      await Company.findByIdAndUpdate(order.companyId, {
-        subscriptionPlan: order.planName,
-        subscriptionStatus: 'active',
-        subscriptionStartDate: startDate,
-        subscriptionEndDate: endDate,
-        subscriptionPriceEgp: order.amountEgp
-      });
+      // Close the cross-document race where a refund arrives between the
+      // paid transition and company activation. The refund path will also
+      // deactivate the linked subscription if it runs after this check.
+      const latestOrder = await PaymentOrder.findById(paidOrder._id).select('status').lean();
+      if (latestOrder?.status === 'refunded') {
+        await deactivateSubscriptionForRefund(paidOrder);
+      }
     } else {
-      order.status = 'failed';
-      order.failureReason = data.data?.message || 'Payment declined';
+      await PaymentOrder.findOneAndUpdate(
+        { _id: order._id, status: { $nin: ['paid', 'refunded'] } },
+        { $set: {
+          paymobTransactionId: transactionId,
+          status: 'failed',
+          failureReason: data.data?.message || 'Payment declined'
+        } }
+      );
     }
 
-    await order.save();
     return res.status(200).json({ received: true });
   } catch (err) {
     console.error('[Payment/webhook] Error:', err.message);

@@ -129,11 +129,19 @@ function verifyHmac(data, receivedHmac) {
     .createHmac('sha512', PAYMOB_HMAC_KEY)
     .update(concatenated)
     .digest('hex');
-  return hmac === receivedHmac;
+  if (typeof receivedHmac !== 'string' || !/^[a-f0-9]{128}$/i.test(receivedHmac)) {
+    return false;
+  }
+  return crypto.timingSafeEqual(Buffer.from(hmac, 'hex'), Buffer.from(receivedHmac, 'hex'));
+}
+
+function isExpectedIntegration(data) {
+  return Boolean(PAYMOB_INTEGRATION_ID) && String(data?.integration_id) === PAYMOB_INTEGRATION_ID;
 }
 
 module.exports = {
   initiatePayment,
   verifyHmac,
+  isExpectedIntegration,
   getIframeUrl
 };

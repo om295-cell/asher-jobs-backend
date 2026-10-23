@@ -62,6 +62,10 @@ const userSchema = new mongoose.Schema(
     },
     lastLoginAt: {
       type: Date
+    },
+    tokenVersion: {
+      type: Number,
+      default: 0
     }
   },
   {

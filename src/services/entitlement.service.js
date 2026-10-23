@@ -137,30 +137,32 @@ async function checkAndConsumeSearchQuota(companyId, req = null) {
   const planLimits = await getPlanLimits(company.subscriptionPlan);
   const cairoDate = getCairoDateString();
 
-  // Atomically find or create today's usage document
+  // SEC-36: Atomic increment — prevents race condition where two concurrent requests
+  // both read the same counter value below the limit and both get accepted.
   const usage = await DailyQuotaUsage.findOneAndUpdate(
     { companyId, cairoDate },
-    { $setOnInsert: { companyId, cairoDate, searchesCount: 0, downloadsByJob: {} } },
+    {
+      $inc: { searchesCount: 1 },
+      $setOnInsert: { downloadsByJob: {} }
+    },
     { upsert: true, new: true }
   );
 
-  if (usage.searchesCount >= planLimits.dailySearchLimit) {
+  // If the post-increment count exceeds the limit, the increment already happened;
+  // we must still reject the request so the caller sees the over-limit error.
+  if (usage.searchesCount > planLimits.dailySearchLimit) {
     const msLeft = getMsUntilCairoMidnight();
     const hoursLeft = Math.ceil(msLeft / (1000 * 60 * 60));
     throw {
       statusCode: 429,
       code: 'DAILY_SEARCH_LIMIT_REACHED',
-      message: `لقد استنفدت الحد اليومي لعمليات البحث (${planLimits.dailySearchLimit} بحث/يوم) لباقة ${planLimits.planName}. يتجدد الرصيد عند منتصف الليل بتوقيت القاهرة (خلال ${hoursLeft} ساعة تقريباً).`,
+      message: `لقد استنفدتم الحد اليومي لعمليات البحث (${planLimits.dailySearchLimit} بحث/يوم) لباقة ${planLimits.planName}. يتجدد الرصيد عند منتصف الليل بتوقيت القاهرة (خلال ${hoursLeft} ساعة تقريباً).`,
       dailyLimit: planLimits.dailySearchLimit,
       used: usage.searchesCount,
       resetInMs: msLeft,
       plan: planLimits.planName
     };
   }
-
-  // Atomically increment search count
-  usage.searchesCount += 1;
-  await usage.save();
 
   // Increment total historical searches
   company.searchesUsed = (company.searchesUsed || 0) + 1;
@@ -197,38 +199,63 @@ async function checkAndConsumeDownloadQuota(companyId, jobId, count = 1, req = n
   const company = await validateCompanyAccess(companyId);
   const planLimits = await getPlanLimits(company.subscriptionPlan);
   const cairoDate = getCairoDateString();
-  const jobKey = String(jobId);
+  // SEC-45: Normalize to lowercase so differently-cased ObjectId strings (which MongoDB
+  // treats as equal) map to the same quota bucket and cannot bypass the per-title limit.
+  const jobKey = String(jobId).toLowerCase();
 
+  // SEC-36: Atomic increment on the per-job download counter.
+  // Using $inc inside findOneAndUpdate prevents two concurrent requests from both
+  // reading the same pre-increment count and both slipping past the daily limit.
+  const incPath = `downloadsByJob.${jobKey}`;
   const usage = await DailyQuotaUsage.findOneAndUpdate(
     { companyId, cairoDate },
-    { $setOnInsert: { companyId, cairoDate, searchesCount: 0, downloadsByJob: {} } },
+    {
+      $inc: { [incPath]: count },
+      $setOnInsert: { searchesCount: 0 }
+    },
     { upsert: true, new: true }
   );
 
-  const currentJobDownloads = (usage.downloadsByJob && usage.downloadsByJob.get(jobKey)) || 0;
+  const updatedCount = (usage.downloadsByJob && usage.downloadsByJob.get ? usage.downloadsByJob.get(jobKey) : usage.downloadsByJob?.[jobKey]) || count;
 
-  if (currentJobDownloads + count > planLimits.dailyDownloadLimitPerTitle) {
+  if (updatedCount > planLimits.dailyDownloadLimitPerTitle) {
     const msLeft = getMsUntilCairoMidnight();
     const hoursLeft = Math.ceil(msLeft / (1000 * 60 * 60));
     throw {
       statusCode: 429,
       code: 'DAILY_DOWNLOAD_LIMIT_REACHED',
-      message: `لقد استنفدت الحد اليومي لتنزيل ملفات الإكسيل لهذا التخصص (${planLimits.dailyDownloadLimitPerTitle} ملفات/يوم لكل مسمى وظيفي) لباقة ${planLimits.planName}. يتجدد الرصيد عند منتصف الليل بتوقيت القاهرة (خلال ${hoursLeft} ساعة تقريباً).`,
+      message: `لقد استنفدتم الحد اليومي لتنزيل ملفات الإكسيل لهذا التخصص (${planLimits.dailyDownloadLimitPerTitle} ملفات/يوم لكل مسمى وظيفي) لباقة ${planLimits.planName}. يتجدد الرصيد عند منتصف الليل بتوقيت القاهرة (خلال ${hoursLeft} ساعة تقريباً).`,
       dailyLimitPerTitle: planLimits.dailyDownloadLimitPerTitle,
-      usedForThisJob: currentJobDownloads,
+      usedForThisJob: updatedCount,
       jobId,
       resetInMs: msLeft,
       plan: planLimits.planName
     };
   }
 
-  // Update map
-  const updatedCount = currentJobDownloads + count;
-  usage.downloadsByJob.set(jobKey, updatedCount);
-  await usage.save();
-
-  company.exportsUsed = (company.exportsUsed || 0) + count;
-  await company.save().catch(() => {});
+  // Atomically enforce the monthly export allowance as well as the daily
+  // per-title quota. This also prevents a multi-title cart from crossing the
+  // monthly limit in one request or through concurrent requests.
+  const monthlyUsage = await Company.findOneAndUpdate(
+    {
+      _id: companyId,
+      $expr: {
+        $lte: [
+          { $add: [{ $ifNull: ['$exportsUsed', 0] }, count] },
+          { $ifNull: ['$exportLimit', 0] }
+        ]
+      }
+    },
+    { $inc: { exportsUsed: count } },
+    { new: true }
+  );
+  if (!monthlyUsage) {
+    throw {
+      statusCode: 429,
+      code: 'EXPORT_LIMIT_REACHED',
+      message: `You have reached your monthly export limit (${company.exportLimit} exports).`
+    };
+  }
 
   if (req) {
     await logActivity({
@@ -252,6 +279,7 @@ async function checkAndConsumeDownloadQuota(companyId, jobId, count = 1, req = n
 
 /**
  * Validates and records Platinum single-candidate view or download
+ * SEC-38: Downloads now enforce the per-title daily download quota before recording.
  */
 async function recordPlatinumCandidateAction(companyId, candidateId, actionType = 'view', req = null) {
   const company = await validateCompanyAccess(companyId);
@@ -271,6 +299,13 @@ async function recordPlatinumCandidateAction(companyId, candidateId, actionType 
       message: 'نظام التصفح في الباقة البلاتينية يسمح باستعراض أو تنزيل مرشح واحد فقط في كل مرة.',
       code: 'PLATINUM_SINGLE_CANDIDATE_ONLY'
     };
+  }
+
+  // SEC-38 / SEC-44: For downloads, enforce the daily per-title quota atomically before recording.
+  // SEC-44: Use a fixed shared daily bucket ('platinum_downloads') instead of a per-candidate key
+  // so downloading different candidates cannot each get a fresh quota bucket.
+  if (actionType === 'download') {
+    await checkAndConsumeDownloadQuota(companyId, 'platinum_downloads', 1, req);
   }
 
   const cairoDate = getCairoDateString();

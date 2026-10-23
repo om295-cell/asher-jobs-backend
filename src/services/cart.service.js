@@ -6,6 +6,9 @@ const Candidate = require('../models/Candidate');
 const { getPlanLimits, checkAndConsumeDownloadQuota } = require('./entitlement.service');
 const { logActivity } = require('./activity.service');
 
+const MAX_CART_TITLES = 10;
+const MAX_CART_EXPORT_CANDIDATES = 50;
+
 /**
  * Retrieve current cart for an employer account with populated job details and available candidate counts
  */
@@ -75,6 +78,13 @@ async function addOrUpdateCartItem(company, { jobId, quantity = 1, notes = '' })
     cart.items[existingIndex].quantity = cleanQuantity;
     if (notes !== undefined) cart.items[existingIndex].notes = notes;
   } else {
+    if (cart.items.length >= MAX_CART_TITLES) {
+      throw {
+        statusCode: 400,
+        message: `A cart can contain at most ${MAX_CART_TITLES} job titles.`,
+        code: 'CART_TITLE_LIMIT_EXCEEDED'
+      };
+    }
     cart.items.push({
       jobId,
       quantity: cleanQuantity,
@@ -155,6 +165,20 @@ async function exportCartExcel(company, { format = 'multi_sheet' }, req = null) 
     throw { statusCode: 400, message: 'سلة المرشحين فارغة. يرجى إضافة مسميات وظيفية أولاً.', code: 'CART_EMPTY' };
   }
 
+  const requestedCandidates = cart.items.reduce((sum, item) => (
+    sum + Math.min(
+      planLimits.maxCandidatesPerTitle,
+      Number.isFinite(Number(item.quantity)) && Number(item.quantity) > 0 ? Math.floor(Number(item.quantity)) : 10
+    )
+  ), 0);
+  if (cart.items.length > MAX_CART_TITLES || requestedCandidates > MAX_CART_EXPORT_CANDIDATES) {
+    throw {
+      statusCode: 400,
+      message: `Cart export is limited to ${MAX_CART_TITLES} job titles and ${MAX_CART_EXPORT_CANDIDATES} candidates per workbook.`,
+      code: 'CART_EXPORT_LIMIT_EXCEEDED'
+    };
+  }
+
   // 1. Verify download quotas for each included job title before starting
   for (const item of cart.items) {
     const jId = item.jobId?._id || item.jobId;
@@ -170,7 +194,11 @@ async function exportCartExcel(company, { format = 'multi_sheet' }, req = null) 
     const jobName = job?.nameAr || job?.name || 'Job Title';
     const cleanSheetName = jobName.replace(/[\\/?*[\]]/g, '').slice(0, 30) || 'Candidates';
 
-    const quantity = Math.min(planLimits.maxCandidatesPerTitle, item.quantity || 10);
+    const requestedQuantity = Number(item.quantity);
+    const quantity = Math.min(
+      planLimits.maxCandidatesPerTitle,
+      Number.isFinite(requestedQuantity) && requestedQuantity > 0 ? Math.floor(requestedQuantity) : 10
+    );
 
     const candidates = await Candidate.aggregate([
       {

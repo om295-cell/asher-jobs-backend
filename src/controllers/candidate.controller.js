@@ -98,6 +98,15 @@ async function downloadCv(req, res, next) {
     const { id } = req.params;
     let candidate = null;
 
+    if (req.user.mustChangePassword) {
+      return errorResponse(
+        res,
+        'You must change your temporary password before accessing candidate CVs.',
+        403,
+        'PASSWORD_CHANGE_REQUIRED'
+      );
+    }
+
     if (req.user.role === 'candidate') {
       candidate = await Candidate.findOne({ userId: req.user._id });
     } else if (req.user.role === 'admin') {
@@ -139,7 +148,9 @@ async function downloadCv(req, res, next) {
           'SUBSCRIPTION_EXPIRED'
         );
       }
-      candidate = await Candidate.findById(id);
+      const entitlementService = require('../services/entitlement.service');
+      await entitlementService.checkAndConsumeDownloadQuota(company._id, 'cv_download', 1, req);
+      candidate = await Candidate.findOne({ _id: id, accountStatus: 'active', isDeleted: false });
     } else {
       return errorResponse(res, 'Access denied.', 403, 'ACCESS_DENIED');
     }
@@ -193,7 +204,16 @@ async function searchCandidates(req, res, next) {
       quotaInfo = await entitlementService.checkAndConsumeSearchQuota(req.company._id, req);
     }
 
-    const result = await searchService.searchCandidates(req.query, req.company, req);
+    // Bound each company response by its plan allowance, even when the caller
+    // supplies a larger `limit` in the query string.
+    const searchQuery = { ...req.query };
+    if (isCompany && quotaInfo?.planLimits?.maxCandidatesPerTitle) {
+      const requestedLimit = Number.parseInt(searchQuery.limit, 10);
+      const boundedLimit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? requestedLimit : 20;
+      searchQuery.limit = String(Math.min(boundedLimit, quotaInfo.planLimits.maxCandidatesPerTitle));
+    }
+
+    const result = await searchService.searchCandidates(searchQuery, req.company, req);
     const pagination = { ...result.pagination, quota: quotaInfo };
     return successResponse(res, result.items, 'Candidates retrieved successfully', 200, pagination);
   } catch (err) {
@@ -203,6 +223,10 @@ async function searchCandidates(req, res, next) {
 
 async function getCandidateById(req, res, next) {
   try {
+    if (req.company) {
+      const entitlementService = require('../services/entitlement.service');
+      await entitlementService.checkAndConsumeSearchQuota(req.company._id, req);
+    }
     const candidate = await candidateService.getCandidateByIdForCompany(req.params.id, req.company, req);
     return successResponse(res, candidate, 'Candidate details retrieved');
   } catch (err) {
@@ -238,12 +262,12 @@ async function exportCandidates(req, res, next) {
         }
       }
 
-      // Enforce daily download quota per job title
-      const targetJobId = req.query.jobId || req.query.desiredJobId;
-      if (targetJobId) {
-        const entitlementService = require('../services/entitlement.service');
-        await entitlementService.checkAndConsumeDownloadQuota(req.company._id, targetJobId, 1, req);
-      }
+      // SEC-30: Enforce daily download quota per job title.
+      // When no jobId/desiredJobId is supplied (e.g. admin-only or unfiltered export),
+      // use the 'ALL_TITLES' bucket so the quota is never silently skipped.
+      const targetJobId = req.query.jobId || req.query.desiredJobId || 'ALL_TITLES';
+      const entitlementService = require('../services/entitlement.service');
+      await entitlementService.checkAndConsumeDownloadQuota(req.company._id, targetJobId, 1, req);
     }
 
     const format = req.query.format || 'csv';
@@ -266,10 +290,17 @@ async function exportCandidates(req, res, next) {
 
 /**
  * Dedicated Platinum Candidate Database Browsing (Unlimited browsing with filters)
+ * SEC-37: Contact details (phone, email) are stripped from browse results.
+ * Contacts are only accessible through the single-candidate detail route.
+ * Page size is capped at 20 to prevent bulk harvesting.
  */
 async function browseCandidatesPlatinum(req, res, next) {
   try {
     const entitlementService = require('../services/entitlement.service');
+
+    // SEC-29 (defence-in-depth)
+    await entitlementService.validateCompanyAccess(req.company._id);
+
     const planLimits = await entitlementService.getPlanLimits(req.company?.subscriptionPlan);
 
     if (!planLimits.platinumBrowseEnabled) {
@@ -281,8 +312,13 @@ async function browseCandidatesPlatinum(req, res, next) {
       );
     }
 
-    const result = await searchService.searchCandidates(req.query, req.company, req);
-    return successResponse(res, result.items, 'Platinum candidate browsing results', 200, result.pagination);
+    // SEC-37: Cap page size at 20 for Platinum browse to prevent bulk contact harvest
+    const safeQuery = { ...req.query, limit: Math.min(parseInt(req.query.limit, 10) || 20, 20) };
+    const result = await searchService.searchCandidates(safeQuery, req.company, req);
+
+    // SEC-37: Strip phone and email from browse list — contacts only available via /:id detail route
+    const sanitized = result.items.map(({ phone, email, ...rest }) => rest);
+    return successResponse(res, sanitized, 'Platinum candidate browsing results', 200, result.pagination);
   } catch (err) {
     next(err);
   }
@@ -290,10 +326,15 @@ async function browseCandidatesPlatinum(req, res, next) {
 
 /**
  * Platinum Single Candidate View (Strictly 1 candidate at a time)
+ * SEC-43: Consumes the daily search quota so detail views can't bypass the
+ * per-session rate limit that browse enforces at the aggregate level.
  */
 async function getPlatinumCandidateDetail(req, res, next) {
   try {
     const entitlementService = require('../services/entitlement.service');
+
+    // SEC-43: enforce search quota so /:id detail can't be used to bypass the browse limiter
+    await entitlementService.checkAndConsumeSearchQuota(req.company._id, req);
     await entitlementService.recordPlatinumCandidateAction(req.company._id, req.params.id, 'view', req);
 
     const candidate = await candidateService.getCandidateByIdForCompany(req.params.id, req.company, req);

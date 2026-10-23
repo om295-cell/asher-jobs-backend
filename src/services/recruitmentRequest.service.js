@@ -5,6 +5,7 @@ const CandidateInteraction = require('../models/CandidateInteraction');
 const { getPagination, formatPagination } = require('../utils/pagination');
 const { logActivity } = require('./activity.service');
 const { escapeRegex } = require('../middleware/sanitize.middleware');
+const { getPlanLimits } = require('./entitlement.service');
 
 function generateRequestNumber() {
   const timestamp = Date.now().toString().slice(-6);
@@ -28,9 +29,20 @@ async function createRecruitmentRequest(company, requestData, req) {
     throw { statusCode: 400, message: 'Please specify the required job position.', code: 'JOB_REQUIRED' };
   }
 
+  // SEC-39: Enforce the plan-level maxCandidatesPerTitle limit (typically 10) rather than
+  // the old hardcoded 50. This aligns recruitment requests with the company's subscription.
+  const planLimits = await getPlanLimits(company.subscriptionPlan);
+  const planCap = planLimits.maxCandidatesPerTitle || 10;
   const quantity = parseInt(quantityRequested, 10);
   if (isNaN(quantity) || quantity < 1) {
     throw { statusCode: 400, message: 'Quantity requested must be at least 1 candidate.', code: 'INVALID_QUANTITY' };
+  }
+  if (quantity > planCap) {
+    throw {
+      statusCode: 400,
+      message: `Quantity requested cannot exceed ${planCap} candidates per request for your ${planLimits.planName} plan.`,
+      code: 'QUANTITY_EXCEEDS_LIMIT'
+    };
   }
 
   const job = await Job.findById(jobId);
@@ -152,9 +164,24 @@ async function getCompanyRecruitmentRequests(companyId, queryParams) {
   };
 }
 
-async function getRecruitmentRequestById(requestId, companyId, isAdmin = false) {
+async function getRecruitmentRequestById(requestId, companyId, isAdmin = false, company = null) {
   if (!isAdmin && !companyId) {
     throw { statusCode: 403, message: 'Access denied.', code: 'FORBIDDEN' };
+  }
+
+  // SEC-33/40: Only an *active* subscription may retrieve candidate contact details.
+  // Reject expired, inactive, cancelled, or any non-active status regardless of end date.
+  if (!isAdmin && company) {
+    const isNotActive =
+      company.subscriptionStatus !== 'active' ||
+      (company.subscriptionEndDate && new Date(company.subscriptionEndDate) < new Date());
+    if (isNotActive) {
+      throw {
+        statusCode: 403,
+        message: 'An active subscription is required to access candidate contact details.',
+        code: 'SUBSCRIPTION_REQUIRED'
+      };
+    }
   }
 
   const query = { _id: requestId };
@@ -198,12 +225,37 @@ async function logCandidateInteraction(companyId, candidateId, action, notes = '
     throw { statusCode: 400, message: 'Invalid interaction action.', code: 'INVALID_ACTION' };
   }
 
+  // Validate candidate existence and active status
+  const candidate = await Candidate.findById(candidateId).lean();
+  if (!candidate || candidate.isDeleted) {
+    throw { statusCode: 404, message: 'Candidate not found.', code: 'CANDIDATE_NOT_FOUND' };
+  }
+
+  // If requestId is provided, verify it belongs to this company
+  if (requestId) {
+    const reqDoc = await RecruitmentRequest.findOne({ _id: requestId, companyId }).lean();
+    if (!reqDoc) {
+      throw {
+        statusCode: 404,
+        message: 'Recruitment request not found or does not belong to this company.',
+        code: 'REQUEST_NOT_FOUND'
+      };
+    }
+  }
+
+  // Enforce notes length limit
+  if (notes && typeof notes === 'string' && notes.length > 1000) {
+    throw { statusCode: 400, message: 'Interaction notes exceed 1000 characters limit.', code: 'INPUT_TOO_LONG' };
+  }
+
+  const cleanNotes = typeof notes === 'string' ? notes.trim() : '';
+
   const interaction = await CandidateInteraction.create({
     companyId,
     candidateId,
     recruitmentRequestId: requestId || null,
     action,
-    notes: notes || ''
+    notes: cleanNotes
   });
 
   return interaction;

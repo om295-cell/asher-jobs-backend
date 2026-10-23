@@ -6,10 +6,13 @@ async function getJobs(req, res, next) {
   try {
     let jobs = await adminService.getAllJobs(false);
 
-    // Trigger sync ONLY if DB is empty or explicitly requested via ?refresh=true
-    const needsSync = jobs.length === 0 || req.query.refresh === 'true';
-    if (needsSync) {
-      console.log(`[JobController] Catalog sync triggered (total jobs: ${jobs.length}). Synchronizing...`);
+    // SEC-35: count ALL jobs (including admin-disabled ones) for the bootstrap check,
+    // so a catalog where the admin deactivated all entries is NOT treated as empty.
+    // This prevents the bootstrap sync from re-enabling deliberately disabled jobs.
+    // SEC-28 (retained): ?refresh=true never triggers an unauthenticated sync.
+    const allJobsCount = (await adminService.getAllJobs(true)).length;
+    if (allJobsCount === 0) {
+      console.log('[JobController] Catalog is empty – running bootstrap sync.');
       await syncJobCatalog();
       adminService.invalidateCatalogueCache();
       jobs = await adminService.getAllJobs(false);

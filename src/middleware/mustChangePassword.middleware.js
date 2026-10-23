@@ -11,7 +11,9 @@ function requirePasswordChanged(req, res, next) {
 
   // Admins do not have forced change unless explicitly flagged
   if (req.user.mustChangePassword) {
-    // Allow password change, logout, and getMe endpoints
+    // Allow password change, logout, and getMe endpoints.
+    // SEC-32: match against the path ONLY (strip query string) and use startsWith()
+    // so ?next=/auth/me or similar query-string injections cannot bypass the gate.
     const allowedPaths = [
       '/auth/change-initial-password',
       '/auth/update-password',
@@ -19,7 +21,8 @@ function requirePasswordChanged(req, res, next) {
       '/auth/me'
     ];
 
-    const isAllowed = allowedPaths.some((p) => req.originalUrl.includes(p));
+    const urlPath = req.originalUrl.split('?')[0].split('#')[0];
+    const isAllowed = allowedPaths.some((p) => urlPath.startsWith(p));
     if (!isAllowed) {
       return errorResponse(
         res,
