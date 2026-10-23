@@ -20,7 +20,6 @@ function buildCandidateFilters(queryParams) {
     area,
     minExperience,
     maxExperience,
-    availability,
     qualification
   } = queryParams;
 
@@ -58,12 +57,9 @@ function buildCandidateFilters(queryParams) {
     }
   }
 
-  if (availability && availability.trim() && availability !== 'ALL') {
-    filter.availabilityStatus = availability.trim();
-  } else if (!availability) {
-    // Default to 'Available' for employers looking for immediately ready candidates
-    filter.availabilityStatus = 'Available';
-  }
+  // Employer discovery is restricted to candidates who currently opt in as
+  // Available. Never let a query parameter expose hired or unavailable profiles.
+  filter.availabilityStatus = 'Available';
 
   if (governorate && governorate.trim() && governorate !== 'ALL') {
     filter.governorate = new RegExp(escapeRegex(governorate.trim()), 'i');

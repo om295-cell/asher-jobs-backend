@@ -224,6 +224,7 @@ async function getCandidateByIdForCompany(candidateId, company, req) {
   const candidate = await Candidate.findOne({
     _id: candidateId,
     accountStatus: 'active',
+    availabilityStatus: 'Available',
     isDeleted: false
   })
     .populate('desiredJobId', 'name nameAr')

@@ -2439,6 +2439,28 @@ check('SEC-63: Payment success and refund transitions are atomic and preserve tr
   assert.ok(orderSource.includes('paymobRefundTransactionId: { type: String, default: null }'));
 });
 
+check('SEC-64: Candidate cart counts and exports include only available candidates and active job titles', () => {
+  const fs = require('fs');
+  const cartSource = fs.readFileSync(require.resolve('./src/services/cart.service'), 'utf8');
+  assert.ok(cartSource.includes("availabilityStatus: 'Available'"));
+  assert.ok(cartSource.includes('if (!job || job.isActive === false)'));
+  assert.ok(cartSource.includes('item.jobId.isActive === false'));
+  assert.ok(cartSource.includes('availabilityStatus: \'Available\','));
+});
+
+check('SEC-65: Employer search, detail, and CV routes cannot retrieve unavailable candidate profiles', () => {
+  const { buildCandidateFilters } = require('./src/services/search.service');
+  const candidateServiceSource = require('fs').readFileSync(require.resolve('./src/services/candidate.service'), 'utf8');
+  const candidateControllerSource = require('fs').readFileSync(require.resolve('./src/controllers/candidate.controller'), 'utf8');
+  const searchFilter = buildCandidateFilters({ availability: 'Hired' });
+  assert.strictEqual(searchFilter.availabilityStatus, 'Available', 'Caller-supplied status must not expand employer search');
+  const detailStart = candidateServiceSource.indexOf('async function getCandidateByIdForCompany');
+  const detailEnd = candidateServiceSource.indexOf('\nmodule.exports', detailStart);
+  const detailSource = candidateServiceSource.slice(detailStart, detailEnd);
+  assert.ok(detailSource.includes("availabilityStatus: 'Available'"), 'Single-candidate detail must require Available status');
+  assert.ok(candidateControllerSource.includes("availabilityStatus: 'Available'"), 'Company CV download must require Available status');
+});
+
 // SUMMARY REPORT & RUNNER
 // ─────────────────────────────────────────────────────────────────────────────
 

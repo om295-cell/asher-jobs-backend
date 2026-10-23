@@ -37,6 +37,8 @@ async function authenticate(req, res, next) {
       const validOrigins = [
         CLIENT_URL,
         'https://asher-jobs-frontend.vercel.app',
+        'https://www.asher-jobs.com',
+        'https://asher-jobs.com',
         'http://localhost:5173',
         'http://127.0.0.1:5173',
         'http://localhost:3000',

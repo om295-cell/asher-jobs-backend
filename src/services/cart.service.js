@@ -26,6 +26,7 @@ async function getCart(companyId) {
 
       const availableCount = await Candidate.countDocuments({
         $or: [{ desiredJobId: jId }, { secondJobId: jId }, { thirdJobId: jId }],
+        availabilityStatus: 'Available',
         accountStatus: 'active',
         isDeleted: false
       });
@@ -62,7 +63,7 @@ async function addOrUpdateCartItem(company, { jobId, quantity = 1, notes = '' })
   }
 
   const job = await Job.findById(jobId);
-  if (!job) {
+  if (!job || job.isActive === false) {
     throw { statusCode: 404, message: 'المسمى الوظيفي غير موجود.', code: 'JOB_NOT_FOUND' };
   }
 
@@ -165,6 +166,14 @@ async function exportCartExcel(company, { format = 'multi_sheet' }, req = null) 
     throw { statusCode: 400, message: 'سلة المرشحين فارغة. يرجى إضافة مسميات وظيفية أولاً.', code: 'CART_EMPTY' };
   }
 
+  if (cart.items.some((item) => !item.jobId || item.jobId.isActive === false)) {
+    throw {
+      statusCode: 409,
+      message: 'A job title in this cart is no longer active. Remove it before exporting.',
+      code: 'CART_CONTAINS_INACTIVE_JOB'
+    };
+  }
+
   const requestedCandidates = cart.items.reduce((sum, item) => (
     sum + Math.min(
       planLimits.maxCandidatesPerTitle,
@@ -204,6 +213,7 @@ async function exportCartExcel(company, { format = 'multi_sheet' }, req = null) 
       {
         $match: {
           $or: [{ desiredJobId: jId }, { secondJobId: jId }, { thirdJobId: jId }],
+          availabilityStatus: 'Available',
           accountStatus: 'active',
           isDeleted: false
         }

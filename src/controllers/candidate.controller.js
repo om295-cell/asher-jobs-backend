@@ -150,7 +150,12 @@ async function downloadCv(req, res, next) {
       }
       const entitlementService = require('../services/entitlement.service');
       await entitlementService.checkAndConsumeDownloadQuota(company._id, 'cv_download', 1, req);
-      candidate = await Candidate.findOne({ _id: id, accountStatus: 'active', isDeleted: false });
+      candidate = await Candidate.findOne({
+        _id: id,
+        accountStatus: 'active',
+        availabilityStatus: 'Available',
+        isDeleted: false
+      });
     } else {
       return errorResponse(res, 'Access denied.', 403, 'ACCESS_DENIED');
     }
