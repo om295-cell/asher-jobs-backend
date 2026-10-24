@@ -303,18 +303,22 @@ async function browseCandidatesPlatinum(req, res, next) {
   try {
     const entitlementService = require('../services/entitlement.service');
 
-    // SEC-29 (defence-in-depth)
-    await entitlementService.validateCompanyAccess(req.company._id);
+    if (req.company) {
+      // SEC-29 (defence-in-depth)
+      await entitlementService.validateCompanyAccess(req.company._id);
 
-    const planLimits = await entitlementService.getPlanLimits(req.company?.subscriptionPlan);
+      const planLimits = await entitlementService.getPlanLimits(req.company?.subscriptionPlan);
 
-    if (!planLimits.platinumBrowseEnabled) {
-      return errorResponse(
-        res,
-        'خاصية تصفح قاعدة بيانات المرشحين متاحة حصرياً لمشتركي الباقة البلاتينية (Platinum).',
-        403,
-        'PLATINUM_REQUIRED'
-      );
+      if (!planLimits.platinumBrowseEnabled) {
+        return errorResponse(
+          res,
+          'خاصية تصفح قاعدة بيانات المرشحين متاحة حصرياً لمشتركي الباقة البلاتينية (Platinum).',
+          403,
+          'PLATINUM_REQUIRED'
+        );
+      }
+    } else if (req.user?.role !== 'admin') {
+      return errorResponse(res, 'Company context required.', 403, 'COMPANY_REQUIRED');
     }
 
     // SEC-37: Cap page size at 20 for Platinum browse to prevent bulk contact harvest
@@ -336,11 +340,12 @@ async function browseCandidatesPlatinum(req, res, next) {
  */
 async function getPlatinumCandidateDetail(req, res, next) {
   try {
-    const entitlementService = require('../services/entitlement.service');
-
-    // SEC-43: enforce search quota so /:id detail can't be used to bypass the browse limiter
-    await entitlementService.checkAndConsumeSearchQuota(req.company._id, req);
-    await entitlementService.recordPlatinumCandidateAction(req.company._id, req.params.id, 'view', req);
+    if (req.company) {
+      const entitlementService = require('../services/entitlement.service');
+      // SEC-43: enforce search quota so /:id detail can't be used to bypass the browse limiter
+      await entitlementService.checkAndConsumeSearchQuota(req.company._id, req);
+      await entitlementService.recordPlatinumCandidateAction(req.company._id, req.params.id, 'view', req);
+    }
 
     const candidate = await candidateService.getCandidateByIdForCompany(req.params.id, req.company, req);
     return successResponse(res, candidate, 'Platinum single candidate details retrieved');
@@ -354,8 +359,10 @@ async function getPlatinumCandidateDetail(req, res, next) {
  */
 async function downloadPlatinumCandidateExcel(req, res, next) {
   try {
-    const entitlementService = require('../services/entitlement.service');
-    await entitlementService.recordPlatinumCandidateAction(req.company._id, req.params.id, 'download', req);
+    if (req.company) {
+      const entitlementService = require('../services/entitlement.service');
+      await entitlementService.recordPlatinumCandidateAction(req.company._id, req.params.id, 'download', req);
+    }
 
     const query = { candidateIds: [req.params.id], limit: 1 };
     const buffer = await exportService.exportCandidatesXLSX(query, req.company, req);

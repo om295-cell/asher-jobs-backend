@@ -385,6 +385,9 @@ async function getAccountEntitlementSummary(companyId) {
       mustChangePassword: company.mustChangePassword || false
     },
     planLimits,
+    limits: planLimits,
+    plan: company.subscriptionPlan || 'Basic',
+    cairoDate,
     quota: {
       cairoDate,
       resetInMs: msUntilMidnight,
