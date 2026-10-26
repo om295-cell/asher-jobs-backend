@@ -1,4 +1,3 @@
-const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const User = require('../models/User');
@@ -101,8 +100,8 @@ async function createEmployerAccount(data, adminUser, req = null) {
     planPrice = planObj?.priceEgp ?? (subscriptionPlan === 'Platinum' ? 2000 : subscriptionPlan === 'Gold' ? 1000 : 500);
   }
 
-  const generatedTemp = crypto.randomBytes(4).toString('hex') + 'Aa1!';
-  const actualTempPassword = (tempPassword && tempPassword.trim()) ? tempPassword.trim() : generatedTemp;
+  const DEFAULT_TEMP_PASSWORD = 'Temp@1234';
+  const actualTempPassword = (tempPassword && tempPassword.trim()) ? tempPassword.trim() : DEFAULT_TEMP_PASSWORD;
 
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(actualTempPassword, salt);
@@ -211,7 +210,7 @@ async function resetPasswordByAdmin(companyId, adminUser, req = null) {
     throw { statusCode: 404, message: 'User record not found.', code: 'USER_NOT_FOUND' };
   }
 
-  const generatedPassword = crypto.randomBytes(4).toString('hex') + 'Aa1!';
+  const generatedPassword = 'Temp@1234';
   const salt = await bcrypt.genSalt(10);
   const passwordHash = await bcrypt.hash(generatedPassword, salt);
 
