@@ -217,6 +217,8 @@ async function resetPasswordByAdmin(companyId, adminUser, req = null) {
   user.passwordHash = passwordHash;
   user.mustChangePassword = true;
   user.tokenVersion = (user.tokenVersion || 0) + 1;  // SEC-22: invalidate pre-change tokens
+  user.loginFailedCount = 0;       // clear any failed-attempt counter
+  user.loginLockedUntil = null;    // unlock account if it was locked out
   await user.save();
 
   company.mustChangePassword = true;
