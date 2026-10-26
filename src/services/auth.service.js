@@ -478,13 +478,13 @@ async function login(credential, password, req) {
   let user = null;
 
   if (trimmed.includes('@')) {
-    user = await User.findOne({ email: trimmed.toLowerCase() }).select('+passwordHash');
+    user = await User.findOne({ email: trimmed.toLowerCase() }).select('+passwordHash +tokenVersion');
   } else {
     const phoneCheck = normalizeEgyptianPhone(trimmed);
     const normalized = phoneCheck.isValid ? phoneCheck.normalized : trimmed;
     user = await User.findOne({
       $or: [{ phoneNormalized: normalized }, { phone: trimmed }]
-    }).select('+passwordHash');
+    }).select('+passwordHash +tokenVersion');
   }
 
   if (!user) {
