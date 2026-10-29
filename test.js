@@ -80,13 +80,8 @@ function runParserTests() {
 // ─── Integration test (requires DB) ──────────────────────────────────────────
 async function runIntegrationTest() {
   console.log('\n=== Integration Test (DB) ===');
-  const MONGO_URI = process.env.MONGO_URI;
-  if (!MONGO_URI) {
-    console.log('  ⚠ MONGO_URI not set — skipping DB integration test');
-    return;
-  }
-
-  await mongoose.connect(MONGO_URI);
+  const { connectDB, closeDB } = require('./src/config/db');
+  await connectDB();
   console.log('  Connected to DB');
 
   const service = require('./src/services/jobTitleReview.service');
@@ -139,7 +134,7 @@ async function runIntegrationTest() {
   await JobTitleBatch.deleteOne({ _id: batch._id });
   console.log('  Test data cleaned up');
 
-  await mongoose.disconnect();
+  await closeDB();
 }
 
 (async () => {

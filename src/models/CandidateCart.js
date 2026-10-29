@@ -14,6 +14,11 @@ const candidateCartItemSchema = new mongoose.Schema(
       max: 10,
       default: 1
     },
+    careerLevel: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     notes: {
       type: String,
       trim: true,

@@ -265,7 +265,7 @@
     "nameAr": "مسؤول برامج ومشاريع مجتمعية"
   },
   {
-    "category": "Specialized & Other",
+    "category": "Quality & Inspection",
     "name": "Document Controller",
     "nameAr": "مراقب وثائق ومستندات"
   },
@@ -1270,7 +1270,7 @@
     "nameAr": "مدير محطة خرسانة جاهزة"
   },
   {
-    "category": "Quality & Inspection",
+    "category": "Production & Manufacturing",
     "name": "Workers Supervisor",
     "nameAr": "مشرف عمال"
   },
@@ -1515,12 +1515,12 @@
     "nameAr": "أخصائي صحة وسلامة مهنية"
   },
   {
-    "category": "Specialized & Other",
+    "category": "Accounting & Finance",
     "name": "Site Accountant",
     "nameAr": "محاسب موقع"
   },
   {
-    "category": "Engineering",
+    "category": "Accounting & Finance",
     "name": "Internal Auditor",
     "nameAr": "مراجع داخلي"
   },
@@ -1531,138 +1531,8 @@
   },
   {
     "category": "Specialized & Other",
-    "name": "General Accountant",
-    "nameAr": "محاسب عام"
-  },
-  {
-    "category": "Quality & Inspection",
-    "name": "Warehouse Supervisor",
-    "nameAr": "مشرف مخازن"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Interior Designer",
-    "nameAr": "مصمم معماري داخلي وديكور"
-  },
-  {
-    "category": "Engineering",
-    "name": "Quality Engineer",
-    "nameAr": "مهندس جودة"
-  },
-  {
-    "category": "Quality & Inspection",
-    "name": "Document Controller",
-    "nameAr": "مراقب وثائق ومستندات"
-  },
-  {
-    "category": "Quality & Inspection",
-    "name": "Stock Controller",
-    "nameAr": "مراقب حركة المخزون"
-  },
-  {
-    "category": "Quality & Inspection",
-    "name": "Inventory Controller",
-    "nameAr": "مراقب مخزون"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Store Manager",
-    "nameAr": "مدير متجر"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Assistant Manager",
-    "nameAr": "مساعد مدير"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Surveying Manager",
-    "nameAr": "مدير إدارة مساحة"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Draftsman",
-    "nameAr": "رسام هندسي"
-  },
-  {
-    "category": "HR & Administration",
-    "name": "IT Director",
-    "nameAr": "مدير تكنولوجيا المعلومات"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "QHSE Manager",
-    "nameAr": "مدير سلامة وجودة وبيئة (QHSE)"
-  },
-  {
-    "category": "Sales & Marketing",
-    "name": "Microbiologist",
-    "nameAr": "أخصائي ميكروبيولوجي"
-  },
-  {
-    "category": "Engineering",
-    "name": "Mechanical Maintenance Supervisor",
-    "nameAr": "مشرف صيانة ميكانيكية"
-  },
-  {
-    "category": "Quality & Inspection",
-    "name": "Sales Supervisor",
-    "nameAr": "مشرف مبيعات"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Digital Marketer",
-    "nameAr": "أخصائي تسويق رقمي"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Social Media Specialist",
-    "nameAr": "أخصائي وسائل التواصل الاجتماعي"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "SEO Specialist",
-    "nameAr": "أخصائي تحسين محركات البحث (SEO)"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Graphic Designer",
-    "nameAr": "مصمم جرافيك"
-  },
-  {
-    "category": "Quality & Inspection",
-    "name": "Customer Service Supervisor",
-    "nameAr": "مشرف خدمة عملاء"
-  },
-  {
-    "category": "Accounting & Finance",
-    "name": "Internal Auditor",
-    "nameAr": "مراجع داخلي"
-  },
-  {
-    "category": "HR & Administration",
-    "name": "مدخل بيانات",
-    "nameAr": "مدخل بيانات"
-  },
-  {
-    "category": "Specialized & Other",
     "name": "مدرس",
     "nameAr": "مدرس"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "name": "عامل إنتاج",
-    "nameAr": "عامل إنتاج"
-  },
-  {
-    "category": "Sales & Marketing",
-    "name": "أخصائي تسويق",
-    "nameAr": "أخصائي تسويق"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مساعد صيدلي",
-    "nameAr": "مساعد صيدلي"
   },
   {
     "category": "Specialized & Other",
@@ -1675,27 +1545,12 @@
     "nameAr": "عامل بوفيه"
   },
   {
-    "category": "Production & Manufacturing",
-    "name": "عامل تعبئة وتغليف",
-    "nameAr": "عامل تعبئة وتغليف"
-  },
-  {
     "category": "Specialized & Other",
     "name": "مترجم",
     "nameAr": "مترجم"
   },
   {
-    "category": "HR & Administration",
-    "name": "Data entry",
-    "nameAr": "مدخل بيانات"
-  },
-  {
     "category": "Accounting & Finance",
-    "name": "محاسب مالي",
-    "nameAr": "محاسب مالي"
-  },
-  {
-    "category": "Specialized & Other",
     "name": "Customer Accounts Accountant",
     "nameAr": "محاسب عملاء"
   },
@@ -1735,34 +1590,9 @@
     "nameAr": "موظف خدمة عملاء"
   },
   {
-    "category": "Engineering",
-    "name": "مهندس جودة",
-    "nameAr": "مهندس جودة"
-  },
-  {
-    "category": "HR & Administration",
-    "name": "سكرتارية",
-    "nameAr": "سكرتارية"
-  },
-  {
     "category": "Maintenance & Technical",
     "name": "فني ميكانيكا",
     "nameAr": "فني ميكانيكا"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني نسيج",
-    "nameAr": "فني نسيج"
-  },
-  {
-    "category": "Accounting & Finance",
-    "name": "محاسب",
-    "nameAr": "محاسب"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "name": "أمين مخزن",
-    "nameAr": "أمين مخزن"
   },
   {
     "category": "HR & Administration",
@@ -1795,19 +1625,9 @@
     "nameAr": "Purchase Officer"
   },
   {
-    "category": "HR & Administration",
-    "name": "موظف إداري",
-    "nameAr": "موظف إداري"
-  },
-  {
     "category": "Quality & Inspection",
     "name": "مسئول جودة",
     "nameAr": "مسئول جودة"
-  },
-  {
-    "category": "Quality & Inspection",
-    "name": "مراقب جودة",
-    "nameAr": "مراقب جودة"
   },
   {
     "category": "Sales & Marketing",
@@ -1816,18 +1636,8 @@
   },
   {
     "category": "Engineering",
-    "name": "مهندس ميكانيكا",
-    "nameAr": "مهندس ميكانيكا"
-  },
-  {
-    "category": "Engineering",
     "name": "مهندس صيانة ميكانيكا",
     "nameAr": "مهندس صيانة ميكانيكا"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس كهرباء",
-    "nameAr": "مهندس كهرباء"
   },
   {
     "category": "Engineering",
@@ -1835,19 +1645,9 @@
     "nameAr": "مهندس معمار"
   },
   {
-    "category": "Warehousing & Logistics",
-    "name": "مسؤول مشتريات وتوريدات",
-    "nameAr": "مسؤول مشتريات وتوريدات"
-  },
-  {
     "category": "Drivers & Logistics",
     "name": "مراقب حركة",
     "nameAr": "مراقب حركة"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "name": "مساعد أمين مخزن",
-    "nameAr": "مساعد أمين مخزن"
   },
   {
     "category": "Specialized & Other",
@@ -1858,11 +1658,6 @@
     "category": "Sales & Marketing",
     "name": "مسئول تسويق",
     "nameAr": "مسئول تسويق"
-  },
-  {
-    "category": "Drivers & Logistics",
-    "name": "سائق رخصة ثانية",
-    "nameAr": "سائق رخصة ثانية"
   },
   {
     "category": "Specialized & Other",
@@ -1905,11 +1700,6 @@
     "nameAr": "سائق كلارك"
   },
   {
-    "category": "Quality & Inspection",
-    "name": "مشرف جودة",
-    "nameAr": "مشرف جودة"
-  },
-  {
     "category": "Specialized & Other",
     "name": "تمام تناسبني",
     "nameAr": "تمام تناسبني"
@@ -1918,11 +1708,6 @@
     "category": "HR & Administration",
     "name": "أمن إداري",
     "nameAr": "أمن إداري"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "محامي",
-    "nameAr": "محامي"
   },
   {
     "category": "Specialized & Other",
@@ -1950,24 +1735,9 @@
     "nameAr": "فنى كهرباء وتكيف"
   },
   {
-    "category": "Maintenance & Technical",
-    "name": "كهربائي سيارات",
-    "nameAr": "كهربائي سيارات"
-  },
-  {
-    "category": "Drivers & Logistics",
-    "name": "سائق رخصة أولى",
-    "nameAr": "سائق رخصة أولى"
-  },
-  {
     "category": "Specialized & Other",
     "name": "Receiving team leader",
     "nameAr": "Receiving team leader"
-  },
-  {
-    "category": "Drivers & Logistics",
-    "name": "سائق رخصة ثالثة",
-    "nameAr": "سائق رخصة ثالثة"
   },
   {
     "category": "Drivers & Logistics",
@@ -1996,18 +1766,8 @@
   },
   {
     "category": "Maintenance & Technical",
-    "name": "فني صيانة عامة",
-    "nameAr": "فني صيانة عامة"
-  },
-  {
-    "category": "Maintenance & Technical",
     "name": "فني خياطة",
     "nameAr": "فني خياطة"
-  },
-  {
-    "category": "Accounting & Finance",
-    "name": "كاشير",
-    "nameAr": "كاشير"
   },
   {
     "category": "Production & Manufacturing",
@@ -2040,16 +1800,6 @@
     "nameAr": "اخصائي مشتريات"
   },
   {
-    "category": "Maintenance & Technical",
-    "name": "فني سلامة وصحة مهنية",
-    "nameAr": "فني سلامة وصحة مهنية"
-  },
-  {
-    "category": "Sales & Marketing",
-    "name": "مدير مبيعات",
-    "nameAr": "مدير مبيعات"
-  },
-  {
     "category": "Specialized & Other",
     "name": "مشرف تنفيذ",
     "nameAr": "مشرف تنفيذ"
@@ -2075,24 +1825,9 @@
     "nameAr": "موارد بشرية"
   },
   {
-    "category": "HR & Administration",
-    "name": "أخصائي موارد بشرية",
-    "nameAr": "أخصائي موارد بشرية"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "أخصائي سلامة وصحة مهنية",
-    "nameAr": "أخصائي سلامة وصحة مهنية"
-  },
-  {
     "category": "Specialized & Other",
     "name": "ممثل خدمة العملاء",
     "nameAr": "ممثل خدمة العملاء"
-  },
-  {
-    "category": "Accounting & Finance",
-    "name": "محاسب عملاء وموردين",
-    "nameAr": "محاسب عملاء وموردين"
   },
   {
     "category": "Quality & Inspection",
@@ -2120,11 +1855,6 @@
     "nameAr": "مهندس سلامه وصحة مهنية"
   },
   {
-    "category": "Engineering",
-    "name": "مهندس ميكاترونكس",
-    "nameAr": "مهندس ميكاترونكس"
-  },
-  {
     "category": "HR & Administration",
     "name": "HR  Personnel",
     "nameAr": "HR  Personnel"
@@ -2150,24 +1880,9 @@
     "nameAr": "ممثل خدمه عملاء"
   },
   {
-    "category": "Engineering",
-    "name": "مهندس زراعي",
-    "nameAr": "مهندس زراعي"
-  },
-  {
     "category": "Production & Manufacturing",
     "name": "موظف شئون العاملين",
     "nameAr": "موظف شئون العاملين"
-  },
-  {
-    "category": "Accounting & Finance",
-    "name": "محاسب قانوني",
-    "nameAr": "محاسب قانوني"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مدير فرع",
-    "nameAr": "مدير فرع"
   },
   {
     "category": "Specialized & Other",
@@ -2175,19 +1890,9 @@
     "nameAr": "مدير مالى"
   },
   {
-    "category": "Warehousing & Logistics",
-    "name": "مدير مخازن",
-    "nameAr": "مدير مخازن"
-  },
-  {
     "category": "Specialized & Other",
     "name": "مراقب وقت",
     "nameAr": "مراقب وقت"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مشرف تشطيبات وديكور",
-    "nameAr": "مشرف تشطيبات وديكور"
   },
   {
     "category": "Sales & Marketing",
@@ -2206,28 +1911,8 @@
   },
   {
     "category": "Engineering",
-    "name": "مهندس مدني",
-    "nameAr": "مهندس مدني"
-  },
-  {
-    "category": "Engineering",
     "name": "مهندس مدنى موقع",
     "nameAr": "مهندس مدنى موقع"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس معماري",
-    "nameAr": "مهندس معماري"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس موقع",
-    "nameAr": "مهندس موقع"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "name": "رئيس قسم المعامل",
-    "nameAr": "رئيس قسم المعامل"
   },
   {
     "category": "Specialized & Other",
@@ -2245,19 +1930,9 @@
     "nameAr": "محاسب إقليمى"
   },
   {
-    "category": "Accounting & Finance",
-    "name": "محاسب عام",
-    "nameAr": "محاسب عام"
-  },
-  {
     "category": "Specialized & Other",
     "name": "مدير إنشاءات مدنى",
     "nameAr": "مدير إنشاءات مدنى"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "name": "مدير مشتريات",
-    "nameAr": "مدير مشتريات"
   },
   {
     "category": "Production & Manufacturing",
@@ -2278,16 +1953,6 @@
     "category": "Specialized & Other",
     "name": "مشرف تنفيذ إنشاءات",
     "nameAr": "مشرف تنفيذ إنشاءات"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مشرف عام",
-    "nameAr": "مشرف عام"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "منسق مشروعات",
-    "nameAr": "منسق مشروعات"
   },
   {
     "category": "Engineering",
@@ -2315,11 +1980,6 @@
     "nameAr": "Data Analytics"
   },
   {
-    "category": "HR & Administration",
-    "name": "HR Specialest",
-    "nameAr": "أخصائي موارد بشرية"
-  },
-  {
     "category": "Specialized & Other",
     "name": "Team Leader",
     "nameAr": "Team Leader"
@@ -2330,24 +1990,9 @@
     "nameAr": "مدير شبكات"
   },
   {
-    "category": "Accounting & Finance",
-    "name": "محاسب تكاليف",
-    "nameAr": "محاسب تكاليف"
-  },
-  {
     "category": "Specialized & Other",
     "name": "مدير سلامة و صحة مهنية",
     "nameAr": "مدير سلامة و صحة مهنية"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس صيانة ميكانيكية",
-    "nameAr": "مهندس صيانة ميكانيكية"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس مدني تصميم",
-    "nameAr": "مهندس مدني تصميم"
   },
   {
     "category": "Engineering",
@@ -2355,19 +2000,9 @@
     "nameAr": "مهندس مدني تنفيذ"
   },
   {
-    "category": "Engineering",
-    "name": "مهندس مكتب فني",
-    "nameAr": "مهندس مكتب فني"
-  },
-  {
     "category": "HR & Administration",
     "name": "Asst HR Manager",
     "nameAr": "Asst HR Manager"
-  },
-  {
-    "category": "Sales & Marketing",
-    "name": "Chief Revenue Officer - CRO",
-    "nameAr": "رئيس قطاع الإيرادات (CRO)"
   },
   {
     "category": "Specialized & Other",
@@ -2380,11 +2015,6 @@
     "nameAr": "SOC Analyst T1"
   },
   {
-    "category": "Accounting & Finance",
-    "name": "مدير حسابات",
-    "nameAr": "مدير حسابات"
-  },
-  {
     "category": "Specialized & Other",
     "name": "مديرة مكتب",
     "nameAr": "مديرة مكتب"
@@ -2393,16 +2023,6 @@
     "category": "Specialized & Other",
     "name": "مراجع فواتير و شيكات",
     "nameAr": "مراجع فواتير و شيكات"
-  },
-  {
-    "category": "Engineering",
-    "name": "مساعد مساح",
-    "nameAr": "مساعد مساح"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس موقع مدني",
-    "nameAr": "مهندس موقع مدني"
   },
   {
     "category": "Specialized & Other",
@@ -2465,16 +2085,6 @@
     "nameAr": "مشرف ميكانيكا"
   },
   {
-    "category": "Engineering",
-    "name": "مهندس جيولوجي",
-    "nameAr": "مهندس جيولوجي"
-  },
-  {
-    "category": "HR & Administration",
-    "name": "موظف استقبال",
-    "nameAr": "موظف استقبال"
-  },
-  {
     "category": "Warehousing & Logistics",
     "name": "Demand Planning",
     "nameAr": "مخطط طلب وتوريد"
@@ -2511,16 +2121,6 @@
   },
   {
     "category": "Engineering",
-    "name": "مهندس تنفيذي",
-    "nameAr": "مهندس تنفيذي"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس كهرباء موقع",
-    "nameAr": "مهندس كهرباء موقع"
-  },
-  {
-    "category": "Engineering",
     "name": "Embedded software",
     "nameAr": "Embedded software"
   },
@@ -2533,11 +2133,6 @@
     "category": "Engineering",
     "name": "IT consultant",
     "nameAr": "IT consultant"
-  },
-  {
-    "category": "Accounting & Finance",
-    "name": "رئيس حسابات",
-    "nameAr": "رئيس حسابات"
   },
   {
     "category": "Engineering",
@@ -2560,11 +2155,6 @@
     "nameAr": "Tec Office Engineer"
   },
   {
-    "category": "HR & Administration",
-    "name": "موظف شؤون عاملين",
-    "nameAr": "موظف شؤون عاملين"
-  },
-  {
     "category": "Engineering",
     "name": "مهندس تنفيذ مدني",
     "nameAr": "مهندس تنفيذ مدني"
@@ -2580,19 +2170,9 @@
     "nameAr": "مشرف تنفيذي معماري"
   },
   {
-    "category": "Warehousing & Logistics",
-    "name": "مشرف مخازن",
-    "nameAr": "مشرف مخازن"
-  },
-  {
     "category": "Engineering",
     "name": "مهندس تصميم كهربى",
     "nameAr": "مهندس تصميم كهربى"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس مدني مكتب فني",
-    "nameAr": "مهندس مدني مكتب فني"
   },
   {
     "category": "Engineering",
@@ -2610,11 +2190,6 @@
     "nameAr": "مندوب مبيعات خارجيه"
   },
   {
-    "category": "Specialized & Other",
-    "name": "منسق عمليات",
-    "nameAr": "منسق عمليات"
-  },
-  {
     "category": "Engineering",
     "name": "مهندس كهرباء مكتب و موقع",
     "nameAr": "مهندس كهرباء مكتب و موقع"
@@ -2623,16 +2198,6 @@
     "category": "Specialized & Other",
     "name": "Video Editor",
     "nameAr": "Video Editor"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مسؤول قطع الجملة",
-    "nameAr": "مسؤول قطع الجملة"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس تنفيذ",
-    "nameAr": "مهندس تنفيذ"
   },
   {
     "category": "Engineering",
@@ -2656,11 +2221,6 @@
   },
   {
     "category": "Engineering",
-    "name": "مهندس كهرباء مكتب فني",
-    "nameAr": "مهندس كهرباء مكتب فني"
-  },
-  {
-    "category": "Engineering",
     "name": "مهندس موقع تنفيذ",
     "nameAr": "مهندس موقع تنفيذ"
   },
@@ -2668,11 +2228,6 @@
     "category": "Engineering",
     "name": "QS engineer",
     "nameAr": "QS engineer"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس بحث وتطوير",
-    "nameAr": "مهندس بحث وتطوير"
   },
   {
     "category": "Engineering",
@@ -2688,16 +2243,6 @@
     "category": "Specialized & Other",
     "name": "مترجم لغة إنجليزية",
     "nameAr": "مترجم لغة إنجليزية"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مدقق أيزو 9001",
-    "nameAr": "مدقق أيزو 9001"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس صوت",
-    "nameAr": "مهندس صوت"
   },
   {
     "category": "Specialized & Other",
@@ -2718,11 +2263,6 @@
     "category": "Maintenance & Technical",
     "name": "فني صيانة",
     "nameAr": "فني صيانة"
-  },
-  {
-    "category": "Accounting & Finance",
-    "name": "محاسب موقع ومشتريات",
-    "nameAr": "محاسب موقع ومشتريات"
   },
   {
     "category": "Sales & Marketing",
@@ -2751,11 +2291,6 @@
   },
   {
     "category": "Specialized & Other",
-    "name": "مدير صحة وسلامة مهنية",
-    "nameAr": "مدير صحة وسلامة مهنية"
-  },
-  {
-    "category": "Specialized & Other",
     "name": "مراجع مطلبات تأمين",
     "nameAr": "مراجع مطلبات تأمين"
   },
@@ -2778,11 +2313,6 @@
     "category": "Specialized & Other",
     "name": "مدير علاقات العامة",
     "nameAr": "مدير علاقات العامة"
-  },
-  {
-    "category": "HR & Administration",
-    "name": "أخصائي شؤون إدارية",
-    "nameAr": "أخصائي شؤون إدارية"
   },
   {
     "category": "Engineering",
@@ -2841,16 +2371,6 @@
   },
   {
     "category": "Specialized & Other",
-    "name": "محلل بيانات",
-    "nameAr": "محلل بيانات"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس معماري موقع",
-    "nameAr": "مهندس معماري موقع"
-  },
-  {
-    "category": "Specialized & Other",
     "name": "موظف شئون قانونيه",
     "nameAr": "موظف شئون قانونيه"
   },
@@ -2863,11 +2383,6 @@
     "category": "Engineering",
     "name": "مهندس تراخيص",
     "nameAr": "مهندس تراخيص"
-  },
-  {
-    "category": "Sales & Marketing",
-    "name": "مشرف مبيعات",
-    "nameAr": "مشرف مبيعات"
   },
   {
     "category": "Production & Manufacturing",
@@ -2960,11 +2475,6 @@
     "nameAr": "موارد بشريه"
   },
   {
-    "category": "Accounting & Finance",
-    "name": "محاسب عملاء",
-    "nameAr": "محاسب عملاء"
-  },
-  {
     "category": "Engineering",
     "name": "مهندس HVAC مكتب فني",
     "nameAr": "مهندس HVAC مكتب فني"
@@ -3006,11 +2516,6 @@
   },
   {
     "category": "Engineering",
-    "name": "مهندس إنتاج",
-    "nameAr": "مهندس إنتاج"
-  },
-  {
-    "category": "Engineering",
     "name": "مهندس موقع معمارى",
     "nameAr": "مهندس موقع معمارى"
   },
@@ -3018,11 +2523,6 @@
     "category": "Specialized & Other",
     "name": "Copywriter",
     "nameAr": "Copywriter"
-  },
-  {
-    "category": "Quality & Inspection",
-    "name": "كيميائي",
-    "nameAr": "كيميائي"
   },
   {
     "category": "Engineering",
@@ -3033,16 +2533,6 @@
     "category": "Sales & Marketing",
     "name": "Key Account Manager",
     "nameAr": "Key Account Manager"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Human Rescources",
-    "nameAr": "موارد بشرية"
-  },
-  {
-    "category": "HR & Administration",
-    "name": "CEO - GM - Director",
-    "nameAr": "رئيس تنفيذي / مدير عام"
   },
   {
     "category": "Specialized & Other",
@@ -3060,19 +2550,9 @@
     "nameAr": "Area manager"
   },
   {
-    "category": "Specialized & Other",
-    "name": "مدير مدفوعات",
-    "nameAr": "مدير مدفوعات"
-  },
-  {
     "category": "Sales & Marketing",
     "name": "Account Manager",
     "nameAr": "Account Manager"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "name": "مدير شؤون العاملين",
-    "nameAr": "مدير شؤون العاملين"
   },
   {
     "category": "Specialized & Other",
@@ -3080,19 +2560,9 @@
     "nameAr": "Content Writer"
   },
   {
-    "category": "Accounting & Finance",
-    "name": "محاسب موقع",
-    "nameAr": "محاسب موقع"
-  },
-  {
     "category": "Specialized & Other",
     "name": "Internal Audit",
     "nameAr": "Internal Audit"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "موظف شؤون قانونية",
-    "nameAr": "موظف شؤون قانونية"
   },
   {
     "category": "Specialized & Other",
@@ -3108,16 +2578,6 @@
     "category": "Specialized & Other",
     "name": "Recruitment",
     "nameAr": "Recruitment"
-  },
-  {
-    "category": "Accounting & Finance",
-    "name": "أخصائي علاقات عمالية",
-    "nameAr": "أخصائي علاقات عمالية"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "Chef Bakery",
-    "nameAr": "شيف مخبوزات وحلويات"
   },
   {
     "category": "Specialized & Other",
@@ -3155,11 +2615,6 @@
     "nameAr": "مدير شؤون عاملين"
   },
   {
-    "category": "Accounting & Finance",
-    "name": "Cost control",
-    "nameAr": "مراقب تكاليف"
-  },
-  {
     "category": "Specialized & Other",
     "name": "مشغل محطة خرسانة",
     "nameAr": "مشغل محطة خرسانة"
@@ -3171,11 +2626,6 @@
   },
   {
     "category": "Quality & Inspection",
-    "name": "فني جودة خرسانة",
-    "nameAr": "فني جودة خرسانة"
-  },
-  {
-    "category": "Quality & Inspection",
     "name": "مدير جودة خرسانة",
     "nameAr": "مدير جودة خرسانة"
   },
@@ -3183,11 +2633,6 @@
     "category": "Specialized & Other",
     "name": "مشرف تنفيذ خرسانه",
     "nameAr": "مشرف تنفيذ خرسانه"
-  },
-  {
-    "category": "Engineering",
-    "name": "QC Engineer",
-    "nameAr": "مهندس جودة"
   },
   {
     "category": "Specialized & Other",
@@ -3241,21 +2686,6 @@
   },
   {
     "category": "Engineering",
-    "name": "مهندس جودة خرسانة",
-    "nameAr": "مهندس جودة خرسانة"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مدير موقع",
-    "nameAr": "مدير موقع"
-  },
-  {
-    "category": "HR & Administration",
-    "name": "مدير إداري",
-    "nameAr": "مدير إداري"
-  },
-  {
-    "category": "Engineering",
     "name": "مكتب فني",
     "nameAr": "مكتب فني"
   },
@@ -3278,11 +2708,6 @@
     "category": "Engineering",
     "name": "مهندس مكتب فنى موقع",
     "nameAr": "مهندس مكتب فنى موقع"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس ميكانيكا مكتب فني",
-    "nameAr": "مهندس ميكانيكا مكتب فني"
   },
   {
     "category": "HR & Administration",
@@ -3316,23 +2741,8 @@
   },
   {
     "category": "Production & Manufacturing",
-    "name": "مدير تشغيل مطاعم",
-    "nameAr": "مدير تشغيل مطاعم"
-  },
-  {
-    "category": "Production & Manufacturing",
     "name": "رئيس شئون العاملين",
     "nameAr": "رئيس شئون العاملين"
-  },
-  {
-    "category": "HR & Administration",
-    "name": "HR Operation Manager",
-    "nameAr": "مدير عمليات الموارد البشرية"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مساعد مدير",
-    "nameAr": "مساعد مدير"
   },
   {
     "category": "Quality & Inspection",
@@ -3340,44 +2750,9 @@
     "nameAr": "PA/QA"
   },
   {
-    "category": "HR & Administration",
-    "name": "HR Personnel",
-    "nameAr": "أخصائي شؤون عاملين"
-  },
-  {
-    "category": "Accounting & Finance",
-    "name": "محاسب موردين",
-    "nameAr": "محاسب موردين"
-  },
-  {
     "category": "Accounting & Finance",
     "name": "مراجع حسابات",
     "nameAr": "مراجع حسابات"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "name": "أخصائي استيراد",
-    "nameAr": "أخصائي استيراد"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "name": "أخصائي تصدير",
-    "nameAr": "أخصائي تصدير"
-  },
-  {
-    "category": "Production & Manufacturing",
-    "name": "عامل مخازن",
-    "nameAr": "عامل مخازن"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مخلص جمركي",
-    "nameAr": "مخلص جمركي"
-  },
-  {
-    "category": "Warehousing & Logistics",
-    "name": "مدير تصدير",
-    "nameAr": "مدير تصدير"
   },
   {
     "category": "Warehousing & Logistics",
@@ -3415,29 +2790,9 @@
     "nameAr": "مدير محطة مياة"
   },
   {
-    "category": "HR & Administration",
-    "name": "مدير مشروع",
-    "nameAr": "مدير مشروع"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مدير مصنع",
-    "nameAr": "مدير مصنع"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مدير مصنع كرتون",
-    "nameAr": "مدير مصنع كرتون"
-  },
-  {
     "category": "Specialized & Other",
     "name": "مراقب وقت (Timekeeper)",
     "nameAr": "مراقب وقت (Timekeeper)"
-  },
-  {
-    "category": "HR & Administration",
-    "name": "مسؤول توظيف",
-    "nameAr": "مسؤول توظيف"
   },
   {
     "category": "Engineering",
@@ -3491,28 +2846,8 @@
   },
   {
     "category": "Engineering",
-    "name": "مهندس خدمة ما بعد البيع",
-    "nameAr": "مهندس خدمة ما بعد البيع"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس صيانة وتشغيل (أمونيا وتبريد)",
-    "nameAr": "مهندس صيانة وتشغيل (أمونيا وتبريد)"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس مبيعات",
-    "nameAr": "مهندس مبيعات"
-  },
-  {
-    "category": "Engineering",
     "name": "مهندس مدنى مشروعات",
     "nameAr": "مهندس مدنى مشروعات"
-  },
-  {
-    "category": "Engineering",
-    "name": "مهندس مكتب فني مبتدئ",
-    "nameAr": "مهندس مكتب فني مبتدئ"
   },
   {
     "category": "Engineering",
@@ -3520,64 +2855,14 @@
     "nameAr": "مهندسين انتاج"
   },
   {
-    "category": "Production & Manufacturing",
-    "name": "عامل فحص قماش",
-    "nameAr": "عامل فحص قماش"
-  },
-  {
-    "category": "Quality & Inspection",
-    "name": "فني معمل",
-    "nameAr": "فني معمل"
-  },
-  {
     "category": "Specialized & Other",
     "name": "خياط كورديلا (كوع / كوز)",
     "nameAr": "خياط كورديلا (كوع / كوز)"
   },
   {
-    "category": "Maintenance & Technical",
-    "name": "فني ألوميتال",
-    "nameAr": "فني ألوميتال"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني إلكترونيات",
-    "nameAr": "فني إلكترونيات"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني تبريد وتكييف",
-    "nameAr": "فني تبريد وتكييف"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني تركيبات",
-    "nameAr": "فني تركيبات"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني تشطيب ملابس",
-    "nameAr": "فني تشطيب ملابس"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني تشغيل ماكينات",
-    "nameAr": "فني تشغيل ماكينات"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني تطريز",
-    "nameAr": "فني تطريز"
-  },
-  {
     "category": "Quality & Inspection",
     "name": "فني جودة متخصص في بنطلونات الجينز",
     "nameAr": "فني جودة متخصص في بنطلونات الجينز"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني حدادة",
-    "nameAr": "فني حدادة"
   },
   {
     "category": "Maintenance & Technical",
@@ -3591,63 +2876,8 @@
   },
   {
     "category": "Maintenance & Technical",
-    "name": "فني صباغة",
-    "nameAr": "فني صباغة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني صيانة ميكانيكية",
-    "nameAr": "فني صيانة ميكانيكية"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني ضواغط هواء",
-    "nameAr": "فني ضواغط هواء"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني طباعة",
-    "nameAr": "فني طباعة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني غلايات",
-    "nameAr": "فني غلايات"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني قص",
-    "nameAr": "فني قص"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني كهرباء",
-    "nameAr": "فني كهرباء"
-  },
-  {
-    "category": "Maintenance & Technical",
     "name": "فني كهرباء باور",
     "nameAr": "فني كهرباء باور"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني لحام",
-    "nameAr": "فني لحام"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني مصاعد",
-    "nameAr": "فني مصاعد"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني نجارة",
-    "nameAr": "فني نجارة"
-  },
-  {
-    "category": "Maintenance & Technical",
-    "name": "فني هيدروليك",
-    "nameAr": "فني هيدروليك"
   },
   {
     "category": "Maintenance & Technical",
@@ -3691,28 +2921,13 @@
   },
   {
     "category": "Production & Manufacturing",
-    "name": "مشرف عمال",
-    "nameAr": "مشرف عمال"
-  },
-  {
-    "category": "Production & Manufacturing",
     "name": "مشغل إنتاج",
     "nameAr": "مشغل إنتاج"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مصمم جرافيك",
-    "nameAr": "مصمم جرافيك"
   },
   {
     "category": "Production & Manufacturing",
     "name": "موظف بوفيه",
     "nameAr": "موظف بوفيه"
-  },
-  {
-    "category": "Sales & Marketing",
-    "name": "بائع ملابس",
-    "nameAr": "بائع ملابس"
   },
   {
     "category": "Sales & Marketing",
@@ -3723,21 +2938,6 @@
     "category": "Sales & Marketing",
     "name": "مدير مبيعات قطاع الهوريكا وكبار الموزعين",
     "nameAr": "مدير مبيعات قطاع الهوريكا وكبار الموزعين"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مسؤول علاقات عامة",
-    "nameAr": "مسؤول علاقات عامة"
-  },
-  {
-    "category": "Sales & Marketing",
-    "name": "مستشار مبيعات تجزئة",
-    "nameAr": "مستشار مبيعات تجزئة"
-  },
-  {
-    "category": "Sales & Marketing",
-    "name": "مندوب دعاية طبية",
-    "nameAr": "مندوب دعاية طبية"
   },
   {
     "category": "Sales & Marketing",
@@ -3755,24 +2955,9 @@
     "nameAr": "مندوب مبيعات B2B"
   },
   {
-    "category": "Specialized & Other",
-    "name": "منسق ممرات",
-    "nameAr": "منسق ممرات"
-  },
-  {
     "category": "Sales & Marketing",
     "name": "منسقة مبيعات داخلية",
     "nameAr": "منسقة مبيعات داخلية"
-  },
-  {
-    "category": "Sales & Marketing",
-    "name": "موظف مبيعات داخلية",
-    "nameAr": "موظف مبيعات داخلية"
-  },
-  {
-    "category": "Drivers & Logistics",
-    "name": "سائق ريتش تراك",
-    "nameAr": "سائق ريتش تراك"
   },
   {
     "category": "Specialized & Other",
@@ -3785,19 +2970,9 @@
     "nameAr": "أخصائي قانوني"
   },
   {
-    "category": "Warehousing & Logistics",
-    "name": "أخصائي لوجستيات",
-    "nameAr": "أخصائي لوجستيات"
-  },
-  {
     "category": "Specialized & Other",
     "name": "أوفيس جيرل",
     "nameAr": "أوفيس جيرل"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "براد اسطمبات حقن بلاستيك",
-    "nameAr": "براد اسطمبات حقن بلاستيك"
   },
   {
     "category": "Specialized & Other",
@@ -3811,23 +2986,8 @@
   },
   {
     "category": "Specialized & Other",
-    "name": "صيدلي",
-    "nameAr": "صيدلي"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "طبيب بيطري",
-    "nameAr": "طبيب بيطري"
-  },
-  {
-    "category": "Specialized & Other",
     "name": "مدرب",
     "nameAr": "مدرب"
-  },
-  {
-    "category": "Specialized & Other",
-    "name": "مشغل ماكينة ليزر CNC",
-    "nameAr": "مشغل ماكينة ليزر CNC"
   },
   {
     "category": "Specialized & Other",

@@ -44,8 +44,21 @@ async function syncCatalog(req, res, next) {
   }
 }
 
+async function mergeDuplicates(req, res, next) {
+  try {
+    const { mergeDuplicateJobTitles } = require('../services/titleDeduplication.service');
+    const result = await mergeDuplicateJobTitles();
+    adminService.invalidateCatalogueCache();
+    const jobs = await adminService.getAllJobs(false);
+    return successResponse(res, { result, totalJobs: jobs.length }, 'Duplicate job titles merged successfully');
+  } catch (err) {
+    next(err);
+  }
+}
+
 module.exports = {
   getJobs,
   getCategories,
-  syncCatalog
+  syncCatalog,
+  mergeDuplicates
 };

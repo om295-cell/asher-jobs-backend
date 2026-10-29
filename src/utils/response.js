@@ -16,11 +16,12 @@ function successResponse(res, data = null, message = 'Success', statusCode = 200
   return res.status(statusCode).json(payload);
 }
 
-function errorResponse(res, message = 'An error occurred', statusCode = 500, code = 'ERROR', errors = null) {
+function errorResponse(res, message = 'An error occurred', statusCode = 500, code = 'ERROR', errors = null, extra = {}) {
   const payload = {
     success: false,
     message,
-    code
+    code,
+    ...extra
   };
 
   if (errors) {

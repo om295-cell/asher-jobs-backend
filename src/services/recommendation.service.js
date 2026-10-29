@@ -539,10 +539,25 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
 
   // If there are intra-form format or duplication errors
   if (Object.keys(validationErrors).length > 0) {
+    const errorDetails = Object.entries(validationErrors)
+      .map(([idxStr, errs]) => {
+        const idx = parseInt(idxStr, 10);
+        const p = people[idx];
+        const label = idx === 0 ? 'مقدم الطلب الأساسي' : `المرشح رقم ${idx}`;
+        const pName = p?.fullName?.trim() ? ` (${p.fullName.trim()})` : '';
+        const fieldIssues = [];
+        if (errs.fullName) fieldIssues.push('الاسم');
+        if (errs.phone) fieldIssues.push('رقم الهاتف');
+        if (errs.jobId || errs.titles) fieldIssues.push('المسمى الوظيفي');
+        if (errs.careerLevel) fieldIssues.push('مستوى الخبرة');
+        return `${label}${pName}${fieldIssues.length > 0 ? ` [${fieldIssues.join('، ')}]` : ''}`;
+      })
+      .join('، ');
+
     throw {
       statusCode: 400,
       code: 'VALIDATION_FAILED',
-      message: 'يرجى مراجعة البيانات وتصحيح الأخطاء الموضحة أدناه.',
+      message: `يوجد خطأ في بيانات: ${errorDetails}. يرجى مراجعة وتصحيح الحقول المحددة.`,
       errors: validationErrors,
       duplicateIndices
     };
@@ -563,10 +578,12 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
     for (const t of p.titles) {
       const job = jobMap.get(t.jobId.toString());
       if (!job) {
+        const label = p.index === 0 ? 'مقدم الطلب الأساسي' : `المرشح رقم ${p.index}`;
         throw {
           statusCode: 400,
           code: 'JOB_NOT_FOUND',
-          message: `الوظيفة المحددة للمرشح "${p.fullName}" غير موجودة في النظام.`
+          message: `الوظيفة المحددة لـ ${label} (${p.fullName}) غير موجودة في النظام.`,
+          invalidPersonIndex: p.index
         };
       }
       t.jobTitle = job.name || '';
@@ -739,12 +756,19 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
   });
 
   if (duplicateRecIndices.length > 0) {
+    const dupNames = duplicateRecIndices.map((idx) => {
+      const p = processedPeople[idx];
+      const label = idx === 0 ? 'مقدم الطلب الأساسي' : `المرشح رقم ${idx}`;
+      return `${label} (${p.fullName || p.phone})`;
+    });
+
     throw {
       statusCode: 409,
       code: 'DUPLICATE_PHONE',
-      message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
+      message: `رقم الهاتف مسجل بالفعل مسبقاً في النظام لـ: ${dupNames.join('، ')}، يرجى تغيير الرقم أو استبدال المرشح.`,
       duplicateIndices: duplicateRecIndices,
-      duplicatePhones: duplicateRecPhones
+      duplicatePhones: duplicateRecPhones,
+      duplicateNames: dupNames
     };
   }
 
@@ -758,9 +782,10 @@ async function submitRecommendationRequest({ people, legalAccepted, ip = '', use
       throw {
         statusCode: 409,
         code: 'DUPLICATE_PHONE',
-        message: 'هذا الشخص مسجل بالفعل مسبقاً، يرجى إدخال شخص آخر',
+        message: `رقم هاتف مقدم الطلب الأساسي (${primarySubmitter.fullName} - ${primarySubmitter.phone}) مسجل بالفعل مسبقاً في النظام.`,
         duplicateIndices: [0],
-        duplicatePhones: [primarySubmitter.phone]
+        duplicatePhones: [primarySubmitter.phone],
+        duplicateNames: [`مقدم الطلب الأساسي (${primarySubmitter.fullName})`]
       };
     }
   }

@@ -8,7 +8,8 @@ const { authorize } = require('../middleware/role.middleware');
 router.get('/', jobController.getJobs);
 router.get('/categories', jobController.getCategories);
 
-// Admin-only catalog synchronization
+// Admin-only catalog synchronization and title deduplication
 router.post('/sync-catalog', authenticate, authorize('admin'), jobController.syncCatalog);
+router.post('/merge-duplicates', authenticate, authorize('admin'), jobController.mergeDuplicates);
 
 module.exports = router;

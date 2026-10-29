@@ -35,7 +35,21 @@ function errorHandler(err, req, res, next) {
     ? 'An unexpected error occurred. Please contact support if the issue persists.'
     : (err.message || 'Internal Server Error');
 
-  return errorResponse(res, message, statusCode, err.code || 'SERVER_ERROR');
+  const extra = {};
+  if (Array.isArray(err.duplicateIndices)) {
+    extra.duplicateIndices = err.duplicateIndices;
+  }
+  if (Array.isArray(err.duplicatePhones)) {
+    extra.duplicatePhones = err.duplicatePhones;
+  }
+  if (Array.isArray(err.duplicateNames)) {
+    extra.duplicateNames = err.duplicateNames;
+  }
+  if (err.invalidPersonIndex !== undefined) {
+    extra.invalidPersonIndex = err.invalidPersonIndex;
+  }
+
+  return errorResponse(res, message, statusCode, err.code || 'SERVER_ERROR', err.errors || null, extra);
 }
 
 module.exports = {

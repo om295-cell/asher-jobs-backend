@@ -103,9 +103,9 @@ async function exportCart(req, res, next) {
   try {
     const cartService = require('../services/cart.service');
     const company = await companyService.getMyCompanyProfile(req.user._id);
-    const { buffer, filename } = await cartService.exportCartExcel(company, req.body, req);
+    const { buffer, filename, contentType } = await cartService.exportCartExcel(company, req.body, req);
 
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Type', contentType || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
     return res.status(200).send(buffer);
   } catch (err) {

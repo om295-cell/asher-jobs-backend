@@ -132,7 +132,7 @@ async function syncJobCatalog() {
   let createdCount = 0;
   let updatedCount = 0;
 
-  // Build bulkWrite operations for MASTER_JOBS
+  // Build bulkWrite operations for MASTER_JOBS (match by unique name)
   const bulkOps = [];
   for (let i = 0; i < MASTER_JOBS.length; i++) {
     const m = MASTER_JOBS[i];
@@ -141,7 +141,7 @@ async function syncJobCatalog() {
 
     bulkOps.push({
       updateOne: {
-        filter: { name: m.name, categoryId: targetCatId },
+        filter: { name: m.name },
         update: {
           $set: {
             name: m.name,
@@ -164,93 +164,11 @@ async function syncJobCatalog() {
     updatedCount += res.modifiedCount || 0;
   }
 
-  // Populate masterJobMap from current DB jobs
-  const allMasterJobs = await Job.find({ isActive: true }).lean();
-  for (const j of allMasterJobs) {
-    masterJobMap.set(j.name.toLowerCase().trim(), j);
-    masterJobMap.set(j.nameAr.trim(), j);
-  }
-
-
-  // 3. Move misplaced jobs and merge/delete duplicates in MongoDB
-  const allDbJobs = await Job.find({}).lean();
-  let movedCount = 0;
-  let mergedCount = 0;
-
-  for (const job of allDbJobs) {
-    const isMaster = MASTER_JOBS.some(
-      (m) => m.name === job.name && m.nameAr === job.nameAr
-    );
-
-    // Check alias mapping
-    const aliasKey = job.name.toLowerCase().trim();
-    const aliasArKey = job.nameAr.trim();
-    const targetCanonicalName = ALIASES[aliasKey] || ALIASES[aliasArKey];
-
-    if (targetCanonicalName) {
-      const canonicalDoc = masterJobMap.get(targetCanonicalName.toLowerCase());
-      if (canonicalDoc && String(canonicalDoc._id) !== String(job._id)) {
-        // Merge candidate references to canonical job, then delete duplicate
-        await Candidate.updateMany(
-          { desiredJobId: job._id },
-          { $set: { desiredJobId: canonicalDoc._id, jobTitle: canonicalDoc.nameAr } }
-        );
-        await Job.deleteOne({ _id: job._id });
-        mergedCount++;
-        continue;
-      }
-    }
-
-    // Check if job is in Accounting & Finance but belongs elsewhere
-    if (String(job.categoryId) === String(accountingCatId)) {
-      const title = `${job.name} ${job.nameAr}`.toLowerCase();
-
-      let newCatId = null;
-      if (/مخازن|مشتريات|توريد|تصدير|استيراد|جمرك|شحن|مستودع|warehouse|storekeeper|procurement|purchas|shipping|logistics|customs|import|export/.test(title)) {
-        newCatId = warehousingCatId;
-      } else if (/مهندس|مطور|مبرمج|شبكات|it|software|hardware|developer|programmer|engineer|flutter|bim|autocad|civil|mechanical|electrical/.test(title)) {
-        newCatId = engineeringCatId;
-      } else if (/hr|موارد بشرية|شؤون عاملين|شئون عاملين|شؤن|موظف إداري|استقبال|سكرتارية|سياحة|personnel|recruitment|admin|reception/.test(title)) {
-        newCatId = hrCatId;
-      } else if (/مبيعات|تسويق|عملاء|سلاسل|sales|marketing|customer|telemarketing|telesales|retail|b2b/.test(title)) {
-        // Only if not an accountant
-        if (!/محاسب|حسابات|accounting|accountant/.test(title)) {
-          newCatId = salesCatId;
-        }
-      } else if (/سائق|كلارك|ريتش تراك|driver|forklift/.test(title)) {
-        newCatId = driversCatId;
-      } else if (/فني|صيانة|كهربا|تبريد|تكييف|سباك|لحام|technician|maintenance|mechanic/.test(title)) {
-        newCatId = maintenanceCatId;
-      } else if (/جودة|معمل|كيميائي|quality|lab|chemist/.test(title)) {
-        newCatId = qualityCatId;
-      } else if (/إنتاج|عمال|تصنيع|نظافة|بوفيه|security|production|worker/.test(title)) {
-        newCatId = productionCatId;
-      }
-
-      if (newCatId) {
-        await Job.updateOne({ _id: job._id }, { $set: { categoryId: newCatId } });
-        movedCount++;
-      }
-    }
-
-    // Deduplicate by name/nameAr inside database
-    const duplicates = await Job.find({
-      _id: { $ne: job._id },
-      $or: [
-        { name: job.name },
-        { nameAr: job.nameAr }
-      ]
-    });
-
-    for (const dup of duplicates) {
-      await Candidate.updateMany(
-        { desiredJobId: dup._id },
-        { $set: { desiredJobId: job._id, jobTitle: job.nameAr } }
-      );
-      await Job.deleteOne({ _id: dup._id });
-      mergedCount++;
-    }
-  }
+  // 3. Comprehensive Cross-Category Deduplication & Reference Merge
+  const { mergeDuplicateJobTitles } = require('../services/titleDeduplication.service');
+  const dedupResult = await mergeDuplicateJobTitles();
+  const mergedCount = dedupResult.mergedJobsCount;
+  const movedCount = 0;
 
   // 4. Clean up any obsolete uncategorized or inactive duplicate jobs
   await JobCategory.deleteMany({

@@ -491,9 +491,29 @@ async function createJob(data) {
   if (!name || !nameAr || !categoryId) {
     throw { statusCode: 400, message: 'Job name (English & Arabic) and category are required.', code: 'FIELDS_REQUIRED' };
   }
+
+  const trimmedName = name.trim();
+  const trimmedNameAr = nameAr.trim();
+
+  // SEC-46: Prevent duplicate titles across all categories
+  const existingJob = await Job.findOne({
+    $or: [
+      { name: new RegExp(`^${escapeRegex(trimmedName)}$`, 'i') },
+      { nameAr: trimmedNameAr }
+    ]
+  }).lean();
+
+  if (existingJob) {
+    throw {
+      statusCode: 409,
+      message: `مسمى وظيفي بهذا الاسم موجود بالفعل (${existingJob.nameAr || existingJob.name}). لا يمكن تكرار نفس المسمى عبر الأقسام.`,
+      code: 'JOB_ALREADY_EXISTS'
+    };
+  }
+
   const job = await Job.create({
-    name: name.trim(),
-    nameAr: nameAr.trim(),
+    name: trimmedName,
+    nameAr: trimmedNameAr,
     categoryId,
     description: description || '',
     isActive: isActive !== undefined ? isActive : true,
@@ -504,6 +524,25 @@ async function createJob(data) {
 }
 
 async function updateJob(id, data) {
+  if (data.name || data.nameAr) {
+    const orConditions = [];
+    if (data.name) orConditions.push({ name: new RegExp(`^${escapeRegex(data.name.trim())}$`, 'i') });
+    if (data.nameAr) orConditions.push({ nameAr: data.nameAr.trim() });
+
+    const duplicate = await Job.findOne({
+      _id: { $ne: id },
+      $or: orConditions
+    }).lean();
+
+    if (duplicate) {
+      throw {
+        statusCode: 409,
+        message: `مسمى وظيفي بهذا الاسم موجود بالفعل (${duplicate.nameAr || duplicate.name}). لا يمكن تكرار نفس المسمى عبر الأقسام.`,
+        code: 'JOB_ALREADY_EXISTS'
+      };
+    }
+  }
+
   const job = await Job.findByIdAndUpdate(id, data, { new: true });
   if (!job) throw { statusCode: 404, message: 'Job not found.', code: 'JOB_NOT_FOUND' };
   invalidateCatalogueCache();

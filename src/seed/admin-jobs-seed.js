@@ -97,8 +97,6 @@ const JOBS = [
   { cat: "Production & Manufacturing", name: "Security Supervisor",               nameAr: "مشرف أمن" },
   { cat: "Production & Manufacturing", name: "Workers Supervisor",                nameAr: "مشرف عمال" },
   { cat: "Production & Manufacturing", name: "Cleaning Worker",                   nameAr: "عامل نظافة" },
-  { cat: "Production & Manufacturing", name: "Graphic Designer",                  nameAr: "مصمم جرافيك" },
-  { cat: "Production & Manufacturing", name: "Content Writer",                    nameAr: "كاتب محتوى" },
   // Sales & Marketing (11)
   { cat: "Sales & Marketing",          name: "Sales Representative",              nameAr: "مندوب مبيعات" },
   { cat: "Sales & Marketing",          name: "Sales Supervisor",                  nameAr: "مشرف مبيعات" },
