@@ -794,6 +794,14 @@ module.exports = {
   updateSubscriptionPlan,
   extractCandidatesExcel,
   searchMainCandidates,
-  executeCandidateImport
+  executeCandidateImport,
+  getCandidatesWithoutJobTitle: async function(req, res, next) {
+    try {
+      const result = await adminService.getCandidatesWithoutJobTitle();
+      return successResponse(res, result, 'Diagnostic: candidates without valid job title');
+    } catch (err) {
+      next(err);
+    }
+  }
 };
 

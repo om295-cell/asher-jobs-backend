@@ -118,6 +118,9 @@ router.patch('/reports/:id', adminController.resolveReport);
 // Activity Logs
 router.get('/activity', adminController.listActivityLogs);
 
+// Diagnostics
+router.get('/diagnostics/candidates-without-job', adminController.getCandidatesWithoutJobTitle);
+
 // System Settings
 router.get('/settings', adminController.getSettings);
 router.put('/settings', adminController.updateSetting);

@@ -700,6 +700,81 @@ module.exports = {
   deleteCategory,
   getSettings,
   updateSetting,
-  invalidateCatalogueCache
+  invalidateCatalogueCache,
+  getCandidatesWithoutJobTitle
 };
+
+// ── Diagnostic: candidates that have no valid active job title ──────────────
+async function getCandidatesWithoutJobTitle() {
+  // 1. Candidates where desiredJobId is null / missing
+  const nullJobId = await Candidate.find({
+    isDeleted: false,
+    $or: [{ desiredJobId: null }, { desiredJobId: { $exists: false } }]
+  })
+    .select('fullName phone accountStatus availabilityStatus createdAt desiredJobId')
+    .lean();
+
+  // 2. Candidates whose desiredJobId points to a non-existent or inactive Job
+  const badRef = await Candidate.aggregate([
+    { $match: { isDeleted: false, desiredJobId: { $ne: null, $exists: true } } },
+    {
+      $lookup: {
+        from: 'jobs',
+        localField: 'desiredJobId',
+        foreignField: '_id',
+        as: 'job'
+      }
+    },
+    {
+      $match: {
+        $or: [
+          { job: { $size: 0 } },          // job deleted from DB
+          { 'job.0.isActive': false }       // job exists but inactive
+        ]
+      }
+    },
+    {
+      $project: {
+        fullName: 1,
+        phone: 1,
+        accountStatus: 1,
+        availabilityStatus: 1,
+        createdAt: 1,
+        desiredJobId: 1,
+        jobExists: { $gt: [{ $size: '$job' }, 0] },
+        jobName: { $arrayElemAt: ['$job.name', 0] },
+        jobNameAr: { $arrayElemAt: ['$job.nameAr', 0] },
+        jobIsActive: { $arrayElemAt: ['$job.isActive', 0] }
+      }
+    }
+  ]);
+
+  return {
+    nullJobIdCount: nullJobId.length,
+    badRefCount: badRef.length,
+    totalIssues: nullJobId.length + badRef.length,
+    nullJobIdCandidates: nullJobId.map(c => ({
+      _id: c._id,
+      fullName: c.fullName,
+      phone: c.phone,
+      accountStatus: c.accountStatus,
+      availabilityStatus: c.availabilityStatus,
+      issue: 'no_job_id',
+      createdAt: c.createdAt
+    })),
+    badRefCandidates: badRef.map(c => ({
+      _id: c._id,
+      fullName: c.fullName,
+      phone: c.phone,
+      accountStatus: c.accountStatus,
+      availabilityStatus: c.availabilityStatus,
+      issue: c.jobExists ? 'job_inactive' : 'job_deleted',
+      jobId: c.desiredJobId,
+      jobName: c.jobName || c.jobNameAr || null,
+      jobIsActive: c.jobIsActive,
+      createdAt: c.createdAt
+    }))
+  };
+}
+
 
