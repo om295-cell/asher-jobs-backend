@@ -706,12 +706,17 @@ module.exports = {
 
 // ── Diagnostic: candidates that have no valid active job title ──────────────
 async function getCandidatesWithoutJobTitle() {
+  const totalCandidates = await Candidate.countDocuments({ isDeleted: false });
+  const totalJobs = await Job.countDocuments({});
+  const activeJobs = await Job.countDocuments({ isActive: true });
+
   // 1. Candidates where desiredJobId is null / missing
   const nullJobId = await Candidate.find({
     isDeleted: false,
     $or: [{ desiredJobId: null }, { desiredJobId: { $exists: false } }]
   })
-    .select('fullName phone accountStatus availabilityStatus createdAt desiredJobId')
+    .select('fullName phone accountStatus availabilityStatus createdAt desiredJobId desiredJobs')
+    .limit(100)
     .lean();
 
   // 2. Candidates whose desiredJobId points to a non-existent or inactive Job
@@ -741,6 +746,7 @@ async function getCandidatesWithoutJobTitle() {
         availabilityStatus: 1,
         createdAt: 1,
         desiredJobId: 1,
+        desiredJobs: 1,
         jobExists: { $gt: [{ $size: '$job' }, 0] },
         jobName: { $arrayElemAt: ['$job.name', 0] },
         jobNameAr: { $arrayElemAt: ['$job.nameAr', 0] },
@@ -749,31 +755,33 @@ async function getCandidatesWithoutJobTitle() {
     }
   ]);
 
+  const candidatesWithValidActiveJob = totalCandidates - (nullJobId.length + badRef.length);
+
+  // Group badRef by issue
+  const jobDeletedCount = badRef.filter(b => !b.jobExists).length;
+  const jobInactiveCount = badRef.filter(b => b.jobExists && !b.jobIsActive).length;
+
+  // Sample a few bad candidates with full desiredJobs to see if titles are preserved
+  const sampleBadCandidates = badRef.slice(0, 5).map(c => ({
+    _id: c._id,
+    fullName: c.fullName,
+    phone: c.phone,
+    desiredJobId: c.desiredJobId,
+    desiredJobs: c.desiredJobs,
+    issue: c.jobExists ? 'job_inactive' : 'job_deleted'
+  }));
+
   return {
+    totalCandidates,
+    totalJobs,
+    activeJobs,
+    candidatesWithValidActiveJob,
+    totalIssues: nullJobId.length + badRef.length,
     nullJobIdCount: nullJobId.length,
     badRefCount: badRef.length,
-    totalIssues: nullJobId.length + badRef.length,
-    nullJobIdCandidates: nullJobId.map(c => ({
-      _id: c._id,
-      fullName: c.fullName,
-      phone: c.phone,
-      accountStatus: c.accountStatus,
-      availabilityStatus: c.availabilityStatus,
-      issue: 'no_job_id',
-      createdAt: c.createdAt
-    })),
-    badRefCandidates: badRef.map(c => ({
-      _id: c._id,
-      fullName: c.fullName,
-      phone: c.phone,
-      accountStatus: c.accountStatus,
-      availabilityStatus: c.availabilityStatus,
-      issue: c.jobExists ? 'job_inactive' : 'job_deleted',
-      jobId: c.desiredJobId,
-      jobName: c.jobName || c.jobNameAr || null,
-      jobIsActive: c.jobIsActive,
-      createdAt: c.createdAt
-    }))
+    jobDeletedCount,
+    jobInactiveCount,
+    sampleBadCandidates
   };
 }
 
