@@ -836,38 +836,39 @@ async function restoreAndMergeTitles({ dryRun = true } = {}) {
   };
 
   if (!dryRun) {
-    // A. Create missing jobs using insertMany
-    const jobsToInsert = [];
+    // A. Create or find missing jobs safely
     for (const [norm, jobData] of missingJobsToCreate.entries()) {
-      jobsToInsert.push({
-        name: (jobData.name || jobData.nameAr || '').trim(),
-        nameAr: (jobData.nameAr || jobData.name || '').trim(),
-        categoryId: fallbackCategory ? fallbackCategory._id : null,
-        isActive: true,
-        sortOrder: 0
-      });
-    }
+      const cleanName = (jobData.name || jobData.nameAr || '').trim();
+      const cleanNameAr = (jobData.nameAr || jobData.name || '').trim();
+      if (!cleanName && !cleanNameAr) continue;
 
-    if (jobsToInsert.length > 0) {
-      try {
-        const createdJobs = await Job.insertMany(jobsToInsert, { ordered: false });
-        for (const newJob of createdJobs) {
-          const norm = normalizeTitle(newJob.nameAr) || normalizeTitle(newJob.name);
-          jobByNormTitle.set(norm, newJob);
-          existingJobIdSet.add(newJob._id.toString());
+      let existing = await Job.findOne({
+        $or: [
+          { name: cleanName },
+          { nameAr: cleanNameAr }
+        ]
+      });
+
+      if (!existing) {
+        try {
+          existing = await Job.create({
+            name: cleanName,
+            nameAr: cleanNameAr,
+            categoryId: fallbackCategory ? fallbackCategory._id : null,
+            isActive: true,
+            sortOrder: 0
+          });
+          executionResults.jobsCreatedCount++;
+        } catch (err) {
+          existing = await Job.findOne({
+            $or: [{ name: cleanName }, { nameAr: cleanNameAr }]
+          });
         }
-        executionResults.jobsCreatedCount = createdJobs.length;
-      } catch (insertErr) {
-        // If some duplicates in insertMany, fetch what was inserted
-        const createdJobs = await Job.find({
-          nameAr: { $in: jobsToInsert.map(j => j.nameAr) }
-        }).lean();
-        for (const newJob of createdJobs) {
-          const norm = normalizeTitle(newJob.nameAr) || normalizeTitle(newJob.name);
-          jobByNormTitle.set(norm, newJob);
-          existingJobIdSet.add(newJob._id.toString());
-        }
-        executionResults.jobsCreatedCount = createdJobs.length;
+      }
+
+      if (existing) {
+        jobByNormTitle.set(norm, existing);
+        existingJobIdSet.add(existing._id.toString());
       }
     }
 
