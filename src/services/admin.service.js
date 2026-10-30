@@ -836,21 +836,43 @@ async function restoreAndMergeTitles({ dryRun = true } = {}) {
   };
 
   if (!dryRun) {
-    // A. Create missing jobs
+    // A. Create missing jobs using insertMany
+    const jobsToInsert = [];
     for (const [norm, jobData] of missingJobsToCreate.entries()) {
-      const newJob = await Job.create({
-        name: jobData.name || jobData.nameAr,
-        nameAr: jobData.nameAr || jobData.name,
+      jobsToInsert.push({
+        name: (jobData.name || jobData.nameAr || '').trim(),
+        nameAr: (jobData.nameAr || jobData.name || '').trim(),
         categoryId: fallbackCategory ? fallbackCategory._id : null,
         isActive: true,
         sortOrder: 0
       });
-      jobByNormTitle.set(norm, newJob);
-      existingJobIdSet.add(newJob._id.toString());
-      executionResults.jobsCreatedCount++;
     }
 
-    // B. Bulk update candidates
+    if (jobsToInsert.length > 0) {
+      try {
+        const createdJobs = await Job.insertMany(jobsToInsert, { ordered: false });
+        for (const newJob of createdJobs) {
+          const norm = normalizeTitle(newJob.nameAr) || normalizeTitle(newJob.name);
+          jobByNormTitle.set(norm, newJob);
+          existingJobIdSet.add(newJob._id.toString());
+        }
+        executionResults.jobsCreatedCount = createdJobs.length;
+      } catch (insertErr) {
+        // If some duplicates in insertMany, fetch what was inserted
+        const createdJobs = await Job.find({
+          nameAr: { $in: jobsToInsert.map(j => j.nameAr) }
+        }).lean();
+        for (const newJob of createdJobs) {
+          const norm = normalizeTitle(newJob.nameAr) || normalizeTitle(newJob.name);
+          jobByNormTitle.set(norm, newJob);
+          existingJobIdSet.add(newJob._id.toString());
+        }
+        executionResults.jobsCreatedCount = createdJobs.length;
+      }
+    }
+
+    // B. Bulk update candidates using bulkWrite for maximum speed and safety
+    const candidateBulkOps = [];
     for (const item of candidateUpdates) {
       let finalJob = item.matchedJob;
       if (!finalJob && item.normTitle && jobByNormTitle.has(item.normTitle)) {
@@ -859,30 +881,48 @@ async function restoreAndMergeTitles({ dryRun = true } = {}) {
       }
 
       if (finalJob) {
-        const updateFields = {
-          desiredJobId: new mongoose.Types.ObjectId(finalJob._id)
-        };
-
-        // Also update primary job in desiredJobs array
-        await Candidate.updateOne(
-          { _id: new mongoose.Types.ObjectId(item.candidateId) },
-          {
-            $set: {
-              ...updateFields,
-              'desiredJobs.0.jobId': new mongoose.Types.ObjectId(finalJob._id)
+        candidateBulkOps.push({
+          updateOne: {
+            filter: { _id: new mongoose.Types.ObjectId(item.candidateId) },
+            update: {
+              $set: {
+                desiredJobId: new mongoose.Types.ObjectId(finalJob._id),
+                'desiredJobs.0.jobId': new mongoose.Types.ObjectId(finalJob._id)
+              }
             }
           }
-        );
-        executionResults.candidatesUpdatedCount++;
+        });
       }
     }
 
-    // C. Remove or deactivate duplicate jobs
+    if (candidateBulkOps.length > 0) {
+      const bulkRes = await Candidate.bulkWrite(candidateBulkOps, { ordered: false });
+      executionResults.candidatesUpdatedCount = (bulkRes.modifiedCount || 0) + (bulkRes.upsertedCount || 0);
+    }
+
+    // C. Remap secondJobId and thirdJobId if pointing to duplicates
     if (duplicateJobMap.size > 0) {
+      for (const [dupId, canonId] of duplicateJobMap.entries()) {
+        await Promise.all([
+          Candidate.updateMany(
+            { secondJobId: new mongoose.Types.ObjectId(dupId) },
+            { $set: { secondJobId: new mongoose.Types.ObjectId(canonId) } }
+          ),
+          Candidate.updateMany(
+            { thirdJobId: new mongoose.Types.ObjectId(dupId) },
+            { $set: { thirdJobId: new mongoose.Types.ObjectId(canonId) } }
+          )
+        ]);
+      }
+
+      // Remove duplicate jobs
       const dupIds = Array.from(duplicateJobMap.keys()).map(id => new mongoose.Types.ObjectId(id));
       const delResult = await Job.deleteMany({ _id: { $in: dupIds } });
       executionResults.duplicateJobsRemovedCount = delResult.deletedCount;
     }
+
+    // Clear catalogue cache
+    invalidateCatalogueCache();
   }
 
   return {
