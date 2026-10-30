@@ -802,6 +802,15 @@ module.exports = {
     } catch (err) {
       next(err);
     }
+  },
+  restoreAndMergeCandidateTitles: async function(req, res, next) {
+    try {
+      const dryRun = req.query.dryRun !== 'false';
+      const result = await adminService.restoreAndMergeTitles({ dryRun });
+      return successResponse(res, result, dryRun ? 'Preview of title restoration & duplicate merge' : 'Title restoration & duplicate merge executed successfully');
+    } catch (err) {
+      next(err);
+    }
   }
 };
 

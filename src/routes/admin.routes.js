@@ -120,6 +120,8 @@ router.get('/activity', adminController.listActivityLogs);
 
 // Diagnostics
 router.get('/diagnostics/candidates-without-job', adminController.getCandidatesWithoutJobTitle);
+router.post('/diagnostics/restore-titles', adminController.restoreAndMergeCandidateTitles);
+router.get('/diagnostics/restore-titles', adminController.restoreAndMergeCandidateTitles);
 
 // System Settings
 router.get('/settings', adminController.getSettings);

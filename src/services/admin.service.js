@@ -701,8 +701,204 @@ module.exports = {
   getSettings,
   updateSetting,
   invalidateCatalogueCache,
-  getCandidatesWithoutJobTitle
+  getCandidatesWithoutJobTitle,
+  restoreAndMergeTitles
 };
+
+function normalizeTitle(str) {
+  if (!str || typeof str !== 'string') return '';
+  return str
+    .trim()
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/[\u064B-\u065F\u0670]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
+// ── Restore candidate titles from when first added & merge duplicate titles ──
+async function restoreAndMergeTitles({ dryRun = true } = {}) {
+  // 1. Fetch all jobs
+  const allJobs = await Job.find({}).lean();
+  
+  // 2. Find or create fallback category for any restored jobs that don't exist
+  let fallbackCategory = await JobCategory.findOne({
+    $or: [{ systemGenerated: true }, { name: 'General' }, { nameAr: 'عام' }, { nameAr: 'أخرى' }]
+  });
+  if (!fallbackCategory) {
+    fallbackCategory = await JobCategory.findOne({ isActive: true });
+  }
+
+  // 3. Detect duplicate jobs by normalized nameAr / name
+  const jobByNormTitle = new Map(); // normTitle -> canonicalJob
+  const duplicateJobMap = new Map(); // duplicateJobIdString -> canonicalJobIdString
+  const duplicateGroups = [];
+
+  const groupedByNorm = new Map();
+  for (const job of allJobs) {
+    const norm = normalizeTitle(job.nameAr) || normalizeTitle(job.name);
+    if (!groupedByNorm.has(norm)) {
+      groupedByNorm.set(norm, []);
+    }
+    groupedByNorm.get(norm).push(job);
+  }
+
+  for (const [norm, list] of groupedByNorm.entries()) {
+    if (list.length > 1) {
+      // Pick canonical: prefer active, then oldest / lowest sortOrder
+      list.sort((a, b) => {
+        if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+        if ((a.sortOrder || 0) !== (b.sortOrder || 0)) return (a.sortOrder || 0) - (b.sortOrder || 0);
+        return new Date(a.createdAt) - new Date(b.createdAt);
+      });
+      const canonical = list[0];
+      const dupes = list.slice(1);
+      duplicateGroups.push({
+        normalized: norm,
+        canonical: { _id: canonical._id.toString(), name: canonical.name, nameAr: canonical.nameAr },
+        duplicates: dupes.map(d => ({ _id: d._id.toString(), name: d.name, nameAr: d.nameAr }))
+      });
+      for (const d of dupes) {
+        duplicateJobMap.set(d._id.toString(), canonical._id.toString());
+      }
+      jobByNormTitle.set(norm, canonical);
+    } else {
+      jobByNormTitle.set(norm, list[0]);
+    }
+  }
+
+  // Also map existing exact job IDs
+  const existingJobIdSet = new Set(allJobs.map(j => j._id.toString()));
+
+  // 4. Scan all candidates
+  const allCandidates = await Candidate.find({ isDeleted: false }).lean();
+
+  const candidateUpdates = [];
+  const missingJobsToCreate = new Map(); // normTitle -> { name, nameAr }
+  let alreadyValidCount = 0;
+
+  for (const c of allCandidates) {
+    let desiredJobIdStr = c.desiredJobId ? c.desiredJobId.toString() : null;
+    let needsUpdate = false;
+    let targetJob = null;
+
+    // Check if candidate has primary title text in desiredJobs
+    const primaryDesired = (c.desiredJobs && c.desiredJobs.length > 0) ? c.desiredJobs[0] : null;
+    const titleText = (primaryDesired?.jobTitleAr || primaryDesired?.jobTitle || '').trim();
+    const normTitleText = normalizeTitle(titleText);
+
+    // Case A: desiredJobId points to a duplicate job -> remap to canonical
+    if (desiredJobIdStr && duplicateJobMap.has(desiredJobIdStr)) {
+      const canonicalIdStr = duplicateJobMap.get(desiredJobIdStr);
+      targetJob = allJobs.find(j => j._id.toString() === canonicalIdStr);
+      needsUpdate = true;
+    }
+    // Case B: desiredJobId points to a deleted job (not in existingJobIdSet) or is null
+    else if (!desiredJobIdStr || !existingJobIdSet.has(desiredJobIdStr)) {
+      if (normTitleText && jobByNormTitle.has(normTitleText)) {
+        targetJob = jobByNormTitle.get(normTitleText);
+        needsUpdate = true;
+      } else if (normTitleText) {
+        // Needs creation
+        if (!missingJobsToCreate.has(normTitleText)) {
+          missingJobsToCreate.set(normTitleText, {
+            name: primaryDesired.jobTitle || primaryDesired.jobTitleAr,
+            nameAr: primaryDesired.jobTitleAr || primaryDesired.jobTitle
+          });
+        }
+        needsUpdate = true;
+      }
+    } else {
+      // Already points to existing job, check if title text matches or if already valid
+      alreadyValidCount++;
+    }
+
+    if (needsUpdate) {
+      candidateUpdates.push({
+        candidateId: c._id.toString(),
+        fullName: c.fullName,
+        phone: c.phone,
+        currentJobId: desiredJobIdStr,
+        originalTitle: titleText,
+        normTitle: normTitleText,
+        matchedJob: targetJob ? { _id: targetJob._id.toString(), nameAr: targetJob.nameAr } : null,
+        status: targetJob ? 'ready_to_remap' : 'needs_job_creation'
+      });
+    }
+  }
+
+  // 5. If NOT dryRun (real execution):
+  const executionResults = {
+    jobsCreatedCount: 0,
+    duplicateJobsRemovedCount: 0,
+    candidatesUpdatedCount: 0
+  };
+
+  if (!dryRun) {
+    // A. Create missing jobs
+    for (const [norm, jobData] of missingJobsToCreate.entries()) {
+      const newJob = await Job.create({
+        name: jobData.name || jobData.nameAr,
+        nameAr: jobData.nameAr || jobData.name,
+        categoryId: fallbackCategory ? fallbackCategory._id : null,
+        isActive: true,
+        sortOrder: 0
+      });
+      jobByNormTitle.set(norm, newJob);
+      existingJobIdSet.add(newJob._id.toString());
+      executionResults.jobsCreatedCount++;
+    }
+
+    // B. Bulk update candidates
+    for (const item of candidateUpdates) {
+      let finalJob = item.matchedJob;
+      if (!finalJob && item.normTitle && jobByNormTitle.has(item.normTitle)) {
+        const j = jobByNormTitle.get(item.normTitle);
+        finalJob = { _id: j._id.toString(), nameAr: j.nameAr };
+      }
+
+      if (finalJob) {
+        const updateFields = {
+          desiredJobId: new mongoose.Types.ObjectId(finalJob._id)
+        };
+
+        // Also update primary job in desiredJobs array
+        await Candidate.updateOne(
+          { _id: new mongoose.Types.ObjectId(item.candidateId) },
+          {
+            $set: {
+              ...updateFields,
+              'desiredJobs.0.jobId': new mongoose.Types.ObjectId(finalJob._id)
+            }
+          }
+        );
+        executionResults.candidatesUpdatedCount++;
+      }
+    }
+
+    // C. Remove or deactivate duplicate jobs
+    if (duplicateJobMap.size > 0) {
+      const dupIds = Array.from(duplicateJobMap.keys()).map(id => new mongoose.Types.ObjectId(id));
+      const delResult = await Job.deleteMany({ _id: { $in: dupIds } });
+      executionResults.duplicateJobsRemovedCount = delResult.deletedCount;
+    }
+  }
+
+  return {
+    dryRun,
+    totalCandidates: allCandidates.length,
+    alreadyValidCandidates: alreadyValidCount,
+    candidatesNeedingUpdate: candidateUpdates.length,
+    duplicateGroupsCount: duplicateGroups.length,
+    duplicateJobsCount: duplicateJobMap.size,
+    duplicateGroupsSample: duplicateGroups.slice(0, 10),
+    missingJobsToCreateCount: missingJobsToCreate.size,
+    missingJobsSample: Array.from(missingJobsToCreate.values()).slice(0, 10),
+    candidateUpdatesSample: candidateUpdates.slice(0, 10),
+    executionResults: dryRun ? null : executionResults
+  };
+}
 
 // ── Diagnostic: candidates that have no valid active job title ──────────────
 async function getCandidatesWithoutJobTitle() {
