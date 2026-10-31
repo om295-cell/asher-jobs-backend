@@ -952,13 +952,27 @@ async function getCandidatesWithoutJobTitle() {
   let cartDiagnostic = [];
   try {
     const cartService = require('./cart.service');
-    const companies = await Company.find({ isDeleted: false }).limit(10).lean();
-    for (const c of companies) {
+    const CandidateCart = require('../models/CandidateCart');
+    const existingCarts = await CandidateCart.find({}).lean();
+    cartDiagnostic.push({ totalExistingCarts: existingCarts.length });
+
+    for (const ec of existingCarts) {
       try {
-        const cart = await cartService.getCart(c._id);
-        cartDiagnostic.push({ companyId: c._id, companyName: c.companyName, status: 'ok', itemsCount: cart.items?.length || 0 });
+        const cart = await cartService.getCart(ec.companyId);
+        cartDiagnostic.push({
+          companyId: ec.companyId,
+          status: 'ok',
+          rawItemsCount: ec.items?.length,
+          enrichedItemsCount: cart.items?.length
+        });
       } catch (cErr) {
-        cartDiagnostic.push({ companyId: c._id, companyName: c.companyName, status: 'error', error: cErr.message, stack: cErr.stack });
+        cartDiagnostic.push({
+          companyId: ec.companyId,
+          status: 'error',
+          rawItems: ec.items,
+          error: cErr.message,
+          stack: cErr.stack
+        });
       }
     }
   } catch (err) {
