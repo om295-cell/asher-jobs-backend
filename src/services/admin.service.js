@@ -948,33 +948,42 @@ async function getCandidatesWithoutJobTitle() {
   const totalJobs = await Job.countDocuments({});
   const activeJobs = await Job.countDocuments({ isActive: true });
 
-  // Test getCart for ALL companies to diagnose any 500 errors
+  // Test getCart and getAccountEntitlementSummary for ALL companies to diagnose any 500 errors
   let cartDiagnostic = [];
   try {
     const cartService = require('./cart.service');
+    const entitlementService = require('./entitlement.service');
     const companies = await Company.find({ isDeleted: false }).lean();
     cartDiagnostic.push({ totalCompaniesFound: companies.length });
 
     for (const c of companies) {
+      const result = {
+        companyId: c._id,
+        companyName: c.companyName,
+        plan: c.subscriptionPlan
+      };
+
       try {
         const cart = await cartService.getCart(c._id);
-        cartDiagnostic.push({
-          companyId: c._id,
-          companyName: c.companyName,
-          plan: c.subscriptionPlan,
-          status: 'ok',
-          itemsCount: cart.items?.length || 0
-        });
+        result.cartStatus = 'ok';
+        result.cartItemsCount = cart.items?.length || 0;
       } catch (cErr) {
-        cartDiagnostic.push({
-          companyId: c._id,
-          companyName: c.companyName,
-          plan: c.subscriptionPlan,
-          status: 'error',
-          error: cErr.message,
-          stack: cErr.stack
-        });
+        result.cartStatus = 'error';
+        result.cartError = cErr.message;
+        result.cartStack = cErr.stack;
       }
+
+      try {
+        const ent = await entitlementService.getAccountEntitlementSummary(c._id);
+        result.entitlementStatus = 'ok';
+        result.dailySearchLimit = ent.planLimits?.dailySearchLimit;
+      } catch (eErr) {
+        result.entitlementStatus = 'error';
+        result.entitlementError = eErr.message;
+        result.entitlementStack = eErr.stack;
+      }
+
+      cartDiagnostic.push(result);
     }
   } catch (err) {
     cartDiagnostic.push({ status: 'outer_error', error: err.message, stack: err.stack });
