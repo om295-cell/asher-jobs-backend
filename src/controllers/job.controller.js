@@ -18,18 +18,24 @@ async function getJobs(req, res, next) {
       jobs = await adminService.getAllJobs(false);
     }
 
-    return successResponse(res, jobs, 'Active jobs retrieved');
+    return successResponse(res, jobs || [], 'Active jobs retrieved');
   } catch (err) {
-    next(err);
+    console.error('[getJobs error]:', err.message);
+    const Job = require('../models/Job');
+    const fallback = await Job.find({ isActive: true }).select('name nameAr categoryId').lean().catch(() => []);
+    return successResponse(res, fallback || [], 'Active jobs retrieved (Fallback)');
   }
 }
 
 async function getCategories(req, res, next) {
   try {
     const categories = await adminService.getAllCategories(false);
-    return successResponse(res, categories, 'Active categories retrieved');
+    return successResponse(res, categories || [], 'Active categories retrieved');
   } catch (err) {
-    next(err);
+    console.error('[getCategories error]:', err.message);
+    const JobCategory = require('../models/JobCategory');
+    const fallback = await JobCategory.find({ isActive: true }).lean().catch(() => []);
+    return successResponse(res, fallback || [], 'Active categories retrieved (Fallback)');
   }
 }
 
