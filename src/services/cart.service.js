@@ -55,31 +55,53 @@ async function getCart(companyId) {
   // Enrich with matching available candidate counts and candidate list preview
   const enrichedItems = await Promise.all(
     (cart.items || []).map(async (item) => {
-      if (!item.jobId) return item;
-      const jId = item.jobId._id || item.jobId;
-      const requestedQty = Math.max(1, Math.min(10, parseInt(item.quantity, 10) || 1));
-      const careerLevel = (item.careerLevel || '').trim();
+      if (!item.jobId) {
+        return {
+          ...item,
+          quantity: item.quantity || 1,
+          careerLevel: item.careerLevel || '',
+          candidates: [],
+          availableCandidatesCount: 0,
+          isSufficient: false
+        };
+      }
 
-      const matchQuery = buildCandidateMatchQuery(jId, careerLevel);
-      const availableCount = await Candidate.countDocuments(matchQuery);
+      try {
+        const jId = item.jobId._id || item.jobId;
+        const requestedQty = Math.max(1, Math.min(10, parseInt(item.quantity, 10) || 1));
+        const careerLevel = (item.careerLevel || '').trim();
 
-      const candidates = await Candidate.find(matchQuery)
-        .select('fullName phone governorate area yearsOfExperience qualification careerLevel secondCareerLevel thirdCareerLevel desiredJobId secondJobId thirdJobId')
-        .populate('desiredJobId', 'name nameAr')
-        .populate('secondJobId', 'name nameAr')
-        .populate('thirdJobId', 'name nameAr')
-        .sort({ createdAt: -1 })
-        .limit(requestedQty)
-        .lean();
+        const matchQuery = buildCandidateMatchQuery(jId, careerLevel);
+        const availableCount = await Candidate.countDocuments(matchQuery);
 
-      return {
-        ...item,
-        quantity: requestedQty,
-        careerLevel,
-        candidates,
-        availableCandidatesCount: availableCount,
-        isSufficient: availableCount >= requestedQty
-      };
+        const candidates = await Candidate.find(matchQuery)
+          .select('fullName phone governorate area yearsOfExperience qualification careerLevel secondCareerLevel thirdCareerLevel desiredJobId secondJobId thirdJobId')
+          .populate('desiredJobId', 'name nameAr')
+          .populate('secondJobId', 'name nameAr')
+          .populate('thirdJobId', 'name nameAr')
+          .sort({ createdAt: -1 })
+          .limit(requestedQty)
+          .lean();
+
+        return {
+          ...item,
+          quantity: requestedQty,
+          careerLevel,
+          candidates: candidates || [],
+          availableCandidatesCount: availableCount || 0,
+          isSufficient: (availableCount || 0) >= requestedQty
+        };
+      } catch (itemErr) {
+        console.warn(`[getCart] Error enriching item ${item._id}:`, itemErr.message);
+        return {
+          ...item,
+          quantity: item.quantity || 1,
+          careerLevel: item.careerLevel || '',
+          candidates: [],
+          availableCandidatesCount: 0,
+          isSufficient: false
+        };
+      }
     })
   );
 

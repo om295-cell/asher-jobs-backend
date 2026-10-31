@@ -8,7 +8,7 @@ const { requireApprovedCompany } = require('../middleware/companyApproval.middle
 const { requirePasswordChanged } = require('../middleware/mustChangePassword.middleware');
 const { requireActiveSubscription } = require('../middleware/subscription.middleware');
 
-router.use(authenticate, authorize('company'), requirePasswordChanged);
+router.use(authenticate, authorize('company', 'admin'), requirePasswordChanged);
 
 router.get('/me', companyController.getMyCompany);
 router.put('/me', companyController.updateMyCompany);

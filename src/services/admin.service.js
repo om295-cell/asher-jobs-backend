@@ -942,34 +942,35 @@ async function restoreAndMergeTitles({ dryRun = true } = {}) {
   };
 }
 
-// ── Diagnostic: candidates that have no valid active job title ──────────────
+// ── Diagnostic: candidates and cart health diagnostic ──────────────
 async function getCandidatesWithoutJobTitle() {
   const totalCandidates = await Candidate.countDocuments({ isDeleted: false });
   const totalJobs = await Job.countDocuments({});
   const activeJobs = await Job.countDocuments({ isActive: true });
 
-  // Test getCart for all companies to diagnose any 500 errors
+  // Test getCart for ALL companies to diagnose any 500 errors
   let cartDiagnostic = [];
   try {
     const cartService = require('./cart.service');
-    const CandidateCart = require('../models/CandidateCart');
-    const existingCarts = await CandidateCart.find({}).lean();
-    cartDiagnostic.push({ totalExistingCarts: existingCarts.length });
+    const companies = await Company.find({ isDeleted: false }).lean();
+    cartDiagnostic.push({ totalCompaniesFound: companies.length });
 
-    for (const ec of existingCarts) {
+    for (const c of companies) {
       try {
-        const cart = await cartService.getCart(ec.companyId);
+        const cart = await cartService.getCart(c._id);
         cartDiagnostic.push({
-          companyId: ec.companyId,
+          companyId: c._id,
+          companyName: c.companyName,
+          plan: c.subscriptionPlan,
           status: 'ok',
-          rawItemsCount: ec.items?.length,
-          enrichedItemsCount: cart.items?.length
+          itemsCount: cart.items?.length || 0
         });
       } catch (cErr) {
         cartDiagnostic.push({
-          companyId: ec.companyId,
+          companyId: c._id,
+          companyName: c.companyName,
+          plan: c.subscriptionPlan,
           status: 'error',
-          rawItems: ec.items,
           error: cErr.message,
           stack: cErr.stack
         });
@@ -979,79 +980,18 @@ async function getCandidatesWithoutJobTitle() {
     cartDiagnostic.push({ status: 'outer_error', error: err.message, stack: err.stack });
   }
 
-  // 1. Candidates where desiredJobId is null / missing
-  const nullJobId = await Candidate.find({
+  // 1. Fast count of missing job titles
+  const nullJobIdCount = await Candidate.countDocuments({
     isDeleted: false,
     $or: [{ desiredJobId: null }, { desiredJobId: { $exists: false } }]
-  })
-    .select('fullName phone accountStatus availabilityStatus createdAt desiredJobId desiredJobs')
-    .limit(100)
-    .lean();
-
-  // 2. Candidates whose desiredJobId points to a non-existent or inactive Job
-  const badRef = await Candidate.aggregate([
-    { $match: { isDeleted: false, desiredJobId: { $ne: null, $exists: true } } },
-    {
-      $lookup: {
-        from: 'jobs',
-        localField: 'desiredJobId',
-        foreignField: '_id',
-        as: 'job'
-      }
-    },
-    {
-      $match: {
-        $or: [
-          { job: { $size: 0 } },          // job deleted from DB
-          { 'job.0.isActive': false }       // job exists but inactive
-        ]
-      }
-    },
-    {
-      $project: {
-        fullName: 1,
-        phone: 1,
-        accountStatus: 1,
-        availabilityStatus: 1,
-        createdAt: 1,
-        desiredJobId: 1,
-        desiredJobs: 1,
-        jobExists: { $gt: [{ $size: '$job' }, 0] },
-        jobName: { $arrayElemAt: ['$job.name', 0] },
-        jobNameAr: { $arrayElemAt: ['$job.nameAr', 0] },
-        jobIsActive: { $arrayElemAt: ['$job.isActive', 0] }
-      }
-    }
-  ]);
-
-  const candidatesWithValidActiveJob = totalCandidates - (nullJobId.length + badRef.length);
-
-  // Group badRef by issue
-  const jobDeletedCount = badRef.filter(b => !b.jobExists).length;
-  const jobInactiveCount = badRef.filter(b => b.jobExists && !b.jobIsActive).length;
-
-  // Sample a few bad candidates with full desiredJobs to see if titles are preserved
-  const sampleBadCandidates = badRef.slice(0, 5).map(c => ({
-    _id: c._id,
-    fullName: c.fullName,
-    phone: c.phone,
-    desiredJobId: c.desiredJobId,
-    desiredJobs: c.desiredJobs,
-    issue: c.jobExists ? 'job_inactive' : 'job_deleted'
-  }));
+  });
 
   return {
     cartDiagnostic,
     totalCandidates,
     totalJobs,
     activeJobs,
-    candidatesWithValidActiveJob,
-    totalIssues: nullJobId.length + badRef.length,
-    nullJobIdCount: nullJobId.length,
-    badRefCount: badRef.length,
-    jobDeletedCount,
-    jobInactiveCount,
-    sampleBadCandidates
+    nullJobIdCount
   };
 }
 
