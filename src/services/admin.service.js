@@ -70,6 +70,7 @@ async function getDashboardMetrics() {
   ]);
 
   return {
+    cartDiagnostic,
     totalCandidates,
     availableCandidates,
     totalCompanies,
@@ -947,6 +948,23 @@ async function getCandidatesWithoutJobTitle() {
   const totalJobs = await Job.countDocuments({});
   const activeJobs = await Job.countDocuments({ isActive: true });
 
+  // Test getCart for all companies to diagnose any 500 errors
+  let cartDiagnostic = [];
+  try {
+    const cartService = require('./cart.service');
+    const companies = await Company.find({ isDeleted: false }).limit(10).lean();
+    for (const c of companies) {
+      try {
+        const cart = await cartService.getCart(c._id);
+        cartDiagnostic.push({ companyId: c._id, companyName: c.companyName, status: 'ok', itemsCount: cart.items?.length || 0 });
+      } catch (cErr) {
+        cartDiagnostic.push({ companyId: c._id, companyName: c.companyName, status: 'error', error: cErr.message, stack: cErr.stack });
+      }
+    }
+  } catch (err) {
+    cartDiagnostic.push({ status: 'outer_error', error: err.message, stack: err.stack });
+  }
+
   // 1. Candidates where desiredJobId is null / missing
   const nullJobId = await Candidate.find({
     isDeleted: false,
@@ -1009,6 +1027,7 @@ async function getCandidatesWithoutJobTitle() {
   }));
 
   return {
+    cartDiagnostic,
     totalCandidates,
     totalJobs,
     activeJobs,
