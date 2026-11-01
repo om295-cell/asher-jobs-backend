@@ -103,13 +103,23 @@ async function listCandidatesForAdmin(queryParams) {
     keyword
   } = queryParams;
 
+  const andClauses = [];
   if (jobId && jobId !== 'ALL') {
     if (mongoose.Types.ObjectId.isValid(jobId)) {
-      filter.desiredJobId = new mongoose.Types.ObjectId(jobId);
+      const jidObj = new mongoose.Types.ObjectId(jobId);
+      andClauses.push({
+        $or: [
+          { desiredJobId: jidObj },
+          { secondJobId: jidObj },
+          { thirdJobId: jidObj },
+          { 'desiredJobs.jobId': jidObj }
+        ]
+      });
     } else {
-      filter.desiredJobId = jobId;
+      andClauses.push({ desiredJobId: jobId });
     }
   }
+
   if (categoryId && categoryId !== 'ALL') {
     if (mongoose.Types.ObjectId.isValid(categoryId)) {
       filter.categoryId = new mongoose.Types.ObjectId(categoryId);
@@ -125,13 +135,19 @@ async function listCandidatesForAdmin(queryParams) {
   if (keyword && keyword.trim()) {
     const kw = keyword.trim();
     const regex = new RegExp(escapeRegex(kw), 'i');
-    filter.$or = [
-      { fullName: regex },
-      { phone: regex },
-      { phoneNormalized: regex },
-      { email: regex },
-      { area: regex }
-    ];
+    andClauses.push({
+      $or: [
+        { fullName: regex },
+        { phone: regex },
+        { phoneNormalized: regex },
+        { email: regex },
+        { area: regex }
+      ]
+    });
+  }
+
+  if (andClauses.length > 0) {
+    filter.$and = andClauses;
   }
 
   const [items, total] = await Promise.all([
@@ -487,6 +503,171 @@ async function getAllJobs(includeInactive = false) {
   return jobs;
 }
 
+// Job catalogue with candidate statistics (count of people per position)
+async function getAllJobsWithCandidateCounts(includeInactive = true, queryParams = {}) {
+  const query = includeInactive ? {} : { isActive: true };
+  const jobs = await Job.find(query)
+    .populate('categoryId', 'name nameAr sortOrder isActive')
+    .sort({ sortOrder: 1, name: 1 })
+    .lean();
+
+  let primaryCountMap = new Map();
+  let totalCountMap = new Map();
+
+  try {
+    const [primaryCounts, totalCounts] = await Promise.all([
+      Candidate.aggregate([
+        { $match: { isDeleted: false, desiredJobId: { $ne: null } } },
+        { $group: { _id: '$desiredJobId', count: { $sum: 1 } } }
+      ]),
+      Candidate.aggregate([
+        { $match: { isDeleted: false } },
+        {
+          $project: {
+            allJobs: {
+              $setUnion: [
+                {
+                  $filter: {
+                    input: [
+                      { $ifNull: ['$desiredJobId', null] },
+                      { $ifNull: ['$secondJobId', null] },
+                      { $ifNull: ['$thirdJobId', null] }
+                    ],
+                    as: 'id',
+                    cond: { $ne: ['$$id', null] }
+                  }
+                },
+                {
+                  $map: {
+                    input: { $ifNull: ['$desiredJobs', []] },
+                    as: 'dj',
+                    in: '$$dj.jobId'
+                  }
+                }
+              ]
+            }
+          }
+        },
+        { $unwind: '$allJobs' },
+        { $match: { allJobs: { $ne: null } } },
+        { $group: { _id: '$allJobs', count: { $sum: 1 } } }
+      ])
+    ]);
+
+    for (const p of primaryCounts) {
+      if (p._id) primaryCountMap.set(p._id.toString(), p.count);
+    }
+    for (const t of totalCounts) {
+      if (t._id) totalCountMap.set(t._id.toString(), t.count);
+    }
+  } catch (aggErr) {
+    console.error('[Admin] Aggregating candidate counts failed, using fallback:', aggErr.message);
+    try {
+      const fallbackCounts = await Candidate.aggregate([
+        { $match: { isDeleted: false, desiredJobId: { $ne: null } } },
+        { $group: { _id: '$desiredJobId', count: { $sum: 1 } } }
+      ]);
+      for (const p of fallbackCounts) {
+        if (p._id) {
+          primaryCountMap.set(p._id.toString(), p.count);
+          totalCountMap.set(p._id.toString(), p.count);
+        }
+      }
+    } catch (fbErr) {
+      console.error('[Admin] Fallback candidate aggregation error:', fbErr.message);
+    }
+  }
+
+  let zeroCount = 0;
+  let less10Count = 0;
+  let less20Count = 0;
+  let less50Count = 0;
+  let twentyPlusCount = 0;
+
+  const enrichedJobs = jobs.map((job) => {
+    const jid = job._id.toString();
+    const totalCount = totalCountMap.get(jid) || primaryCountMap.get(jid) || 0;
+    const primaryCount = primaryCountMap.get(jid) || 0;
+
+    if (totalCount === 0) zeroCount++;
+    if (totalCount < 10) less10Count++;
+    if (totalCount < 20) less20Count++;
+    if (totalCount < 50) less50Count++;
+    if (totalCount >= 20) twentyPlusCount++;
+
+    return {
+      ...job,
+      candidateCount: totalCount,
+      primaryCandidateCount: primaryCount
+    };
+  });
+
+  const summary = {
+    total: enrichedJobs.length,
+    zeroCandidates: zeroCount,
+    lessThan10: less10Count,
+    lessThan20: less20Count,
+    lessThan50: less50Count,
+    twentyPlus: twentyPlusCount
+  };
+
+  let filteredJobs = enrichedJobs;
+  const { candidateFilter, maxCandidates, minCandidates, categoryId, search, sortBy } = queryParams;
+
+  if (categoryId && categoryId !== 'ALL') {
+    filteredJobs = filteredJobs.filter(j => {
+      const cId = j.categoryId?._id ? j.categoryId._id.toString() : j.categoryId?.toString();
+      return cId === categoryId.toString();
+    });
+  }
+
+  if (search && search.trim()) {
+    const s = search.trim().toLowerCase();
+    filteredJobs = filteredJobs.filter(j =>
+      (j.name && j.name.toLowerCase().includes(s)) ||
+      (j.nameAr && j.nameAr.includes(s))
+    );
+  }
+
+  if (candidateFilter) {
+    if (candidateFilter === 'zero') {
+      filteredJobs = filteredJobs.filter(j => j.candidateCount === 0);
+    } else if (candidateFilter === 'less_10') {
+      filteredJobs = filteredJobs.filter(j => j.candidateCount < 10);
+    } else if (candidateFilter === 'less_20') {
+      filteredJobs = filteredJobs.filter(j => j.candidateCount < 20);
+    } else if (candidateFilter === 'less_50') {
+      filteredJobs = filteredJobs.filter(j => j.candidateCount < 50);
+    } else if (candidateFilter === 'twenty_plus') {
+      filteredJobs = filteredJobs.filter(j => j.candidateCount >= 20);
+    } else if (candidateFilter === 'between_1_9') {
+      filteredJobs = filteredJobs.filter(j => j.candidateCount >= 1 && j.candidateCount < 10);
+    } else if (candidateFilter === 'between_10_19') {
+      filteredJobs = filteredJobs.filter(j => j.candidateCount >= 10 && j.candidateCount < 20);
+    } else if (candidateFilter === 'custom' && maxCandidates !== undefined && maxCandidates !== '') {
+      const max = Number(maxCandidates);
+      const min = minCandidates !== undefined && minCandidates !== '' ? Number(minCandidates) : 0;
+      filteredJobs = filteredJobs.filter(j => j.candidateCount >= min && j.candidateCount <= max);
+    }
+  }
+
+  if (sortBy) {
+    if (sortBy === 'candidateCount_asc') {
+      filteredJobs.sort((a, b) => a.candidateCount - b.candidateCount || a.nameAr.localeCompare(b.nameAr));
+    } else if (sortBy === 'candidateCount_desc') {
+      filteredJobs.sort((a, b) => b.candidateCount - a.candidateCount || a.nameAr.localeCompare(b.nameAr));
+    } else if (sortBy === 'name') {
+      filteredJobs.sort((a, b) => a.nameAr.localeCompare(b.nameAr));
+    }
+  }
+
+  return {
+    jobs: filteredJobs,
+    allJobsCount: enrichedJobs.length,
+    summary
+  };
+}
+
 async function createJob(data) {
   const { name, nameAr, categoryId, description, isActive, sortOrder } = data;
   if (!name || !nameAr || !categoryId) {
@@ -692,6 +873,7 @@ module.exports = {
   listRecruitmentRequestsAdmin,
   updateRequestStatusAdmin,
   getAllJobs,
+  getAllJobsWithCandidateCounts,
   createJob,
   updateJob,
   deleteJob,

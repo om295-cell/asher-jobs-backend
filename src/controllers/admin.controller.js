@@ -181,8 +181,8 @@ async function updateCompanyOrderStatus(req, res, next) {
 // Jobs
 async function listJobs(req, res, next) {
   try {
-    const jobs = await adminService.getAllJobs(true);
-    return successResponse(res, jobs, 'All jobs retrieved');
+    const result = await adminService.getAllJobsWithCandidateCounts(true, req.query);
+    return successResponse(res, result, 'All jobs retrieved');
   } catch (err) {
     next(err);
   }
