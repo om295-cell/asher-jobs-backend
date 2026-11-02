@@ -233,28 +233,36 @@ async function checkAndConsumeDownloadQuota(companyId, jobId, count = 1, req = n
     };
   }
 
-  // Atomically enforce the monthly export allowance as well as the daily
-  // per-title quota. This also prevents a multi-title cart from crossing the
-  // monthly limit in one request or through concurrent requests.
-  const monthlyUsage = await Company.findOneAndUpdate(
-    {
-      _id: companyId,
-      $expr: {
-        $lte: [
-          { $add: [{ $ifNull: ['$exportsUsed', 0] }, count] },
-          { $ifNull: ['$exportLimit', 0] }
-        ]
-      }
-    },
-    { $inc: { exportsUsed: count } },
-    { new: true }
-  );
-  if (!monthlyUsage) {
-    throw {
-      statusCode: 429,
-      code: 'EXPORT_LIMIT_REACHED',
-      message: `You have reached your monthly export limit (${company.exportLimit} exports).`
-    };
+  // Monthly export limit: skip for Gold/Platinum active subscribers — they have
+  // unlimited cart exports. Only enforce for non-subscribed or free-tier companies.
+  const isActiveSubscriber =
+    company.subscriptionStatus === 'active' &&
+    ['Gold', 'Platinum'].includes(company.subscriptionPlan);
+
+  if (!isActiveSubscriber) {
+    // Atomically enforce the monthly export allowance.
+    // This also prevents a multi-title cart from crossing the
+    // monthly limit in one request or through concurrent requests.
+    const monthlyUsage = await Company.findOneAndUpdate(
+      {
+        _id: companyId,
+        $expr: {
+          $lte: [
+            { $add: [{ $ifNull: ['$exportsUsed', 0] }, count] },
+            { $ifNull: ['$exportLimit', 0] }
+          ]
+        }
+      },
+      { $inc: { exportsUsed: count } },
+      { new: true }
+    );
+    if (!monthlyUsage) {
+      throw {
+        statusCode: 429,
+        code: 'EXPORT_LIMIT_REACHED',
+        message: `You have reached your monthly export limit (${company.exportLimit} exports).`
+      };
+    }
   }
 
   if (req) {

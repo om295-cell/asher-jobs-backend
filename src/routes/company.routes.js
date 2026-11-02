@@ -23,6 +23,7 @@ router.get('/cart', requireApprovedCompany, companyController.getCart);
 router.post('/cart', requireApprovedCompany, companyController.addOrUpdateCart);
 router.delete('/cart/:itemId', requireApprovedCompany, companyController.removeCartItem);
 router.delete('/cart', requireApprovedCompany, companyController.clearCart);
-router.post('/cart/export', requireApprovedCompany, requireActiveSubscription({ checkExportLimit: true }), companyController.exportCart);
+// Subscribed companies (Gold/Platinum) have unlimited cart exports — no monthly limit gate
+router.post('/cart/export', requireApprovedCompany, requireActiveSubscription(), companyController.exportCart);
 
 module.exports = router;

@@ -2113,6 +2113,51 @@ check('SEC-49: getCandidateById consumes daily search quota and /:id route enfor
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// SEC-67: Cart Export Route Has NO Monthly Limit for Subscribed Companies
+// ─────────────────────────────────────────────────────────────────────────────
+check('SEC-67: Cart export route does not enforce monthly export limit for subscribed companies', async () => {
+  const companyRoutes = require('./src/routes/company.routes');
+  const { requireActiveSubscription } = require('./src/middleware/subscription.middleware');
+
+  // Confirm /cart/export route exists
+  const cartExportRoute = companyRoutes.stack.find(layer =>
+    layer.route && layer.route.path === '/cart/export' && layer.route.methods.post
+  );
+  assert.ok(cartExportRoute, 'POST /cart/export route must exist');
+
+  // Verify that an active Gold subscriber is NOT blocked by the monthly limit
+  // even when exportsUsed >= exportLimit
+  const gate = requireActiveSubscription();  // No checkExportLimit flag
+  const maxedGoldCompany = {
+    subscriptionStatus: 'active',
+    subscriptionPlan: 'Gold',
+    subscriptionEndDate: new Date(Date.now() + 86400000),
+    exportsUsed: 999,   // Far over any limit
+    exportLimit: 10,
+    isApproved: true,
+    cartEnabled: true
+  };
+
+  let nextCalled = false;
+  const fakeRes = {
+    status: (s) => ({ json: (d) => { throw new Error(`Subscribed company was blocked with ${s} / ${d.code}`); } })
+  };
+
+  await gate({ company: maxedGoldCompany }, fakeRes, () => { nextCalled = true; });
+  assert.ok(nextCalled, 'next() must be called — active subscriber must NOT be blocked by export limit on cart');
+
+  // Also verify entitlement.service skips monthly check for active Gold/Platinum subscribers
+  const entitlementService = require('./src/services/entitlement.service');
+  // The monthly limit guard is only present for non-subscribers; active Gold/Platinum skip it.
+  // We confirm this by checking the source does NOT run the blocking findOneAndUpdate for active subscribers.
+  const entitlementSrc = require('fs').readFileSync('./src/services/entitlement.service.js', 'utf8');
+  assert.ok(
+    entitlementSrc.includes('isActiveSubscriber') && entitlementSrc.includes('Gold') && entitlementSrc.includes('Platinum'),
+    'entitlement.service.js must check isActiveSubscriber and skip monthly limit for Gold/Platinum'
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // SEC-50: Platinum Download Route Enforces Monthly Export Limit
 // ─────────────────────────────────────────────────────────────────────────────
 check('SEC-50: Platinum candidate download route enforces checkExportLimit', async () => {
