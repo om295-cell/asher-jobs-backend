@@ -2461,6 +2461,32 @@ check('SEC-65: Employer search, detail, and CV routes cannot retrieve unavailabl
   assert.ok(candidateControllerSource.includes("availabilityStatus: 'Available'"), 'Company CV download must require Available status');
 });
 
+check('SEC-66: Fawry payment gateway SHA-256 signature verification accepts valid signatures and rejects tampered ones', () => {
+  const fawryService = require('./src/services/fawry.service');
+  const testSecretKey = 'test_fawry_secret_key_2026';
+  const data = {
+    fawryRefNumber: '99001122',
+    merchantRefNumber: 'order_1234567890abcdef',
+    paymentAmount: '150.00',
+    orderStatus: 'PAID'
+  };
+
+  // Concatenate: fawryRefNumber + merchantRefNumber + formattedAmount(2 decimals) + orderStatus + secureKey
+  const raw = `${data.fawryRefNumber}${data.merchantRefNumber}${data.paymentAmount}${data.orderStatus}${testSecretKey}`;
+  const validSignature = crypto.createHash('sha256').update(raw).digest('hex').toLowerCase();
+
+  const validPayload = { ...data, messageSignature: validSignature };
+  assert.strictEqual(fawryService.verifyWebhookSignature(validPayload, testSecretKey), true, 'Valid Fawry webhook signature must pass');
+
+  // Tampered payload (different amount)
+  const tamperedPayload = { ...data, paymentAmount: '50.00', messageSignature: validSignature };
+  assert.strictEqual(fawryService.verifyWebhookSignature(tamperedPayload, testSecretKey), false, 'Tampered amount must fail Fawry signature check');
+
+  // Malformed signature length/chars
+  const malformedPayload = { ...data, messageSignature: 'invalid_short_signature' };
+  assert.strictEqual(fawryService.verifyWebhookSignature(malformedPayload, testSecretKey), false, 'Malformed signature must be rejected');
+});
+
 // SUMMARY REPORT & RUNNER
 // ─────────────────────────────────────────────────────────────────────────────
 

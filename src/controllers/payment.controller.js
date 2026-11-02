@@ -2,6 +2,7 @@ const Company = require('../models/Company');
 const Subscription = require('../models/Subscription');
 const PaymentOrder = require('../models/PaymentOrder');
 const paymobService = require('../services/paymob.service');
+const fawryService = require('../services/fawry.service');
 const { successResponse, errorResponse } = require('../utils/response');
 
 async function activateSubscriptionForOrder(order) {
@@ -169,6 +170,8 @@ async function initiatePayment(req, res) {
     const totalDiscountAmount = Math.max(0, totalBeforeAnyDiscount - totalAmountEgp);
     const effectiveDiscountPct = totalBeforeAnyDiscount > 0 ? Math.round((totalDiscountAmount / totalBeforeAnyDiscount) * 100) : 0;
 
+    const activeGateway = (process.env.PAYMENT_GATEWAY || 'fawry').trim().toLowerCase();
+
     // Create internal order record
     const order = await PaymentOrder.create({
       companyId: company._id,
@@ -177,35 +180,66 @@ async function initiatePayment(req, res) {
       billingMonths: months,
       amountEgp: totalAmountEgp,
       status: 'pending',
+      paymentGateway: activeGateway,
+      merchantRefNumber: null,
       planSnapshot: plan
     });
+    order.merchantRefNumber = order._id.toString();
 
     // Split company name into first/last for billing
     const nameParts = (company.companyName || 'Company').split(' ');
     const billingData = {
       firstName: nameParts[0] || 'Company',
       lastName:  nameParts.slice(1).join(' ') || 'Account',
-      email:     company.email || 'no@email.com',
+      email:     company.email || 'finance@company.com',
       phone:     company.phone || '+201000000000',
       city:      company.governorate || 'Cairo',
       street:    company.area || 'N/A'
     };
 
-    // Initiate Paymob payment
-    const { paymobOrderId, paymentKey, iframeUrl } = await paymobService.initiatePayment({
-      amountEgp: totalAmountEgp,
-      internalOrderId: order._id.toString(),
-      billingData
-    });
+    let paymentUrl = '';
+    let iframeUrl = '';
 
-    // Save Paymob IDs back to order
-    order.paymobOrderId = paymobOrderId;
-    order.paymobPaymentKey = paymentKey;
-    await order.save();
+    if (activeGateway === 'fawry') {
+      const fawryResult = await fawryService.initiatePayment({
+        amountEgp: totalAmountEgp,
+        internalOrderId: order._id.toString(),
+        customerData: {
+          companyId: company._id.toString(),
+          firstName: billingData.firstName,
+          lastName: billingData.lastName,
+          email: billingData.email,
+          phone: billingData.phone
+        },
+        planName
+      });
+
+      paymentUrl = fawryResult.paymentUrl;
+      iframeUrl = fawryResult.paymentUrl; // backwards-compatible redirect
+      if (fawryResult.fawryRefNumber) {
+        order.fawryRefNumber = fawryResult.fawryRefNumber;
+      }
+      await order.save();
+    } else {
+      // Legacy Paymob flow
+      const { paymobOrderId, paymentKey, iframeUrl: pmIframeUrl } = await paymobService.initiatePayment({
+        amountEgp: totalAmountEgp,
+        internalOrderId: order._id.toString(),
+        billingData
+      });
+      order.paymobOrderId = paymobOrderId;
+      order.paymobPaymentKey = paymentKey;
+      paymentUrl = pmIframeUrl;
+      iframeUrl = pmIframeUrl;
+      await order.save();
+    }
 
     return successResponse(res, {
       orderId: order._id,
+      paymentUrl,
       iframeUrl,
+      gateway: activeGateway,
+      fawryRefNumber: order.fawryRefNumber || null,
       summary: {
         planName,
         billingMonths: months,
@@ -225,10 +259,145 @@ async function initiatePayment(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// POST /payments/webhook  (called by Paymob on payment result)
+// POST /payments/webhook  (called by Fawry or Paymob on payment result)
 // ─────────────────────────────────────────────────────────────
 async function handleWebhook(req, res) {
   try {
+    const isFawryWebhook = Boolean(
+      req.body?.fawryRefNumber ||
+      req.body?.merchantRefNumber ||
+      req.body?.messageSignature ||
+      (req.body?.orderStatus && !req.query?.hmac && !req.body?.obj)
+    );
+
+    // ── 1. Fawry Webhook Handling ──────────────────────────────
+    if (isFawryWebhook) {
+      const fawryKey = process.env.FAWRY_SECURITY_KEY;
+      if (!fawryKey) {
+        console.error('[Payment/webhook/fawry] SECURITY ERROR: FAWRY_SECURITY_KEY is not configured on server.');
+        return res.status(500).json({ error: 'Fawry signature verification key not configured' });
+      }
+
+      if (!req.body?.messageSignature) {
+        console.warn('[Payment/webhook/fawry] SECURITY ALERT: Webhook called without signature.');
+        return res.status(401).json({ error: 'Signature required' });
+      }
+
+      const validFawry = fawryService.verifyWebhookSignature(req.body, fawryKey);
+      if (!validFawry) {
+        console.warn('[Payment/webhook/fawry] SECURITY ALERT: Invalid Fawry signature detected.');
+        return res.status(401).json({ error: 'Invalid Fawry signature' });
+      }
+
+      const merchantRef = String(req.body.merchantRefNumber || req.body.merchantRefNum || '');
+      const fawryRefNumber = String(req.body.fawryRefNumber || req.body.referenceNumber || '');
+      const fawryStatus = String(req.body.orderStatus || req.body.status || '').toUpperCase();
+      const transactionId = fawryRefNumber || String(req.body.requestId || Date.now());
+
+      const orderQuery = [];
+      if (merchantRef) {
+        if (/^[0-9a-fA-F]{24}$/.test(merchantRef)) orderQuery.push({ _id: merchantRef });
+        orderQuery.push({ merchantRefNumber: merchantRef });
+      }
+      if (fawryRefNumber) orderQuery.push({ fawryRefNumber });
+
+      const order = await PaymentOrder.findOne(orderQuery.length ? { $or: orderQuery } : { merchantRefNumber: merchantRef });
+      if (!order) {
+        console.warn('[Payment/webhook/fawry] Order not found for merchantRef:', merchantRef);
+        return res.status(200).json({ received: true });
+      }
+
+      const isRefunded = fawryStatus === 'REFUNDED' || req.body.is_refunded === true;
+      if (isRefunded) {
+        if (order.status !== 'refunded') {
+          await PaymentOrder.findOneAndUpdate(
+            { _id: order._id, status: { $ne: 'refunded' } },
+            { $set: {
+              fawryRefNumber,
+              fawryTransactionId: transactionId,
+              paymobRefundTransactionId: transactionId,
+              status: 'refunded',
+              refundedAt: new Date(),
+              refundReason: 'Refund confirmed by Fawry'
+            } },
+            { new: true }
+          );
+        }
+        await deactivateSubscriptionForRefund(order);
+        return res.status(200).json({ received: true });
+      }
+
+      if (order.status === 'paid') {
+        if (fawryStatus === 'PAID' || fawryStatus === 'SUCCESS') {
+          await activateSubscriptionForOrder(order);
+          const latestOrder = await PaymentOrder.findById(order._id).select('status').lean();
+          if (latestOrder?.status === 'refunded') {
+            await deactivateSubscriptionForRefund(order);
+          }
+        }
+        return res.status(200).json({ received: true });
+      }
+
+      if (order.status === 'refunded') {
+        return res.status(200).json({ received: true });
+      }
+
+      if (fawryStatus === 'PAID' || fawryStatus === 'SUCCESS') {
+        const receivedAmount = Number(req.body.paymentAmount || req.body.orderAmount || 0);
+        const expectedAmount = Number(order.amountEgp);
+
+        if (Math.abs(receivedAmount - expectedAmount) > 0.05) {
+          console.warn(`[Payment/webhook/fawry] Amount mismatch: received ${receivedAmount}, expected ${expectedAmount}`);
+          await PaymentOrder.findOneAndUpdate(
+            { _id: order._id, status: { $nin: ['paid', 'refunded'] } },
+            { $set: {
+              fawryRefNumber,
+              fawryTransactionId: transactionId,
+              status: 'failed',
+              failureReason: 'Amount mismatch detected'
+            } }
+          );
+          return res.status(200).json({ received: true });
+        }
+
+        const paidAt = new Date();
+        const paidOrder = await PaymentOrder.findOneAndUpdate(
+          { _id: order._id, status: { $nin: ['paid', 'refunded'] } },
+          { $set: {
+            fawryRefNumber,
+            fawryTransactionId: transactionId,
+            fawryPaymentMethod: req.body.paymentMethod || 'FAWRY',
+            paymobTransactionId: transactionId,
+            status: 'paid',
+            paidAt,
+            failureReason: ''
+          } },
+          { new: true }
+        );
+        if (!paidOrder) return res.status(200).json({ received: true });
+
+        await activateSubscriptionForOrder(paidOrder);
+
+        const latestOrder = await PaymentOrder.findById(paidOrder._id).select('status').lean();
+        if (latestOrder?.status === 'refunded') {
+          await deactivateSubscriptionForRefund(paidOrder);
+        }
+      } else {
+        await PaymentOrder.findOneAndUpdate(
+          { _id: order._id, status: { $nin: ['paid', 'refunded'] } },
+          { $set: {
+            fawryRefNumber,
+            fawryTransactionId: transactionId,
+            status: fawryStatus === 'EXPIRED' ? 'expired' : 'failed',
+            failureReason: req.body.statusDescription || `Fawry status: ${fawryStatus}`
+          } }
+        );
+      }
+
+      return res.status(200).json({ received: true });
+    }
+
+    // ── 2. Paymob Webhook Handling (Preserved for compatibility) ─
     const hmac = req.query.hmac;
     const data = req.body.obj || req.body;
 
@@ -346,9 +515,6 @@ async function handleWebhook(req, res) {
       // Activate subscription on company
       await activateSubscriptionForOrder(paidOrder);
 
-      // Close the cross-document race where a refund arrives between the
-      // paid transition and company activation. The refund path will also
-      // deactivate the linked subscription if it runs after this check.
       const latestOrder = await PaymentOrder.findById(paidOrder._id).select('status').lean();
       if (latestOrder?.status === 'refunded') {
         await deactivateSubscriptionForRefund(paidOrder);
@@ -372,13 +538,49 @@ async function handleWebhook(req, res) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// GET /payments/callback  (browser redirect from Paymob iframe)
-// Purely redirects the user — never activates subscriptions directly
+// GET /payments/callback  (browser redirect from Fawry or Paymob)
 // ─────────────────────────────────────────────────────────────
 async function handleCallback(req, res) {
   try {
-    const { success, order: paymobOrderId } = req.query;
+    const { success, order: paymobOrderId, merchantRefNumber, merchantRefNum, orderStatus, statusCode } = req.query;
     const FRONTEND_URL = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://asher-jobs-frontend.vercel.app';
+
+    // ── Fawry Redirect Callback ───────────────────────────────
+    const fawryRef = merchantRefNumber || merchantRefNum;
+    if (fawryRef) {
+      const order = await PaymentOrder.findOne({
+        $or: [
+          ...(fawryRef.match(/^[0-9a-fA-F]{24}$/) ? [{ _id: fawryRef }] : []),
+          { merchantRefNumber: fawryRef }
+        ]
+      });
+
+      if (order && order.status === 'paid') {
+        return res.redirect(`${FRONTEND_URL}/company/subscription?payment=success&order=${order._id}`);
+      }
+
+      // Check real-time status with Fawry Status API if pending
+      if (order && order.status === 'pending') {
+        const liveStatus = await fawryService.checkPaymentStatus(fawryRef);
+        const liveStatusStr = String(liveStatus?.orderStatus || liveStatus?.status || '').toUpperCase();
+        if (liveStatusStr === 'PAID' || liveStatusStr === 'SUCCESS') {
+          order.status = 'paid';
+          order.paidAt = new Date();
+          if (liveStatus?.referenceNumber) order.fawryRefNumber = String(liveStatus.referenceNumber);
+          await order.save();
+          await activateSubscriptionForOrder(order);
+          return res.redirect(`${FRONTEND_URL}/company/subscription?payment=success&order=${order._id}`);
+        }
+      }
+
+      const isFawrySuccess = orderStatus === 'PAID' || statusCode === '200' || statusCode === 200;
+      if (isFawrySuccess) {
+        return res.redirect(`${FRONTEND_URL}/company/subscription?payment=processing&order=${fawryRef}`);
+      }
+      return res.redirect(`${FRONTEND_URL}/company/subscription?payment=failed&order=${fawryRef}`);
+    }
+
+    // ── Paymob Redirect Callback ──────────────────────────────
     const isSuccess = success === 'true';
 
     if (isSuccess && paymobOrderId) {
@@ -386,7 +588,6 @@ async function handleCallback(req, res) {
       if (order && order.status === 'paid') {
         return res.redirect(`${FRONTEND_URL}/company/subscription?payment=success&order=${order._id}`);
       }
-      // If webhook hasn't processed it yet, redirect to processing status
       return res.redirect(`${FRONTEND_URL}/company/subscription?payment=processing&order=${paymobOrderId}`);
     } else {
       return res.redirect(`${FRONTEND_URL}/company/subscription?payment=failed`);

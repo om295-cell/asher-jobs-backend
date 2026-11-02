@@ -28,6 +28,17 @@ const paymentOrderSchema = new mongoose.Schema(
       type: Number,
       required: true
     },
+    // Gateway indicator
+    paymentGateway: {
+      type: String,
+      enum: ['fawry', 'paymob'],
+      default: 'fawry'
+    },
+    // Fawry fields
+    fawryRefNumber: { type: String, default: null, index: true },
+    merchantRefNumber: { type: String, default: null, index: true },
+    fawryPaymentMethod: { type: String, default: null },
+    fawryTransactionId: { type: String, default: null, index: true },
     // Paymob fields
     paymobOrderId: { type: String, default: null, index: true },
     paymobPaymentKey: { type: String, default: null },

@@ -10,11 +10,13 @@ const { paymentInitiateLimiter } = require('../middleware/rateLimit.middleware')
 // ── Public: plan listing (companies see plans before logging in) ──
 router.get('/plans', paymentController.listPlans);
 
-// ── Paymob webhook (no auth — called server-to-server by Paymob) ──
+// ── Payment webhooks (no auth — called server-to-server by Fawry / Paymob) ──
 router.post('/webhook', paymentController.handleWebhook);
+router.post('/fawry/webhook', paymentController.handleWebhook);
 
-// ── Paymob browser redirect callback (no auth — redirect from iframe) ──
+// ── Payment browser redirect callbacks (no auth) ──
 router.get('/callback', paymentController.handleCallback);
+router.get('/fawry/callback', paymentController.handleCallback);
 
 // ── Authenticated company routes ──
 router.use(authenticate, authorize('company'), requirePasswordChanged, requireApprovedCompany);
