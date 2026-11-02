@@ -734,9 +734,9 @@ check('SEC-24: Stale or already-revoked token presented to /logout does NOT bump
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SEC-25: Public Recommendation Tracking Anti-Enumeration & Phone Verification
+// SEC-25: Public Recommendation Tracking by Request Number & Verification
 // ─────────────────────────────────────────────────────────────────────────────
-check('SEC-25: Public tracking requires valid matching phone and rejects omitted/malformed phone', async () => {
+check('SEC-25: Public tracking works with request number alone and validates phone when provided', async () => {
   const recommendationService = require('./src/services/recommendation.service');
   const { RecommendationRequest } = require('./src/models/RecommendationRequest');
 
@@ -779,14 +779,11 @@ check('SEC-25: Public tracking requires valid matching phone and rejects omitted
     };
   };
 
-  // 1. Phone omitted -> must throw 400 PHONE_REQUIRED
-  await assert.rejects(
-    async () => {
-      await recommendationService.trackRequestStatus(mockRequest.requestNumber, '');
-    },
-    (err) => err.statusCode === 400 && err.code === 'PHONE_REQUIRED',
-    'Omitted phone must be rejected with 400 PHONE_REQUIRED'
-  );
+  // 1. Lookup with requestNumber alone (no phone) -> must succeed and mask phone numbers
+  const resultSolo = await recommendationService.trackRequestStatus(mockRequest.requestNumber);
+  assert.strictEqual(resultSolo.requestNumber, mockRequest.requestNumber);
+  assert.strictEqual(resultSolo.submitterName, 'أحمد محمود');
+  assert.strictEqual(resultSolo.people[0].maskedPhone, '010****5678');
 
   // 2. Malformed/invalid phone -> must throw 400 INVALID_PHONE
   await assert.rejects(
@@ -806,16 +803,23 @@ check('SEC-25: Public tracking requires valid matching phone and rejects omitted
     'Non-matching phone must be rejected with 403 PHONE_MISMATCH'
   );
 
-  // 4. Valid matching phone with requestNumber -> must succeed and mask recommendations
+  // 4. Missing requestNumber -> must throw 400 REQUEST_NUMBER_REQUIRED
+  await assert.rejects(
+    async () => {
+      await recommendationService.trackRequestStatus('');
+    },
+    (err) => err.statusCode === 400 && err.code === 'REQUEST_NUMBER_REQUIRED',
+    'Omitted request number must throw 400 REQUEST_NUMBER_REQUIRED'
+  );
+
+  // 5. Valid matching phone with requestNumber -> must succeed
   const resultByReqNum = await recommendationService.trackRequestStatus(
     mockRequest.requestNumber,
     '01012345678'
   );
   assert.strictEqual(resultByReqNum.requestNumber, mockRequest.requestNumber);
-  assert.strictEqual(resultByReqNum.submitterName, 'أحمد محمود');
-  assert.strictEqual(resultByReqNum.people[0].maskedPhone, '010****5678');
 
-  // 5. Valid matching phone with trackingSecret -> must succeed
+  // 6. Valid matching phone with trackingSecret -> must succeed
   const resultBySecret = await recommendationService.trackRequestStatus(
     mockRequest.trackingSecret,
     '01012345678'

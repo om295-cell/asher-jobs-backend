@@ -897,22 +897,17 @@ async function trackRequestStatus(requestNumber, primaryPhone) {
     throw { statusCode: 400, message: 'رقم الطلب أو رمز التتبع مطلوب.', code: 'REQUEST_NUMBER_REQUIRED' };
   }
 
-  // SEC-25: Require a valid primary submitter phone for every lookup to prevent enumeration
-  if (!primaryPhone || typeof primaryPhone !== 'string' || !primaryPhone.trim()) {
-    throw {
-      statusCode: 400,
-      message: 'رقم هاتف مقدم الطلب مطلوب للتحقق من الهوية.',
-      code: 'PHONE_REQUIRED'
-    };
-  }
-
-  const phoneNorm = normalizeEgyptianPhone(primaryPhone.trim());
-  if (!phoneNorm.isValid) {
-    throw {
-      statusCode: 400,
-      message: 'صيغة رقم الهاتف غير صالحة. يرجى إدخال رقم هاتف مصري صحيح (11 رقماً).',
-      code: 'INVALID_PHONE'
-    };
+  // If phone is provided, validate format and verify against submitter
+  let phoneNorm = null;
+  if (primaryPhone && typeof primaryPhone === 'string' && primaryPhone.trim()) {
+    phoneNorm = normalizeEgyptianPhone(primaryPhone.trim());
+    if (!phoneNorm.isValid) {
+      throw {
+        statusCode: 400,
+        message: 'صيغة رقم الهاتف غير صالحة. يرجى إدخال رقم هاتف مصري صحيح (11 رقماً).',
+        code: 'INVALID_PHONE'
+      };
+    }
   }
 
   const cleanReqNum = requestNumber.trim().toUpperCase();
@@ -937,8 +932,8 @@ async function trackRequestStatus(requestNumber, primaryPhone) {
 
   const submitter = request.people[0] || {};
 
-  // Verify phone matches submitter normalized phone
-  if (phoneNorm.normalized !== submitter.phoneNormalized) {
+  // If a phone was provided, verify it matches the submitter normalized phone
+  if (phoneNorm && phoneNorm.normalized !== submitter.phoneNormalized) {
     throw {
       statusCode: 403,
       message: 'رقم الهاتف غير متطابق مع بيانات الطلب.',
