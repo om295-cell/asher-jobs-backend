@@ -12,6 +12,13 @@ const { CLIENT_URL, NODE_ENV } = require('./config/env');
 
 const app = express();
 
+// Vercel forwards requests with X-Forwarded-For. Trust only the single
+// platform proxy so express-rate-limit can key requests by the client IP.
+// Avoid `true`, which would trust arbitrary forwarded addresses from any hop.
+if (process.env.VERCEL) {
+  app.set('trust proxy', 1);
+}
+
 // OWASP A05: Disable X-Powered-By header to prevent server fingerprinting
 app.disable('x-powered-by');
 
