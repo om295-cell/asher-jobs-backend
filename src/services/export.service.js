@@ -82,15 +82,10 @@ function sanitizeExcelCell(val) {
 }
 
   return candidates.map((c) => ({
-    'Candidate Name': sanitizeExcelCell(c.fullName),
-    'Phone': sanitizeExcelCell(c.phone),
-    'Job #1 (Primary)': sanitizeExcelCell(c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A'),
-    'Career Level #1': sanitizeExcelCell(c.careerLevel || 'N/A'),
-    'Job #2': sanitizeExcelCell(c.secondJobId ? (c.secondJobId.nameAr || c.secondJobId.name) : 'None'),
-    'Career Level #2': sanitizeExcelCell(c.secondCareerLevel || ''),
-    'Job #3': sanitizeExcelCell(c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'None'),
-    'Career Level #3': sanitizeExcelCell(c.thirdCareerLevel || ''),
-    'Category': sanitizeExcelCell(c.categoryId ? (c.categoryId.nameAr || c.categoryId.name) : 'N/A')
+    'اسم المرشح': sanitizeExcelCell(c.fullName || 'N/A'),
+    'رقم الهاتف': sanitizeExcelCell(c.phone || 'N/A'),
+    'المسمى الوظيفي': sanitizeExcelCell(c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A'),
+    'مستوى الخبرة': sanitizeExcelCell(c.careerLevel || 'N/A')
   }));
 }
 

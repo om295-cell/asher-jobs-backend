@@ -257,22 +257,20 @@ function sanitizeExcelCell(val) {
 }
 
 /**
- * Format candidate fields for export
+ * Format candidate fields for export - strictly ONLY the 4 collected fields:
+ * 1- Name (اسم المرشح)
+ * 2- Phone Number (رقم الهاتف)
+ * 3- Job Title (المسمى الوظيفي)
+ * 4- Career Level (مستوى الخبرة)
  */
 function formatCandidateRow(c, jobTitleName, careerLevelFilter = '') {
+  const job = jobTitleName || (c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A');
+  const level = c.careerLevel || careerLevelFilter || 'متوسط (3-5 سنوات)';
   return {
-    'المسمى المطلوب': sanitizeExcelCell(jobTitleName || 'N/A'),
-    'مستوى الخبرة المحدد': sanitizeExcelCell(careerLevelFilter || 'الكل'),
     'اسم المرشح': sanitizeExcelCell(c.fullName || 'N/A'),
     'رقم الهاتف': sanitizeExcelCell(c.phone || 'N/A'),
-    'مستوى خبرة المرشح': sanitizeExcelCell(c.careerLevel || 'N/A'),
-    'المحافظة': sanitizeExcelCell(c.governorate || 'الشرقية'),
-    'المنطقة': sanitizeExcelCell(c.area || 'العاشر من رمضان'),
-    'سنوات الخبرة': c.yearsOfExperience !== undefined ? c.yearsOfExperience : '',
-    'المؤهل الدراسي': sanitizeExcelCell(c.qualification || ''),
-    'المسمى الأساسي المسجل': sanitizeExcelCell(c.desiredJobId ? (c.desiredJobId.nameAr || c.desiredJobId.name) : 'N/A'),
-    'المسمى الثاني': sanitizeExcelCell(c.secondJobId ? (c.secondJobId.nameAr || c.secondJobId.name) : 'لا يوجد'),
-    'المسمى الثالث': sanitizeExcelCell(c.thirdJobId ? (c.thirdJobId.nameAr || c.thirdJobId.name) : 'لا يوجد')
+    'المسمى الوظيفي': sanitizeExcelCell(job),
+    'مستوى الخبرة': sanitizeExcelCell(level)
   };
 }
 
